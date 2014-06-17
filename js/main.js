@@ -1,70 +1,83 @@
 $(document).ready(function(){
-  touchHandler_init();
+
   $('#pano').panorama({
+
+    camera: {
+      zoom: {
+        max: 1.5
+      }
+    },
+
+    fov: {
+      max: 140
+    },
+
     renderer: {
       precision: 'lowp',
       antialias: false,
       alpha: false
 
     },
-  /*
-    sphere: {
+    pyramid: {
+      dirName: 'img/dreamsofmouron/result_1386335738_995170-0-25-1/1024',
+      baseName: 'result_1386335738_995170-0-25-1',
+      levels: 4,
+      preload: true
+    },
+
+    __sphere: {
       texture: {
-        src: 'img/dreamsofmouron/result_1386335738_995170-0-25-1/1024/2/',
-        rows: 4,
-        colums: 8,
-        baseName: 'result_1386335738_995170-0-25-1'
+        dirName: 'img/dreamsofmouron/result_1386335738_995170-0-25-1/1024/1',
+        baseName: 'result_1386335738_995170-0-25-1',
+        columns: 4,
+        rows: 2
       }
     },
-*/
-    sphere: {
-      pyramid: {
-        src: 'img/dreamsofmouron/result_1386335738_995170-0-25-1/1024/',
-        levels: 4,
-        current: 2,
-        baseName: 'result_1386335738_995170-0-25-1'
-      }
-    },
+
     postProcessing: {
-      enabled: true,
+      enabled: false,
       edge: {
         shader: THREE.EdgeShader,
         enabled: false,
         uniforms: {
-          aspect: function(pano) {
-            this.value.x=$(pano.container).width();
-            this.value.y=$(pano.container).height();
+          aspect: function(panorama) {
+            this.value.x=$(panorama.container).width();
+            this.value.y=$(panorama.container).height();
           }
         }
       },
+
       edge2: {
         shader: THREE.EdgeShader2,
         enabled: false,
         uniforms: {
-          aspect: function(pano) {
-            this.value.x=$(pano.container).width();
-            this.value.y=$(pano.container).height();
+          aspect: function(panorama) {
+            this.value.x=$(panorama.container).width();
+            this.value.y=$(panorama.container).height();
           }
         }
       }
     }
   });
 
-  var pano=$('#pano').data('pano');
+  var panorama=$('#pano').data('pano');
 
   $(document).on('keypress',function(e){
     switch(e.keyCode) {
     case 49:
-      toggleEffect(pano.postProcessing.edge);
+      toggleEffect(panorama.postProcessing.edge);
       break;
     case 50:
-      toggleEffect(pano.postProcessing.edge2);
+      toggleEffect(panorama.postProcessing.edge2);
       break;
     }
+    panorama.postProcessing.enabled=panorama.postProcessing.edge.pass.enabled||panorama.postProcessing.edge2.pass.enabled;
   });
+
   function toggleEffect(effect){
     effect.pass.enabled=!effect.pass.enabled;
-    pano.drawScene();
+    panorama.drawScene();
   }
+
 });
 
