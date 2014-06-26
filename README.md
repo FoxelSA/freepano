@@ -1,9 +1,8 @@
 
 ## freepano<br />WebGL panorama viewer
 
-WebGL panorama viewer based on [three.js](http://threejs.org) and other
-dependencies. Please read the [COPYRIGHT.md](COPYRIGHT.md) file for more
-information.
+WebGL panorama viewer based on [three.js](http://threejs.org) and [other
+dependencies](COPYRIGHT.md).
 
 
 ### Copyright
