@@ -1,25 +1,40 @@
-/*                                                                                                                                                                                                                   
- *  jquery.freepano.js
+/*
+ * freepano - WebGL panorama viewer
  *
- *  Copyright (C) 2014 Foxel www.foxel.ch
+ * Copyright (c) 2014 FOXEL SA - http://foxel.ch
+ * Please read <http://foxel.ch/license> for more information.
  *
- *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU Affero General Public License as
- *  published by the Free Software Foundation, either version 3 of the
- *  License, or (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Affero General Public License for more details.
+ * Author(s):
  *
- *  You should have received a copy of the GNU Affero General Public License
- *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *      Luc Deschenaux <l.deschenaux@foxel.ch>
  *
- *  Created on: Mar 27, 2014
- *      Author: luc.deschenaux@foxel.ch
+ *
+ * This file is part of the FOXEL project <http://foxel.ch>.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *
+ * Additional Terms:
+ *
+ *      You are required to preserve legal notices and author attributions in
+ *      that material or in the Appropriate Legal Notices displayed by works
+ *      containing it.
+ *
+ *      You are required to attribute the work as explained in the "Usage and
+ *      Attribution" section of <http://foxel.ch/license>.
  */
-
 
 function Texture(options) {
   if (!(this instanceof Texture)) {
@@ -106,8 +121,8 @@ $.extend(true,Sphere.prototype,{
         }
 
         var tileTexture=THREE.ImageUtils.loadTexture(sphere.texture.getTile(col,row),new THREE.UVMapping(),function(){
-          --remaining;                                                          
-          if (!remaining) {                                                     
+          --remaining;
+          if (!remaining) {
             setTimeout(function(){
               sphere.texture.height=rows*tileTexture.image.height;
               sphere.r=sphere.texture.height/Math.PI;
@@ -117,12 +132,12 @@ $.extend(true,Sphere.prototype,{
               } else {
                 sphere.callback()
               }
-            },0);                                                    
-          }                                                                     
-        },                                                                      
-        function(){                                                             
-          $.notify('Cannot load panorama.');                             
-        });                                                                     
+            },0);
+          }
+        },
+        function(){
+          $.notify('Cannot load panorama.');
+        });
         $.extend(tileTexture,sphere.texture.options);
 
         var material=new THREE.MeshBasicMaterial({
@@ -134,7 +149,7 @@ $.extend(true,Sphere.prototype,{
         sphere.object3D.add(mesh);
       }
     }
-  } 
+  }
 });
 
 function Camera(options) {
@@ -199,7 +214,7 @@ $.extend(true,Panorama.prototype,{
         step: 0.01
       }
     },
-    
+
     init: function panorama_init(){
       var panorama=this;
 
@@ -267,7 +282,7 @@ $.extend(true,Panorama.prototype,{
           var effect=new THREE.ShaderPass(THREE.CopyShader);
           effect.renderToScreen=true;
           this.composer.addPass(effect);
-        } 
+        }
       }
 
       this.eventsInit();
@@ -351,7 +366,7 @@ $.extend(true,Panorama.prototype,{
         };
       }
     },
-    
+
     mousemove: function panorama_mousemove(e){
       if (!this.sphere.done) {
         return;
@@ -365,7 +380,7 @@ $.extend(true,Panorama.prototype,{
         }
       }
     },
-    
+
     mouseup: function panorama_mouseup(e){
       this.mode.mousedown=false;
     },
@@ -375,14 +390,14 @@ $.extend(true,Panorama.prototype,{
       visible=this.sphere.texture.height*this.camera.instance.fov/180;
       return this.renderer.domElement.height/visible;
     },
-   
+
     getFov: function() {
       var fov=360*((this.renderer.domElement.width*this.camera.zoom.current/4)/this.sphere.texture.height*2);
       if (fov>this.fov.max) {
         var fovRatio=fov/this.fov.max;
         fov=this.fov.max;
         this.camera.zoom.current/=fovRatio;
-      } 
+      }
       fov=fov/(this.renderer.domElement.width/this.renderer.domElement.height);
       if (fov>this.fov.max){
         var fovRatio=fov/this.fov.max;
@@ -392,7 +407,7 @@ $.extend(true,Panorama.prototype,{
       //console.log(this.camera.zoom.current,this.getZoom());
       return fov;
     },
-   
+
     zoomUpdate: function panorama_zoomUpdate() {
       var fov=this.camera.instance.fov;
       this.camera.zoom.current=1/Math.min(this.camera.zoom.max,Math.max(this.camera.zoom.min,1/this.camera.zoom.current));
@@ -402,7 +417,7 @@ $.extend(true,Panorama.prototype,{
         this.drawScene();
       }
     },
- 
+
     mousewheel: function panorama_mousewheel(e){
       if (!this.sphere.done) {
         return;

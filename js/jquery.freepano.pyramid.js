@@ -1,25 +1,40 @@
-/*                                                                                                                                                                                                                   
- *  jquery.freepano.pyramid.js
+/*
+ * freepano - WebGL panorama viewer
  *
- *  Copyright (C) 2014 Foxel www.foxel.ch
+ * Copyright (c) 2014 FOXEL SA - http://foxel.ch
+ * Please read <http://foxel.ch/license> for more information.
  *
- *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU Affero General Public License as
- *  published by the Free Software Foundation, either version 3 of the
- *  License, or (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Affero General Public License for more details.
+ * Author(s):
  *
- *  You should have received a copy of the GNU Affero General Public License
- *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *      Luc Deschenaux <l.deschenaux@foxel.ch>
  *
- *  Created on: Apr 06, 2014
- *      Author: luc.deschenaux@foxel.ch
+ *
+ * This file is part of the FOXEL project <http://foxel.ch>.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *
+ * Additional Terms:
+ *
+ *      You are required to preserve legal notices and author attributions in
+ *      that material or in the Appropriate Legal Notices displayed by works
+ *      containing it.
+ *
+ *      You are required to attribute the work as explained in the "Usage and
+ *      Attribution" section of <http://foxel.ch/license>.
  */
-
 
 function Pyramid(options) {
   if (!(this instanceof Pyramid)) {
@@ -153,7 +168,7 @@ $.extend(Panorama.prototype,{
       Pyramid.prototype.panorama_zoomUpdate.call(panorama);
     }
   },
-  setRotationMatrix: function panorama_setRotationMatrix(R) {                                                                                               
+  setRotationMatrix: function panorama_setRotationMatrix(R) {
     var pyramid=this.pyramid;
     $.each(pyramid.sphere,function(){
       if (this instanceof Sphere) {

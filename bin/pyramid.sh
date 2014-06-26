@@ -1,23 +1,42 @@
 #!/bin/bash
 #  pyramid.sh
 #
-#  Copyright (C) 2014 Foxel www.foxel.ch
 #
-#  This program is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU Affero General Public License as
-#  published by the Free Software Foundation, either version 3 of the
-#  License, or (at your option) any later version.
+# freepano - WebGL panorama viewer
 #
-#  This program is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU Affero General Public License for more details.
+# Copyright (c) 2014 FOXEL SA - http://foxel.ch
+# Please read <http://foxel.ch/license> for more information.
 #
-#  You should have received a copy of the GNU Affero General Public License
-#  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-#  Created on: Mar 27, 2014
-#      Author: luc.deschenaux@foxel.ch
+# Author(s):
+#
+#      Luc Deschenaux <l.deschenaux@foxel.ch>
+#
+#
+# This file is part of the FOXEL project <http://foxel.ch>.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+# Additional Terms:
+#
+#      You are required to preserve legal notices and author attributions in
+#      that material or in the Appropriate Legal Notices displayed by works
+#      containing it.
+#
+#      You are required to attribute the work as explained in the "Usage and
+#      Attribution" section of <http://foxel.ch/license>.
 
 #set -x
 
@@ -34,7 +53,7 @@ f=$2
 
   base=$(basename $f .jpeg)
   echo image: $base
-  [ -d $base -a "$removedir" = "yes" ] && rm -r $base 
+  [ -d $base -a "$removedir" = "yes" ] && rm -r $base
   mkdir -p $base || exit
 
   # get input resolution
@@ -87,7 +106,7 @@ f=$2
   while [ $level -gt 0 ] ; do
     echo
     echo
-    echo -n level: $level - $curwidth\x$(expr $curwidth / 2)\ 
+    echo -n level: $level - $curwidth\x$(expr $curwidth / 2)\
     if [ -f $base/$tilesize/$level/done ] ; then
       echo -n "- skipped"
     else
@@ -115,7 +134,7 @@ f=$2
         echo tiles count and dimensions mismatch
         exit 1
       fi
-      row=$(expr $rowCount - 1) 
+      row=$(expr $rowCount - 1)
       col=$(expr $colCount - 1)
       echo -n "row: $row - "
       while [ $tilenum -gt 0 ] ; do
