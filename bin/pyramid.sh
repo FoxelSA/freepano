@@ -107,6 +107,7 @@ f=$2
     echo
     echo
     echo -n level: $level - $curwidth\x$(expr $curwidth / 2)\
+
     if [ -f $base/$tilesize/$level/done ] ; then
       echo -n "- skipped"
     else
