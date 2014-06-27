@@ -51,7 +51,8 @@ removedir=no
 
 f=$2
 
-  base=$(basename $f .jpeg)
+  base=$(basename $f | sed -r -e 's/\.[^\.]+$//')
+
   echo image: $base
   [ -d $base -a "$removedir" = "yes" ] && rm -r $base
   mkdir -p $base || exit
@@ -76,13 +77,6 @@ f=$2
     newwidth=$(expr $newwidth \* 2)
   done
 
-  if [ $levelok -eq $level ] ; then
-    echo skipped
-    echo
-#    continue
-    exit 0
-  fi
-
   bottom=$level
   echo pyramid levels: $(expr $bottom + 1)
 
@@ -92,7 +86,7 @@ f=$2
   if [ $width -ne $newwidth -o $height -ne $halfw ] ; then
     width=$newwidth
     height=$halfw
-    tempfile=$f.tiff
+    tempfile=tmp.$f.tiff
     convert $f -resize ${width}x$height -quality 100 $tempfile
     fref=$f
     f=$tempfile
@@ -103,7 +97,7 @@ f=$2
   level=$bottom
   curwidth=$width
 
-  while [ $level -gt 0 ] ; do
+  while [ $level -ge 0 ] ; do
     echo
     echo
     echo -n "level: $level - $curwidth\x$(expr $curwidth / 2)\ "
@@ -145,7 +139,7 @@ f=$2
         mv ${base}_${level}.$N.jpg $tile || exit
         if [ $col -eq 0 ] ; then
           row=$(expr $row - 1)
-          [ $tilenum -gt 0 ] && (echo ; echo -n "row: $row - ")
+          [ $tilenum -gt 0 ] && {echo ; echo -n "row: $row - "}
           col=$colCount;
         fi
         col=$(expr $col - 1)
@@ -155,17 +149,6 @@ f=$2
     level=$(expr $level - 1)
     curwidth=$(expr $curwidth / 2)
   done
-
-  echo
-  echo
-  if [ -f $base/$tilesize/0/done ] ; then
-    echo "level: 0 - ${tilesize}x$(expr $tilesize / 2) - skipped"
-  else
-    echo "level: 0 - ${tilesize}x$(expr $tilesize / 2) - 1 tile - 1x1"
-    echo "row: 0 -  0"
-    tile=$base/$tilesize/0/${base}_0_0.jpg
-    convert $f -resize $tilesize\x $QUALITY $tile
-  fi
 
   [ -n "$tempfile" ] && rm $tempfile
   echo
