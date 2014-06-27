@@ -63,10 +63,7 @@ $.extend(true,Pyramid.prototype,{
       callback: function(){
         pyramid.panorama.sphere=this;
         pyramid.callback();
-        setTimeout(function(){ // TODO set first level
-          pyramid.panorama.zoomUpdate();
-        },0);
-        setTimeout(function(){
+        setTimeout(function(){ // TODO set first level according to fov canvas width and texture width
           pyramid.panorama.zoomUpdate();
         },0);
       }
@@ -115,7 +112,7 @@ $.extend(true,Pyramid.prototype,{
             panorama.sphere=this;
           }
         }
-      },sphereOptions));
+      },pyramid.sphere[pyramid.curLevel]||{},sphereOptions));
     } else {
       panorama.scene.remove(panorama.sphere.object3D);
       panorama.sphere=pyramid.sphere[pyramid.curLevel];
@@ -144,8 +141,12 @@ $.extend(true,Pyramid.prototype,{
   }
 });
 
-Pyramid.prototype.panorama_init=Panorama.prototype.init;
-Pyramid.prototype.panorama_zoomUpdate=Panorama.prototype.zoomUpdate;
+$.extend(Pyramid.prototype,{
+    panorama_init: Panorama.prototype.init,
+    panorama_zoomUpdate: Panorama.prototype.zoomUpdate,
+    panorama_setRotationMatrix: Panorama.prototype.setRotationMatrix
+});
+
 $.extend(Panorama.prototype,{
   init: function panorama_init() {
     var panorama=this;
@@ -169,7 +170,12 @@ $.extend(Panorama.prototype,{
     }
   },
   setRotationMatrix: function panorama_setRotationMatrix(R) {
-    var pyramid=this.pyramid;
+    var panorama=this;
+    var pyramid=panorama.pyramid;
+    if (!pyramid){
+     Pyramid.prototype.panorama_setRotationMatrix.apply(panorama,[R]);
+     return;
+    }
     $.each(pyramid.sphere,function(){
       if (this instanceof Sphere) {
         this.setRotationMatrix(R);

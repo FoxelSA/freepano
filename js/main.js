@@ -61,6 +61,25 @@ $(document).ready(function(){
       baseName: 'result_1386335738_995170-0-25-1',
       levels: 4,
       preload: true
+      /*
+      sphere: [
+        {
+          radius: 1
+        },
+        {
+          radius: 2
+        },
+        {
+          radius: 4
+        },
+        {
+          radius: 8
+        },
+        {
+          radius: 16
+        },
+      ]
+      */
     },
 
     __sphere: {
