@@ -86,7 +86,7 @@ f=$2
   if [ $width -ne $newwidth -o $height -ne $halfw ] ; then
     width=$newwidth
     height=$halfw
-    tempfile=tmp.$f.tiff
+    tempfile=/tmp/tmp.$(basename $f).tiff
     convert $f -resize ${width}x$height -quality 100 $tempfile
     fref=$f
     f=$tempfile
