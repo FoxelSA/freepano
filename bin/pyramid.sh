@@ -100,7 +100,7 @@ f=$2
   while [ $level -ge 0 ] ; do
     echo
     echo
-    echo -n "level: $level - $curwidth\x$(expr $curwidth / 2)\ "
+    echo -n "level: $level - ${curwidth}x$(expr $curwidth / 2) "
     if [ -f $base/$tilesize/$level/done ] ; then
       echo -n "- skipped"
     else
