@@ -139,8 +139,8 @@ f=$2
         mv ${base}_${level}.$N.jpg $tile || exit
         if [ $col -eq 0 ] ; then
           row=$(expr $row - 1)
-          [ $tilenum -gt 0 ] && {echo ; echo -n "row: $row - "}
-          col=$colCount;
+          [ $tilenum -gt 0 ] && ( echo ; echo -n "row: $row - " )
+          col=$colCount
         fi
         col=$(expr $col - 1)
       done
