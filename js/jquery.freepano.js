@@ -483,7 +483,7 @@ $.extend(true,Panorama.prototype,{
         this.drawScene();
         return;
       }
-      this.camera.zoom.current+=e.deltaY*this.camera.zoom.step;
+      this.camera.zoom.current-=e.deltaY*this.camera.zoom.step;
       this.zoomUpdate();
     },
 
