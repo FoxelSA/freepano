@@ -413,7 +413,7 @@ $.extend(true,Panorama.prototype,{
         };
         var wc=this.textureToWorldCoords(this.mousedownPos.textureCoords.left,this.mousedownPos.textureCoords.top);
         console.log(this.mousedownPos.textureCoords.longitude+'=='+wc.longitude,this.mousedownPos.textureCoords.latitude+'=='+wc.latitude);
-        //TODO something is wrong: this.mousedownPos.textureCoords.latitude != wc.latitude 
+        //TODO something is wrong: this.mousedownPos.textureCoords.latitude != wc.latitude
       }
     },
 

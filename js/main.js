@@ -10,6 +10,11 @@
  *      Luc Deschenaux <l.deschenaux@foxel.ch>
  *
  *
+ * Contributor(s):
+ *
+ *      Alexandre Kraft <a.kraft@foxel.ch>
+ *
+ *
  * This file is part of the FOXEL project <http://foxel.ch>.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -56,9 +61,9 @@ $(document).ready(function(){
       alpha: false
 
     },
-    pyramid: {
-      dirName: 'img/dreamsofmouron/result_1386335738_995170-0-25-1/1024',
-      baseName: 'result_1386335738_995170-0-25-1',
+    __pyramid: { /* remove the two underscores to use it */
+      dirName: 'examples/result_1403179805_224762-0-25-1/512',
+      baseName: 'result_1403179805_224762-0-25-1',
       levels: 4,
       preload: true
       /*
@@ -82,12 +87,12 @@ $(document).ready(function(){
       */
     },
 
-    __sphere: {
+    sphere: {
       texture: {
-        dirName: 'img/dreamsofmouron/result_1386335738_995170-0-25-1/1024/1',
-        baseName: 'result_1386335738_995170-0-25-1',
-        columns: 4,
-        rows: 2
+        dirName: 'examples/result_1403179805_224762-0-25-1',
+        baseName: 'result_1403179805_224762-0-25-1',
+        columns: 16,
+        rows: 8
       }
     },
 
