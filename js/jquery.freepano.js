@@ -10,6 +10,11 @@
  *      Luc Deschenaux <l.deschenaux@foxel.ch>
  *
  *
+ * Contributor(s):
+ *
+ *      Alexandre Kraft <a.kraft@foxel.ch>
+ *
+ *
  * This file is part of the FOXEL project <http://foxel.ch>.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -243,11 +248,18 @@ $.extend(true,Panorama.prototype,{
           panorama.renderer=new THREE.WebGLRenderer(panorama.renderer);
           panorama.renderer.renderPluginsPre=[];
           panorama.renderer.renderPluginsPost=[];
-
         } catch(e) {
-          $.notify('Cannot initialize WebGL');
-          console.log(e);
-          return;
+          try {
+            panorama.renderer=new THREE.CanvasRenderer();
+            panorama.renderer.renderPluginsPre=[];
+            panorama.renderer.renderPluginsPost=[];
+            $.notify('Cannot initialize WebGL. Canvas 2D used instead, please expect slow rendering results.',{type:'warning',sticky:false});
+          } catch (ex) {
+            $.notify('Cannot initialize WebGL neither fallback on Canvas 2D.');
+            $.notify('Please check your browser configuration and/or compatibilty with HTML5 standards.',{type:'warning'});
+            console.log(e);
+            return;
+          }
         }
       }
 
