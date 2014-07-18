@@ -45,6 +45,8 @@ $(document).ready(function(){
 
   $('#pano').panorama({
 
+    lon: 180,
+
     camera: {
       zoom: {
         max: 1.5
