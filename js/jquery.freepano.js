@@ -213,6 +213,12 @@ $.extend(true,Panorama.prototype,{
         tilt: 0,
         roll: 0,
         step: 0.01
+      },
+      limits: {
+        lat: {
+            min: -85,
+            max: 85
+        }
       }
     },
 
@@ -511,7 +517,7 @@ $.extend(true,Panorama.prototype,{
       if (!this.sphere.done) {
         return;
       }
-      this.lat=Math.max(-85,Math.min(85,this.lat));
+      this.lat=Math.max(this.limits.lat.min,Math.min(this.limits.lat.max,this.lat));
       this.phi=THREE.Math.degToRad(90-this.lat);
       this.theta=THREE.Math.degToRad(this.lon);
 
