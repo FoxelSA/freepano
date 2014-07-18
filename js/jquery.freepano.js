@@ -10,6 +10,11 @@
  *      Luc Deschenaux <l.deschenaux@foxel.ch>
  *
  *
+ * Contributor(s):
+ *
+ *      Alexandre Kraft <a.kraft@foxel.ch>
+ *
+ *
  * This file is part of the FOXEL project <http://foxel.ch>.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -208,6 +213,12 @@ $.extend(true,Panorama.prototype,{
         tilt: 0,
         roll: 0,
         step: 0.01
+      },
+      limits: {
+        lat: {
+            min: -85,
+            max: 85
+        }
       }
     },
 
@@ -243,11 +254,18 @@ $.extend(true,Panorama.prototype,{
           panorama.renderer=new THREE.WebGLRenderer(panorama.renderer);
           panorama.renderer.renderPluginsPre=[];
           panorama.renderer.renderPluginsPost=[];
-
         } catch(e) {
-          $.notify('Cannot initialize WebGL');
-          console.log(e);
-          return;
+          try {
+            panorama.renderer=new THREE.CanvasRenderer();
+            panorama.renderer.renderPluginsPre=[];
+            panorama.renderer.renderPluginsPost=[];
+            $.notify('Cannot initialize WebGL. Canvas 2D used instead, please expect slow rendering results.',{type:'warning',sticky:false});
+          } catch (ex) {
+            $.notify('Cannot initialize WebGL neither fallback on Canvas 2D.');
+            $.notify('Please check your browser configuration and/or compatibilty with HTML5 standards.',{type:'warning'});
+            console.log(e);
+            return;
+          }
         }
       }
 
@@ -413,7 +431,7 @@ $.extend(true,Panorama.prototype,{
         };
         var wc=this.textureToWorldCoords(this.mousedownPos.textureCoords.left,this.mousedownPos.textureCoords.top);
         console.log(this.mousedownPos.textureCoords.longitude+'=='+wc.longitude,this.mousedownPos.textureCoords.latitude+'=='+wc.latitude);
-        //TODO something is wrong: this.mousedownPos.textureCoords.latitude != wc.latitude 
+        //TODO something is wrong: this.mousedownPos.textureCoords.latitude != wc.latitude
       }
     },
 
@@ -483,7 +501,7 @@ $.extend(true,Panorama.prototype,{
         this.drawScene();
         return;
       }
-      this.camera.zoom.current+=e.deltaY*this.camera.zoom.step;
+      this.camera.zoom.current-=e.deltaY*this.camera.zoom.step;
       this.zoomUpdate();
     },
 
@@ -499,7 +517,7 @@ $.extend(true,Panorama.prototype,{
       if (!this.sphere.done) {
         return;
       }
-      this.lat=Math.max(-85,Math.min(85,this.lat));
+      this.lat=Math.max(this.limits.lat.min,Math.min(this.limits.lat.max,this.lat));
       this.phi=THREE.Math.degToRad(90-this.lat);
       this.theta=THREE.Math.degToRad(this.lon);
 

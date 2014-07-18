@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <!--
 
 /*
@@ -12,6 +12,11 @@
  * Author(s):
  *
  *      Luc Deschenaux <l.deschenaux@foxel.ch>
+ *
+ *
+ * Contributor(s):
+ *
+ *      Alexandre Kraft <a.kraft@foxel.ch>
  *
  *
  * This file is part of the FOXEL project <http://foxel.ch>.
@@ -41,30 +46,48 @@
  */
 
 -->
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, height=device-height, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-    <script src="js/jquery-2.1.0.js"></script>
-    <script src="js/touchHandler.js"></script>
-    <script src="js/jquery.mousewheel.js"></script>
-    <script src="js/jquery.toastmessage.js"></script>
-    <script src="js/notify.js"></script>
-    <script src="js/three.js/three.js"></script>
-    <script src="js/three.js/postprocessing/EffectComposer.js"></script>
-    <script src="js/three.js/postprocessing/RenderPass.js"></script>
-    <script src="js/three.js/postprocessing/MaskPass.js"></script>
-    <script src="js/three.js/postprocessing/ShaderPass.js"></script>
-    <script src="js/three.js/shaders/CopyShader.js"></script>
-    <script src="js/three.js/shaders/FXAAShader.js"></script>
-    <script src="js/three.js/shaders/EdgeShader.js"></script>
-    <script src="js/three.js/shaders/EdgeShader2.js"></script>
-    <script src="js/jquery.freepano.js"></script>
-    <script src="js/jquery.freepano.pyramid.js"></script>
-    <script src="js/main.js"></script>
-    <link rel="stylesheet" href="css/jquery.toastmessage.css" />
-    <link rel="stylesheet" href="css/main.css" />
-  </head>
-  <body>
-    <div class="pano" id="pano"></div>
-  </body>
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+    <title>Freepano Example - https://github.com/FoxelSA/freepano</title>
+    <meta name="viewport" content="width=device-width,height=device-height,user-scalable=no,minimum-scale=1.0,maximum-scale=1.0" />
+    <script type="text/javascript" src="js/jquery-2.1.0.js"></script>
+    <script type="text/javascript" src="js/touchHandler.js"></script>
+    <script type="text/javascript" src="js/jquery.mousewheel.js"></script>
+    <script type="text/javascript" src="js/jquery.toastmessage.js"></script>
+    <script type="text/javascript" src="js/notify.js"></script>
+    <script type="text/javascript" src="js/three.js/three.js"></script>
+    <script type="text/javascript" src="js/three.js/postprocessing/EffectComposer.js"></script>
+    <script type="text/javascript" src="js/three.js/postprocessing/RenderPass.js"></script>
+    <script type="text/javascript" src="js/three.js/postprocessing/MaskPass.js"></script>
+    <script type="text/javascript" src="js/three.js/postprocessing/ShaderPass.js"></script>
+    <script type="text/javascript" src="js/three.js/shaders/CopyShader.js"></script>
+    <script type="text/javascript" src="js/three.js/shaders/FXAAShader.js"></script>
+    <script type="text/javascript" src="js/three.js/shaders/EdgeShader.js"></script>
+    <script type="text/javascript" src="js/three.js/shaders/EdgeShader2.js"></script>
+    <script type="text/javascript" src="js/jquery.freepano.js"></script>
+    <script type="text/javascript" src="js/jquery.freepano.pyramid.js"></script>
+    <script type="text/javascript" src="js/main.js"></script>
+    <link rel="stylesheet" type="text/css" media="all" href="css/jquery.toastmessage.css" />
+    <link rel="stylesheet" type="text/css" media="all" href="css/main.css" />
+</head>
+
+<body>
+
+<div id="pano" class="freepano"></div>
+
+<footer>
+    <div class="shade"></div>
+    <div class="main">
+        <div class="caption">
+            <div>Freepano Example</div>
+            <div>Montpellier, Port Marianne</div>
+        </div>
+        <div class="logo">
+            <a href="http://foxel.ch/" target="_blank"><img src="img/foxel.png" alt="FOXEL" width="71" height="18" /></a>
+        </div>
+    </div>
+</footer>
+
+</body>
 </html>
