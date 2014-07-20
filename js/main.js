@@ -57,6 +57,22 @@ $(document).ready(function(){
       max: 140
     },
 
+    controls: {
+        keyboard: {
+            move: {
+                active: true
+            },
+            zoom: {
+                active: true
+            }
+        },
+        devicemotion: {
+            move: {
+                active: true
+            }
+        }
+    },
+
     renderer: {
       precision: 'lowp',
       antialias: false,
