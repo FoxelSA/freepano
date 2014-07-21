@@ -94,18 +94,23 @@ $.extend(true,Controls.prototype, {
         });
 
         // keyboard
-        $(document).on('keydown', function(e) {
-            controls.keyboard_press(e);
-        });
-
-        // devicemotion orientation API
-        if (window.DeviceOrientationEvent) {
-            window.addEventListener('deviceorientation', function(e) { controls.device_orientation(e); }, false);
+        if (this.keyboard.move.active || this.keyboard.zoom.active) {
+            $(document).on('keydown', function(e) {
+                controls.keyboard_press(e);
+            });
         }
 
-        // devicemotion motion API
-        if (window.DeviceMotionEvent) {
-            window.addEventListener('devicemotion', function(e) { controls.device_motion(e); }, false);
+        // devicemotion
+        if (this.devicemotion.move.active) {
+
+            // orientation
+            if (window.DeviceOrientationEvent)
+                window.addEventListener('deviceorientation', function(e) { controls.device_orientation(e); }, false);
+
+            // motion
+            if (window.DeviceMotionEvent)
+                window.addEventListener('devicemotion', function(e) { controls.device_motion(e); }, false);
+
         }
 
         // callback!
