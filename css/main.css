@@ -106,3 +106,24 @@ footer .logo {
     top:18px;
     right:10px;
 }
+
+
+@media only screen and (max-width: 700px) and (orientation:portrait) {
+
+    html, body {
+        font-size:12px;
+    }
+
+    footer > .shade, footer > .main {
+        height:60px;
+    }
+
+    footer .caption > div:first-child {
+        font-size:15px;
+    }
+
+    footer .logo {
+        top:23px;
+    }
+
+}
