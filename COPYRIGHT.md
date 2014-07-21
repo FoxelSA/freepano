@@ -56,3 +56,8 @@ Public License and/or a compatible license and other copyright notices.
     <[http://akquinet.github.io/jquery-toastmessage-plugin/](http://akquinet.github.io/jquery-toastmessage-plugin/)><br />
     Copyright (c) 2010 akquinet<br />
     jQuery ToastMessage Plugin is licensed under the [Apache License 2.0](http://opensource.org/licenses/Apache-2.0).
+
+*   __Watch.js 1.3.0__<br />
+    <[https://github.com/melanke/Watch.JS](https://github.com/melanke/Watch.JS)><br />
+    Copyright (c) 2012 Gil Lopes Bueno a.k.a melanke<br />
+    Watch.js is licensed under the [MIT license](http://opensource.org/licenses/MIT).

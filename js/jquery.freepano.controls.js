@@ -94,24 +94,10 @@ $.extend(true,Controls.prototype, {
         });
 
         // keyboard
-        if (this.keyboard.move.active || this.keyboard.zoom.active) {
-            $(document).on('keydown', function(e) {
-                controls.keyboard_press(e);
-            });
-        }
+        controls._init_keyboard();
 
         // devicemotion
-        if (this.devicemotion.move.active) {
-
-            // orientation
-            if (window.DeviceOrientationEvent)
-                window.addEventListener('deviceorientation', function(e) { controls.device_orientation(e); }, false);
-
-            // motion
-            if (window.DeviceMotionEvent)
-                window.addEventListener('devicemotion', function(e) { controls.device_motion(e); }, false);
-
-        }
+        controls._init_devicemotion();
 
         // callback!
         controls.callback();
@@ -133,54 +119,118 @@ $.extend(true,Controls.prototype, {
         this.orientation.landscape = !this.orientation.portrait;
     },
 
-    // keyboard_press() method
-    keyboard_press: function(e) {
+    // [private] _init_keyboard() method
+    _init_keyboard: function() {
 
-        if (!this.keyboard.move.active && !this.keyboard.zoom.active)
+        var controls = this;
+
+        // keyboard move
+        if (controls.keyboard.move.active)
+            controls._register_keyboard_move(controls);
+
+        // keyboard zoom
+        if (controls.keyboard.zoom.active)
+            controls._register_keyboard_zoom(controls);
+
+        // watch keyboard move properties
+        watch(controls.keyboard.move,['active'], function() {
+            if (controls.keyboard.move.active)
+                controls._register_keyboard_move(controls);
+            else
+                controls._unregister_keyboard_move(controls);
+        });
+
+        // watch keyboard zoom properties
+        watch(controls.keyboard.zoom,['active'], function() {
+            if (controls.keyboard.zoom.active)
+                controls._register_keyboard_zoom(controls);
+            else
+                controls._unregister_keyboard_zoom(controls);
+        });
+
+    },
+
+    // [private] _register_keyboard_move() method
+    _register_keyboard_move: function(controls) {
+        $(document).on('keydown',{controls: controls},controls._keyboard_move);
+    },
+
+    // [private] _unregister_keyboard_move() method
+    _unregister_keyboard_move: function(controls) {
+        $(document).off('keydown',controls._keyboard_move);
+    },
+
+    // [private] _register_keyboard_zoom() method
+    _register_keyboard_zoom: function(controls) {
+        $(document).on('keydown',{controls: controls},controls._keyboard_zoom);
+    },
+
+    // [private] _unregister_keyboard_zoom() method
+    _unregister_keyboard_zoom: function(controls) {
+        $(document).off('keydown',controls._keyboard_zoom);
+    },
+
+    // [private] _keyboard_move() method
+    _keyboard_move: function(e) {
+
+        var controls = e.data.controls;
+        if (!controls.keyboard.move.active)
             return;
 
-        var needDrawScene = this.keyboard.move.active;
-        var needZoomUpdate = this.keyboard.zoom.active;
-
-        var moveStep = this.keyboard.move.step;
-        var zoomStep = this.keyboard.zoom.step == null ?
-            this.panorama.camera.zoom.step : this.keyboard.zoom.step;
+        var needDrawScene = true;
+        var moveStep = controls.keyboard.move.step;
 
         // move
         switch(e.keyCode) {
             case 37:            // arrow left
-                this.panorama.lon -= moveStep;
+                controls.panorama.lon -= moveStep;
                 break;
             case 38:            // arrow top
-                this.panorama.lat += moveStep;
+                controls.panorama.lat += moveStep;
                 break;
             case 39:            // arrow right
-                this.panorama.lon += moveStep;
+                controls.panorama.lon += moveStep;
                 break;
             case 40:            // arrow bottom
-                this.panorama.lat -= moveStep;
+                controls.panorama.lat -= moveStep;
                 break;
             default:
                 needDrawScene = false;
         }
 
+        // update
+        if (needDrawScene)
+            controls.panorama.drawScene();
+
+    },
+
+    // [private] _keyboard_zoom() method
+    _keyboard_zoom: function(e) {
+
+        var controls = e.data.controls;
+        if (!controls.keyboard.zoom.active)
+            return;
+
+        var needZoomUpdate = true;
+        var zoomStep = controls.keyboard.zoom.step == null ?
+            controls.panorama.camera.zoom.step : controls.keyboard.zoom.step;
+
         // zoom
         switch(e.keyCode) {
             case 107:           // [-] key
-                this.panorama.camera.zoom.current -= zoomStep;
+                controls.panorama.camera.zoom.current -= zoomStep;
                 break;
             case 109:           // [+] key
-                this.panorama.camera.zoom.current += zoomStep;
+                controls.panorama.camera.zoom.current += zoomStep;
                 break;
             default:
                 needZoomUpdate = false;
         }
 
         // update
-        if (needDrawScene)
-            this.panorama.drawScene();
         if (needZoomUpdate)
-            this.panorama.zoomUpdate();
+            controls.panorama.zoomUpdate();
+
     },
 
     // device
@@ -188,46 +238,99 @@ $.extend(true,Controls.prototype, {
         ticks: 0
     },
 
-    // device_orientation() method
-    device_orientation: function(e) {
+    // [private] _init_devicemotion() method
+    _init_devicemotion: function() {
 
-        if (!this.devicemotion.move.active || !this.orientation.portrait)
+        var controls = this;
+
+        // devicemotion move
+        if (controls.devicemotion.move.active)
+            controls._register_devicemotion_move(controls);
+
+        // watch devicemotion move properties
+        watch(controls.devicemotion.move,['active'], function() {
+            if (controls.devicemotion.move.active)
+                controls._register_devicemotion_move(controls);
+            else
+                controls._unregister_devicemotion_move(controls);
+        });
+
+    },
+
+    // [private] _register_devicemotion_move() method
+    _register_devicemotion_move: function(controls) {
+
+        // pass controls
+        window._controls_devicemotion = controls;
+
+        // orientation
+        if (window.DeviceOrientationEvent)
+            window.addEventListener('deviceorientation',controls._device_move_by_orientation,false);
+
+        // motion
+        if (window.DeviceMotionEvent)
+            window.addEventListener('devicemotion',controls._device_move_by_device_motion,false);
+
+    },
+
+    // [private] _unregister_devicemotion_move() method
+    _unregister_devicemotion_move: function(controls) {
+
+        // orientation
+        if (window.DeviceOrientationEvent)
+            window.removeEventListener('deviceorientation',controls._device_move_by_orientation,false);
+
+        // motion
+        if (window.DeviceMotionEvent)
+            window.removeEventListener('devicemotion',controls._device_move_by_device_motion,false);
+
+        // clear controls
+        window._controls_devicemotion = null;
+
+    },
+
+    // [private] _device_move_by_orientation() method
+    _device_move_by_orientation: function(e) {
+
+        var controls = window._controls_devicemotion;
+        if (!controls.devicemotion.move.active || !controls.orientation.portrait)
             return;
 
         // limit ticks rate
-        this.device.ticks++;
-        if (this.device.ticks <= this.devicemotion.nth)
+        controls.device.ticks++;
+        if (controls.device.ticks <= controls.devicemotion.nth)
             return;
         else
-            this.device.ticks = 0;
+            controls.device.ticks = 0;
 
         // target
         var lon = 360-e.alpha;
         var lat = -(90-e.beta);
 
         // update
-        var needDrawScene = !(this.panorama.lon == lon && this.panorama.lat == lat);
+        var needDrawScene = !(controls.panorama.lon == lon && controls.panorama.lat == lat);
 
         // move
-        this.panorama.lon = lon;
-        this.panorama.lat = lat;
+        controls.panorama.lon = lon;
+        controls.panorama.lat = lat;
         if (needDrawScene)
-            this.panorama.drawScene();
+            controls.panorama.drawScene();
 
     },
 
-    // device_motion() method
-    device_motion: function(e) {
+    // [private] _device_move_by_device_motion() method
+    _device_move_by_device_motion: function(e) {
 
-        if (!this.devicemotion.move.active || !this.orientation.landscape)
+        var controls = window._controls_devicemotion;
+        if (!controls.devicemotion.move.active || !controls.orientation.landscape)
             return;
 
         // limit ticks rate
-        this.device.ticks++;
-        if (this.device.ticks <= this.devicemotion.nth)
+        controls.device.ticks++;
+        if (controls.device.ticks <= controls.devicemotion.nth)
             return;
         else
-            this.device.ticks = 0;
+            controls.device.ticks = 0;
 
         // rotation
         var rotation = e.rotationRate;
@@ -236,7 +339,7 @@ $.extend(true,Controls.prototype, {
         y = rotation.beta;
 
         // noise
-        var noise = this.devicemotion.move.noise;
+        var noise = controls.devicemotion.move.noise;
         if (x > -noise && x < noise)
             x = 0;
         if (y > -noise && y < noise)
@@ -246,10 +349,10 @@ $.extend(true,Controls.prototype, {
         var needDrawScene = (x != 0 || y != 0);
 
         // move
-        this.panorama.lon -= x / this.devicemotion.move.sensivity;
-        this.panorama.lat -= y / this.devicemotion.move.sensivity;
+        controls.panorama.lon -= x / controls.devicemotion.move.sensivity;
+        controls.panorama.lat -= y / controls.devicemotion.move.sensivity;
         if (needDrawScene)
-            this.panorama.drawScene();
+            controls.panorama.drawScene();
 
     }
 
