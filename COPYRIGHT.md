@@ -47,6 +47,11 @@ Public License and/or a compatible license and other copyright notices.
     Copyright (c) 2005, 2014 jQuery Foundation, Inc. and other contributors<br />
     jQuery is licensed under the [MIT license](http://opensource.org/licenses/MIT).
 
+*   __jQuery Easing 1.3__<br />
+    <[http://gsgd.co.uk/sandbox/jquery/easing/](http://gsgd.co.uk/sandbox/jquery/easing/)><br />
+    Copyright (c) 2008 George McGinley Smith<br />
+    jQuery Easing is licensed under the [BSD 3-Clause license](http://opensource.org/licenses/BSD-3-Clause).
+
 *   __jQuery Mouse Wheel Plugin 3.1.9__<br />
     <[https://github.com/brandonaaron/jquery-mousewheel](https://github.com/brandonaaron/jquery-mousewheel)><br />
     Copyright (c) 2013 Brandon Aaron (http://brandon.aaron.sh)<br />
