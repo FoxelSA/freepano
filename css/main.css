@@ -108,7 +108,7 @@ footer .logo {
 }
 
 
-@media only screen and (max-width: 700px) and (orientation:portrait) {
+@media only screen and (max-width: 640px) {
 
     html, body {
         font-size:12px;
@@ -118,9 +118,14 @@ footer .logo {
         height:60px;
     }
 
-    footer .caption > div:first-child {
-        font-size:15px;
+    footer .caption > div {
+        display:block;
     }
+
+        footer .caption > div:first-child {
+            font-size:15px;
+            margin-right:90px;
+        }
 
     footer .logo {
         top:23px;
