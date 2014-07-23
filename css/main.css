@@ -96,10 +96,10 @@ footer .caption {
         margin-right:90px;
     }
 
-    footer .caption > div:first-child {
-        font-size:18px;
-        margin-right:10px;
-    }
+        footer .caption > div:first-child {
+            font-size:18px;
+            margin-right:10px;
+        }
 
 footer .logo {
     position:absolute;
