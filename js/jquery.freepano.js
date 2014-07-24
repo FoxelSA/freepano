@@ -212,7 +212,7 @@ $.extend(true,Panorama.prototype,{
         heading: 0,
         tilt: 0,
         roll: 0,
-        step: 0.01
+        step: 0.1
       },
       limits: {
         lat: {
@@ -495,9 +495,19 @@ $.extend(true,Panorama.prototype,{
       if (!this.sphere.done) {
         return;
       }
+      var needDrawScene = false;
+      if (e.shiftKey) {
+        this.rotation.tilt+=e.deltaX*this.rotation.step;
+        this.setRotationMatrix(this.rotation);
+        needDrawScene = true;
+      }
       if (e.altKey) {
         this.rotation.roll+=e.deltaY*this.rotation.step;
         this.setRotationMatrix(this.rotation);
+        needDrawScene = true;
+      }
+      if (needDrawScene) {
+        //console.log('lon ['+this.lon+'] lat ['+this.lat+'] tilt ['+this.rotation.tilt+'] roll ['+this.rotation.roll+']');
         this.drawScene();
         return;
       }

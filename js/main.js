@@ -144,6 +144,9 @@ $(document).ready(function(){
 
   $(document).on('keypress',function(e){
     switch(e.keyCode) {
+    case 32:
+      console.log('lon ['+panorama.lon+'] lat ['+panorama.lat+'] tilt ['+panorama.rotation.tilt+'] roll ['+panorama.rotation.roll+']');
+      break;
     case 49:
       toggleEffect(panorama.postProcessing.edge);
       break;
