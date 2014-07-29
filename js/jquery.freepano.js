@@ -80,7 +80,7 @@ function Sphere(options) {
 $.extend(true,Sphere.prototype,{
   defaults: {
     done: false,
-    radius: 1,
+    radius: 15,
     widthSegments: 36,
     heightSegments: 18,
     texture: null,
@@ -165,7 +165,7 @@ $.extend(true,Camera.prototype,{
     defaults: {
       fov: 120,
       nearPlane: 0.1,
-      farPlane: 1,
+      farPlane: Sphere.prototype.defaults.radius+1,
       zoom: {
         max: 1.5,
         min: 0.5,
