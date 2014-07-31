@@ -350,7 +350,7 @@ $.extend(true,Controls.prototype, {
 
         // move
         controls.panorama.lon -= x / controls.devicemotion.move.sensivity;
-        controls.panorama.lat -= y / controls.devicemotion.move.sensivity;
+        controls.panorama.lat += y / controls.devicemotion.move.sensivity;
         if (needDrawScene)
             controls.panorama.drawScene();
 
