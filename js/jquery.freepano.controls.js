@@ -186,13 +186,13 @@ $.extend(true,Controls.prototype, {
                 controls.panorama.lon -= moveStep;
                 break;
             case 38:            // arrow top
-                controls.panorama.lat += moveStep;
+                controls.panorama.lat -= moveStep;
                 break;
             case 39:            // arrow right
                 controls.panorama.lon += moveStep;
                 break;
             case 40:            // arrow bottom
-                controls.panorama.lat -= moveStep;
+                controls.panorama.lat += moveStep;
                 break;
             default:
                 needDrawScene = false;

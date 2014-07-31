@@ -100,14 +100,6 @@ $.extend(true,Sphere.prototype,{
     sphere.build(callback);
   },
 
-  setRotationMatrix: function sphere_setRotationMatrix(R){
-    var rotation=this.object3D.rotation;
-    rotation.order="YZX";
-    rotation.y=R.heading*Math.PI/180;
-    rotation.z=R.tilt*Math.PI/180;
-    rotation.x=R.roll*Math.PI/180;
-  },
-
   build: function sphere_build(callback) {
     var sphere=this;
     var columns=sphere.texture.columns;
@@ -247,7 +239,7 @@ $.extend(true,Panorama.prototype,{
         panorama.scene.add(panorama.sphere.object3D);
       }
 
-      panorama.setRotationMatrix(this.rotation);
+      panorama.updateRotationMatrix();
 
       if (!(panorama.renderer instanceof THREE.WebGLRenderer)) {
         try {
@@ -302,9 +294,13 @@ $.extend(true,Panorama.prototype,{
       this.eventsInit();
     },
 
-    setRotationMatrix: function panorama_setRotationMatrix(R) {
+    updateRotationMatrix: function panorama_updateRotationMatrix() {
       var panorama=this;
-      panorama.sphere.setRotationMatrix(R);
+      panorama.rotation.matrix=new THREE.Matrix4();
+      panorama.rotation.matrix.makeRotationAxis((new THREE.Vector3(0, 1, 0)).normalize(),THREE.Math.degToRad(this.rotation.heading));
+      panorama.rotation.matrix.multiply((new THREE.Matrix4()).makeRotationAxis((new THREE.Vector3(1,0,0)).normalize(),THREE.Math.degToRad(this.rotation.tilt)));
+      panorama.rotation.matrix.multiply((new THREE.Matrix4()).makeRotationAxis((new THREE.Vector3(0,0,1)).normalize(),THREE.Math.degToRad(this.rotation.roll)));
+
     },
 
     eventsInit: function panorama_eventsInit(){
@@ -327,16 +323,7 @@ $.extend(true,Panorama.prototype,{
     worldToTextureCoords:function(worldCoords){
       this.inversePanoramaRotationMatrix=new THREE.Matrix4();
       this.inversePanoramaRotationMatrix.getInverse(this.sphere.object3D.matrix);
-/*
-      if (!_map.panoramaRotationMatrix) {
-        var R  = createRotationMatrix(-_map.heading, [0, 1, 0]);
-        R   = R .x(createRotationMatrix(_map.tilt-90, [1, 0, 0]));
-        R  =  R .x(createRotationMatrix(_map.roll, [0, 0, 1])); ///
-        _map.panoramaRotationMatrix = R .x(createRotationMatrix(-90, [0, 1, 0]));
-      }
 
-
- */
       // world to texture coordinates
       var v=worldCoords.clone().applyMatrix4(this.inversePanoramaRotationMatrix);
       var r=v.length();
@@ -377,7 +364,7 @@ $.extend(true,Panorama.prototype,{
     getMouseCoords: function panorama_getMouseCoords(e) {
 
       this.iMatrix=new THREE.Matrix4();
-      this.iMatrix.getInverse(this.camera.instance.projectionMatrix.clone().multiply(this.sphere.object3D.matrix));
+      this.iMatrix.getInverse(this.camera.instance.projectionMatrix.clone());
 
       var mouseNear=new THREE.Vector4(0,0,0,1);
       var offset=$(this.renderer.domElement).offset();
@@ -423,6 +410,7 @@ $.extend(true,Panorama.prototype,{
     mousedown: function panorama_mousedown(e){
       this.mode.mousedown=true;
       if (isLeftButtonDown(e)) {
+        event.preventDefault();
         this.mousedownPos={
           lon: this.lon,
           lat: this.lat,
@@ -440,10 +428,11 @@ $.extend(true,Panorama.prototype,{
         return;
       }
       if (this.mode.mousedown) {
+        event.preventDefault();
         if (isLeftButtonDown(e)) {
           var mouseCoords=this.getMouseCoords(e);
           this.lon=this.mousedownPos.lon-(mouseCoords.lon-this.mousedownPos.mouseCoords.lon);
-          this.lat=this.mousedownPos.lat+(mouseCoords.lat-this.mousedownPos.mouseCoords.lat);
+          this.lat=this.mousedownPos.lat-(mouseCoords.lat-this.mousedownPos.mouseCoords.lat);
           this.drawScene();
         }
       }
@@ -498,12 +487,12 @@ $.extend(true,Panorama.prototype,{
       var needDrawScene = false;
       if (e.shiftKey) {
         this.rotation.tilt+=e.deltaX*this.rotation.step;
-        this.setRotationMatrix(this.rotation);
+        this.updateRotationMatrix();
         needDrawScene = true;
       }
       if (e.altKey) {
         this.rotation.roll+=e.deltaY*this.rotation.step;
-        this.setRotationMatrix(this.rotation);
+        this.updateRotationMatrix();
         needDrawScene = true;
       }
       if (needDrawScene) {
@@ -528,13 +517,13 @@ $.extend(true,Panorama.prototype,{
         return;
       }
       this.lat=Math.max(this.limits.lat.min,Math.min(this.limits.lat.max,this.lat));
-      this.phi=THREE.Math.degToRad(90-this.lat);
-      this.theta=THREE.Math.degToRad(this.lon);
 
-      this.camera.target.x=this.sphere.radius*Math.sin(this.phi)*Math.cos(this.theta);
-      this.camera.target.y=this.sphere.radius*Math.cos(this.phi);
-      this.camera.target.z=this.sphere.radius*Math.sin(this.phi)*Math.sin(this.theta);
-      this.camera.instance.lookAt(this.camera.target);
+      var rotationMatrix=new THREE.Matrix4();  
+      rotationMatrix.multiply((new THREE.Matrix4()).makeRotationAxis((new THREE.Vector3(1,0,0)).normalize(),THREE.Math.degToRad(this.lat)));
+      rotationMatrix.multiply((new THREE.Matrix4()).makeRotationAxis((new THREE.Vector3(0,1,0)).normalize(),THREE.Math.degToRad(this.lon)));
+      this.sphere.object3D.matrix.copy(this.rotation.matrix.clone());
+      this.sphere.object3D.applyMatrix(rotationMatrix);
+
 
       if (this.postProcessing && this.postProcessing.enabled) {
         this.composer.render(this.scene,this.camera.instance);
