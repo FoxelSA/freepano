@@ -410,7 +410,7 @@ $.extend(true,Panorama.prototype,{
     mousedown: function panorama_mousedown(e){
       this.mode.mousedown=true;
       if (isLeftButtonDown(e)) {
-        event.preventDefault();
+        e.preventDefault();
         this.mousedownPos={
           lon: this.lon,
           lat: this.lat,
@@ -428,7 +428,7 @@ $.extend(true,Panorama.prototype,{
         return;
       }
       if (this.mode.mousedown) {
-        event.preventDefault();
+        e.preventDefault();
         if (isLeftButtonDown(e)) {
           var mouseCoords=this.getMouseCoords(e);
           this.lon=this.mousedownPos.lon-(mouseCoords.lon-this.mousedownPos.mouseCoords.lon);
@@ -518,7 +518,7 @@ $.extend(true,Panorama.prototype,{
       }
       this.lat=Math.max(this.limits.lat.min,Math.min(this.limits.lat.max,this.lat));
 
-      var rotationMatrix=new THREE.Matrix4();  
+      var rotationMatrix=new THREE.Matrix4();
       rotationMatrix.multiply((new THREE.Matrix4()).makeRotationAxis((new THREE.Vector3(1,0,0)).normalize(),THREE.Math.degToRad(this.lat)));
       rotationMatrix.multiply((new THREE.Matrix4()).makeRotationAxis((new THREE.Vector3(0,1,0)).normalize(),THREE.Math.degToRad(this.lon)));
       this.sphere.object3D.matrix.copy(this.rotation.matrix.clone());
