@@ -10,6 +10,11 @@
  *      Alexandre Kraft <a.kraft@foxel.ch>
  *
  *
+ * Contributor(s):
+ *
+ *      Nils Hamel <n.hamel@foxel.ch>
+ *
+ *
  * This file is part of the FOXEL project <http://foxel.ch>.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -66,17 +71,29 @@ $.extend(true,Controls.prototype, {
             },
             zoom: {
                 active: false,
-                step: null  // value, or [null] same as panorama.camera.zoom.step
+                step: null  // value, or [null] meaning the same as panorama.camera.zoom.step
             }
         },
 
         // device motion
         devicemotion: {
-            nth: 5,         // limit event action to nth ticks
             move: {
-                active: false,
-                noise: 5,
-                sensivity: 10
+                active: false
+            },
+            internal: {
+                ticks: {
+                    nth: 5,
+                    count: 0,   // [auto]
+                    time: 0     // [auto]
+                },
+                orientation: {
+                    lon: 0,     // [auto]
+                    lat: 0      // [auto]
+                },
+                gravity: {
+                    aligned: false,  // [auto]
+                    sign: 1     // [auto] -1/+1 following device orientation
+                }
             }
         }
 
@@ -117,6 +134,17 @@ $.extend(true,Controls.prototype, {
     orientation_detect: function() {
         this.orientation.portrait = ($(window).width() < $(window).height());
         this.orientation.landscape = !this.orientation.portrait;
+    },
+
+    // gravity_alignment() method
+    gravity_alignment: function() {
+
+        this.devicemotion.internal.orientation.lon = 0; //todo!
+        this.devicemotion.internal.orientation.lat = 0; //todo!
+
+        // gravity set? todo!
+        this.devicemotion.internal.gravity.aligned = true;
+
     },
 
     // [private] _init_keyboard() method
@@ -233,11 +261,6 @@ $.extend(true,Controls.prototype, {
 
     },
 
-    // device
-    device: {
-        ticks: 0
-    },
-
     // [private] _init_devicemotion() method
     _init_devicemotion: function() {
 
@@ -263,11 +286,7 @@ $.extend(true,Controls.prototype, {
         // pass controls
         window._controls_devicemotion = controls;
 
-        // orientation
-        if (window.DeviceOrientationEvent)
-            window.addEventListener('deviceorientation',controls._device_move_by_orientation,false);
-
-        // motion
+        // html5 device motion
         if (window.DeviceMotionEvent)
             window.addEventListener('devicemotion',controls._device_move_by_device_motion,false);
 
@@ -276,45 +295,15 @@ $.extend(true,Controls.prototype, {
     // [private] _unregister_devicemotion_move() method
     _unregister_devicemotion_move: function(controls) {
 
-        // orientation
-        if (window.DeviceOrientationEvent)
-            window.removeEventListener('deviceorientation',controls._device_move_by_orientation,false);
-
         // motion
         if (window.DeviceMotionEvent)
             window.removeEventListener('devicemotion',controls._device_move_by_device_motion,false);
 
+        // reset time
+        controls.devicemotion.internal.ticks.time = 0;
+
         // clear controls
         window._controls_devicemotion = null;
-
-    },
-
-    // [private] _device_move_by_orientation() method
-    _device_move_by_orientation: function(e) {
-
-        var controls = window._controls_devicemotion;
-        if (!controls.devicemotion.move.active || !controls.orientation.portrait)
-            return;
-
-        // limit ticks rate
-        controls.device.ticks++;
-        if (controls.device.ticks <= controls.devicemotion.nth)
-            return;
-        else
-            controls.device.ticks = 0;
-
-        // target
-        var lon = 360-e.alpha;
-        var lat = -(90-e.beta);
-
-        // update
-        var needDrawScene = !(controls.panorama.lon == lon && controls.panorama.lat == lat);
-
-        // move
-        controls.panorama.lon = lon;
-        controls.panorama.lat = lat;
-        if (needDrawScene)
-            controls.panorama.drawScene();
 
     },
 
@@ -322,35 +311,62 @@ $.extend(true,Controls.prototype, {
     _device_move_by_device_motion: function(e) {
 
         var controls = window._controls_devicemotion;
-        if (!controls.devicemotion.move.active || !controls.orientation.landscape)
+        if (!controls.devicemotion.move.active)
             return;
+
+        // first tick
+        if (controls.devicemotion.internal.ticks.time == 0) {
+
+            // init time
+            controls.devicemotion.internal.ticks.time = (new Date()).getTime();
+
+            // gravity alignment
+            controls.gravity_alignment();
+            return;
+
+        }
+
+        // check for gravity alignment
+        if (!controls.devicemotion.internal.gravity.aligned)
+            return;
+
+        // time
+        var now = (new Date()).getTime();
+        var elapsed = (now - controls.devicemotion.internal.ticks.time) / 1000;
+
+        // original orientation
+        var lon = controls.devicemotion.internal.orientation.lon;
+        var lat = controls.devicemotion.internal.orientation.lat;
+
+        // panorama orientation per device orientation
+        if (controls.orientation.portrait) {
+            lon -= controls.devicemotion.internal.gravity.sign * e.rotationRate.beta * elapsed;
+            lat -= controls.devicemotion.internal.gravity.sign * e.rotationRate.alpha * elapsed;
+        } else {
+            lon += controls.devicemotion.internal.gravity.sign * e.rotationRate.alpha * elapsed;
+            lat -= controls.devicemotion.internal.gravity.sign * e.rotationRate.beta * elapsed;
+        }
+
+        // assign orientation
+        controls.panorama.lon = lon;
+        controls.panorama.lat = lat;
+        controls.devicemotion.internal.orientation.lon = lon;
+        controls.devicemotion.internal.orientation.lat = lat;
+
+        // store time
+        controls.devicemotion.internal.ticks.time = now;
 
         // limit ticks rate
-        controls.device.ticks++;
-        if (controls.device.ticks <= controls.devicemotion.nth)
+        controls.devicemotion.internal.ticks.count++;
+        if (controls.devicemotion.internal.ticks.count <= controls.devicemotion.internal.ticks.nth)
             return;
         else
-            controls.device.ticks = 0;
+            controls.devicemotion.internal.ticks.count = 0;
 
-        // rotation
-        var rotation = e.rotationRate;
-        var x, y, z = 0;
-        x = rotation.alpha;
-        y = rotation.beta;
+        // moved? todo!
+        var needDrawScene = true;
 
-        // noise
-        var noise = controls.devicemotion.move.noise;
-        if (x > -noise && x < noise)
-            x = 0;
-        if (y > -noise && y < noise)
-            y = 0;
-
-        // update
-        var needDrawScene = (x != 0 || y != 0);
-
-        // move
-        controls.panorama.lon -= x / controls.devicemotion.move.sensivity;
-        controls.panorama.lat += y / controls.devicemotion.move.sensivity;
+        // draw scene
         if (needDrawScene)
             controls.panorama.drawScene();
 
