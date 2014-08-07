@@ -82,17 +82,26 @@ $.extend(true,Controls.prototype, {
             },
             internal: {
                 ticks: {
-                    nth: 5,
-                    count: 0,   // [auto]
-                    time: 0     // [auto]
+                    nth: 5,             // every nth event ticks
+                    threshold: 100,     // maximum elapsed time between ticks
+                    count: 0,           // [internal]
+                    time: 0             // [internal]
                 },
                 orientation: {
-                    lon: 0,     // [auto]
-                    lat: 0      // [auto]
+                    threshold: 0.05,    // rotation rate noise
+                    lon: 0,             // [internal]
+                    lat: 0              // [internal]
                 },
                 gravity: {
-                    aligned: false,  // [auto]
-                    sign: 1     // [auto] -1/+1 following device orientation
+                    nth: 32,            // gravity alignment during nth ticks
+                    count: 0,           // [internal]
+                    aligned: false,     // [internal]
+                    sign: 1,            // [internal] -1/+1 following device orientation
+                    acceleration: {
+                        x: 0,           // [internal]
+                        y: 0,           // [internal]
+                        z: 0            // [internal]
+                    }
                 }
             }
         }
@@ -108,6 +117,10 @@ $.extend(true,Controls.prototype, {
         controls.orientation_detect();
         $(window).on('resize', function(e) {
             controls.orientation_detect();
+            controls.devicemotion.internal.gravity.aligned = false;
+        });
+        $(window).on('orientationchange', function(e) {
+            controls.devicemotion.internal.gravity.aligned = false;
         });
 
         // keyboard
@@ -137,14 +150,48 @@ $.extend(true,Controls.prototype, {
     },
 
     // gravity_alignment() method
-    gravity_alignment: function() {
+    gravity_alignment: function(acc) {
 
-        this.devicemotion.internal.orientation.lon = 0; //todo!
-        this.devicemotion.internal.orientation.lat = 0; //todo!
+        // accumulation
+        this.devicemotion.internal.gravity.acceleration.x += acc.x;
+        this.devicemotion.internal.gravity.acceleration.y += acc.y;
+        this.devicemotion.internal.gravity.acceleration.z += acc.z;
 
-        // gravity set? todo!
+        // limit
+        this.devicemotion.internal.gravity.count++;
+        if (this.devicemotion.internal.gravity.count <= this.devicemotion.internal.gravity.nth)
+            return;
+
+        // average acceleration
+        this.devicemotion.internal.gravity.acceleration.x /= this.devicemotion.internal.gravity.nth;
+        this.devicemotion.internal.gravity.acceleration.y /= this.devicemotion.internal.gravity.nth;
+        this.devicemotion.internal.gravity.acceleration.z /= this.devicemotion.internal.gravity.nth;
+
+        // norm
+        var norm = Math.sqrt(this.devicemotion.internal.gravity.acceleration.x * this.devicemotion.internal.gravity.acceleration.x
+                           + this.devicemotion.internal.gravity.acceleration.y * this.devicemotion.internal.gravity.acceleration.y
+                           + this.devicemotion.internal.gravity.acceleration.z * this.devicemotion.internal.gravity.acceleration.z);
+
+        // sign per orientation
+        if (this.orientation.portrait) {
+            this.devicemotion.internal.gravity.sign
+                = Math.sign(this.devicemotion.internal.gravity.acceleration.y) >= 0 ? 1 : -1;
+        } else {
+            this.devicemotion.internal.gravity.sign
+                = Math.sign(this.devicemotion.internal.gravity.acceleration.x) >= 0 ? -1 : 1;
+        }
+
+        // longitude
+        this.devicemotion.internal.orientation.lon = this.panorama.lon;
+        this.devicemotion.internal.orientation.lat = Math.asin(this.devicemotion.internal.gravity.acceleration.z / norm) * (180 / Math.PI);
+
+        // reset internals
+        this.devicemotion.internal.gravity.count = 0;
+        this.devicemotion.internal.gravity.acceleration = {x:0,y:0,z:0};
+
+        // gravity set
+        this.devicemotion.internal.ticks.time = 0;
         this.devicemotion.internal.gravity.aligned = true;
-
     },
 
     // [private] _init_keyboard() method
@@ -299,8 +346,9 @@ $.extend(true,Controls.prototype, {
         if (window.DeviceMotionEvent)
             window.removeEventListener('devicemotion',controls._device_move_by_device_motion,false);
 
-        // reset time
+        // reset internals
         controls.devicemotion.internal.ticks.time = 0;
+        controls.devicemotion.internal.gravity.aligned = false;
 
         // clear controls
         window._controls_devicemotion = null;
@@ -314,25 +362,27 @@ $.extend(true,Controls.prototype, {
         if (!controls.devicemotion.move.active)
             return;
 
-        // first tick
-        if (controls.devicemotion.internal.ticks.time == 0) {
-
-            // init time
-            controls.devicemotion.internal.ticks.time = (new Date()).getTime();
-
-            // gravity alignment
-            controls.gravity_alignment();
+        // check for gravity alignment
+        if (!controls.devicemotion.internal.gravity.aligned) {
+            controls.gravity_alignment(e.accelerationIncludingGravity);
             return;
-
         }
 
-        // check for gravity alignment
-        if (!controls.devicemotion.internal.gravity.aligned)
+        // first tick after gravity is aligned
+        if (controls.devicemotion.internal.ticks.time == 0) {
+            controls.devicemotion.internal.ticks.time = (new Date()).getTime();
             return;
+        }
 
         // time
         var now = (new Date()).getTime();
         var elapsed = (now - controls.devicemotion.internal.ticks.time) / 1000;
+
+        // elapsed time is beyond threshold
+        if (elapsed > controls.devicemotion.internal.ticks.threshold) {
+            controls.devicemotion.internal.gravity.aligned = false;
+            return;
+        }
 
         // original orientation
         var lon = controls.devicemotion.internal.orientation.lon;
@@ -363,8 +413,9 @@ $.extend(true,Controls.prototype, {
         else
             controls.devicemotion.internal.ticks.count = 0;
 
-        // moved? todo!
-        var needDrawScene = true;
+        // moved beyond rotation threshold
+        var needDrawScene = (e.rotationRate.alpha > controls.devicemotion.internal.orientation.threshold
+                          || e.rotationRate.beta > controls.devicemotion.internal.orientation.threshold);
 
         // draw scene
         if (needDrawScene)
