@@ -83,7 +83,7 @@ $.extend(true,Controls.prototype, {
             internal: {
                 ticks: {
                     nth: 5,             // every nth event ticks
-                    threshold: 100,     // maximum elapsed time between ticks
+                    threshold: 100,     // maximum elapsed time (ms.) between ticks
                     count: 0,           // [internal]
                     time: 0             // [internal]
                 },
