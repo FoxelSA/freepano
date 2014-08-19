@@ -63,6 +63,18 @@ $.extend(true,Controls.prototype, {
     // default values
     defaults: {
 
+        // touch
+        touch: {
+            zoom: {
+                active: false,
+                step: null  // value, or [null] meaning the same as panorama.camera.zoom.step
+            },
+            internal: {
+                pinch: null,
+                hammer: null
+            }
+        },
+
         // keyboard
         keyboard: {
             move: {
@@ -129,6 +141,11 @@ $.extend(true,Controls.prototype, {
         // devicemotion
         controls._init_devicemotion();
 
+        // touch
+        $(controls.panorama.container).on('ready',function() {
+            controls._init_touch();
+        });
+
         // callback!
         controls.callback();
 
@@ -192,6 +209,76 @@ $.extend(true,Controls.prototype, {
         // gravity set
         this.devicemotion.internal.ticks.time = 0;
         this.devicemotion.internal.gravity.aligned = true;
+    },
+
+    // [private] _init_touch() method
+    _init_touch: function() {
+
+        var controls = this;
+
+        // touch zoom
+        if (controls.touch.zoom.active)
+            controls._register_touch_zoom(controls);
+
+        // watch touch zoom properties
+        watch(controls.touch.zoom,['active'], function() {
+            if (controls.touch.zoom.active)
+                controls._register_touch_zoom(controls);
+            else
+                controls._unregister_touch_zoom(controls);
+        });
+
+    },
+
+    // [private] _register_touch_zoom() method
+    _register_touch_zoom: function(controls) {
+
+        // pass controls
+        window._freepano_controls = controls;
+
+        // zoom step
+        if (controls.touch.zoom.step == null)
+            controls.touch.zoom.step = controls.panorama.camera.zoom.step;
+
+        // register hammer on pinch event
+        controls.touch.internal.hammer = new Hammer($('canvas:first',controls.panorama.container).get(0));
+        controls.touch.internal.hammer.get('pinch').set({enable:true});
+        controls.touch.internal.hammer.on('pinch',controls._touch_zoom);
+
+    },
+
+    // [private] _unregister_touch_zoom() method
+    _unregister_touch_zoom: function(controls) {
+
+        // register hammer on pinch event
+        controls.touch.internal.hammer.off('pinch',controls._touch_zoom);
+        controls.touch.internal.hammer = null;
+
+        // clear controls
+        window._freepano_controls = null;
+
+    },
+
+    // [private] _touch_zoom() method
+    _touch_zoom: function(e) {
+
+        var controls = window._freepano_controls;
+        if (!controls.touch.zoom.active)
+            return;
+
+        // initial scale
+        if (controls.touch.internal.pinch == null) {
+            controls.touch.internal.pinch = e.scale;
+            return;
+        }
+
+        // direction
+        var sign = controls.touch.internal.pinch > e.scale ? 1 : -1;
+
+        // zoom
+        controls.panorama.camera.zoom.current += sign * (controls.touch.zoom.step / 5);
+        controls.panorama.zoomUpdate();
+
     },
 
     // [private] _init_keyboard() method

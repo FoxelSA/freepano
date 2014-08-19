@@ -62,6 +62,11 @@ $(document).ready(function(){
     },
 
     controls: {
+        touch: {
+            zoom: {
+                active: true
+            }
+        },
         keyboard: {
             move: {
                 active: true

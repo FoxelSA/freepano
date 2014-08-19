@@ -66,3 +66,8 @@ Public License and/or a compatible license and other copyright notices.
     <[https://github.com/melanke/Watch.JS](https://github.com/melanke/Watch.JS)><br />
     Copyright (c) 2012 Gil Lopes Bueno a.k.a melanke<br />
     Watch.js is licensed under the [MIT license](http://opensource.org/licenses/MIT).
+
+*   __Hammer.js 2.0.2__<br />
+    <[https://github.com/hammerjs/hammer.js](https://github.com/hammerjs/hammer.js)><br />
+    Copyright (c) 2014 Jorik Tangelder (j.tangelder@gmail.com)<br />
+    Hammer.js is licensed under the [MIT license](http://opensource.org/licenses/MIT).
