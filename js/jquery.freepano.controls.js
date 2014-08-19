@@ -324,7 +324,14 @@ $.extend(true,Controls.prototype, {
 
     // [private] _register_keyboard_zoom() method
     _register_keyboard_zoom: function(controls) {
+
+        // zoom step
+        if (controls.keyboard.zoom.step == null)
+            controls.keyboard.zoom.step = controls.panorama.camera.zoom.step;
+
+        // register
         $(document).on('keydown',{controls: controls},controls._keyboard_zoom);
+
     },
 
     // [private] _unregister_keyboard_zoom() method
@@ -374,16 +381,14 @@ $.extend(true,Controls.prototype, {
             return;
 
         var needZoomUpdate = true;
-        var zoomStep = controls.keyboard.zoom.step == null ?
-            controls.panorama.camera.zoom.step : controls.keyboard.zoom.step;
 
         // zoom
         switch(e.keyCode) {
             case 107:           // [-] key
-                controls.panorama.camera.zoom.current -= zoomStep;
+                controls.panorama.camera.zoom.current -= controls.keyboard.zoom.step;
                 break;
             case 109:           // [+] key
-                controls.panorama.camera.zoom.current += zoomStep;
+                controls.panorama.camera.zoom.current += controls.keyboard.zoom.step;
                 break;
             default:
                 needZoomUpdate = false;
