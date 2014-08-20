@@ -216,9 +216,21 @@ $.extend(true,Controls.prototype, {
 
         var controls = this;
 
+        // touch move
+        if (controls.touch.move.active)
+            controls._register_touch_move(controls);
+
         // touch zoom
         if (controls.touch.zoom.active)
             controls._register_touch_zoom(controls);
+
+        // watch touch move properties
+        watch(controls.touch.move,['active'], function() {
+            if (controls.touch.move.active)
+                controls._register_touch_move(controls);
+            else
+                controls._unregister_touch_move(controls);
+        });
 
         // watch touch zoom properties
         watch(controls.touch.zoom,['active'], function() {
@@ -234,15 +246,51 @@ $.extend(true,Controls.prototype, {
 
     },
 
+    // [private] _register_touch() method
+    _register_touch: function(controls) {
+
+        // keep a reference to controls
+        window._freepano_controls = controls;
+
+        // instanciate hammer.js
+        if (controls.touch.internal.hammer == null)
+            controls.touch.internal.hammer = new Hammer($('canvas:first',controls.panorama.container).get(0));
+
+    },
+
+    // [private] _register_touch_move() method
+    _register_touch_move: function(controls) {
+
+        controls._register_touch(controls);
+
+        // activate event
+        controls.touch.internal.hammer.get('pan').set({enable:true});
+
+        // register events
+        controls.touch.internal.hammer.on('panstart',controls._touch_move_panstart);
+        controls.touch.internal.hammer.on('panmove',controls._touch_move_panmove);
+    },
+
+    // [private] _unregister_touch_move() method
+    _unregister_touch_move: function(controls) {
+
+        // unregister events
+        controls.touch.internal.hammer.off('panmove',controls._touch_move_panmove);
+        controls.touch.internal.hammer.off('panstart',controls._touch_move_panstart);
+
+        // desactivate event
+        controls.touch.internal.hammer.get('pan').set({enable:false});
+    },
+
     // [private] _register_touch_zoom() method
     _register_touch_zoom: function(controls) {
 
-        // pass controls
-        window._freepano_controls = controls;
+        controls._register_touch(controls);
 
-        // register hammer on pinch event
-        controls.touch.internal.hammer = new Hammer($('canvas:first',controls.panorama.container).get(0));
+        // activate event
         controls.touch.internal.hammer.get('pinch').set({enable:true});
+
+        // register event
         controls.touch.internal.hammer.on('pinch',controls._touch_zoom);
 
     },
@@ -250,12 +298,64 @@ $.extend(true,Controls.prototype, {
     // [private] _unregister_touch_zoom() method
     _unregister_touch_zoom: function(controls) {
 
-        // register hammer on pinch event
+        // unregister event
         controls.touch.internal.hammer.off('pinch',controls._touch_zoom);
-        controls.touch.internal.hammer = null;
 
-        // clear controls
-        window._freepano_controls = null;
+        // desactivate event
+        controls.touch.internal.hammer.get('pinch').set({enable:false});
+
+    },
+
+    // [private] _touch_move_panstart() method
+    _touch_move_panstart: function(e) {
+
+        var controls = window._freepano_controls;
+        if (!controls.touch.move.active)
+            return;
+
+        if (controls.panorama.mode.mousedown)
+            return; // do not interfere with mouse events
+
+        // impersonate mouse properties
+        e.clientX = e.center.x;
+        e.clientY = e.center.y;
+
+        // keep position
+        controls.panorama.mousedownPos = {
+            lon: controls.panorama.lon,
+            lat: controls.panorama.lat,
+            mouseCoords: controls.panorama.getMouseCoords(e),
+            textureCoords: controls.panorama.worldToTextureCoords(controls.panorama.mouseCoords)
+        };
+
+    },
+
+    // [private] _touch_move_panmove() method
+    _touch_move_panmove: function(e) {
+
+        var controls = window._freepano_controls;
+        if (!controls.touch.move.active)
+            return;
+
+        if (controls.panorama.mode.mousedown)
+            return; // do not interfere with mouse events
+
+        if (!controls.panorama.sphere.done)
+            return; // not ready
+
+        // impersonate mouse properties
+        e.clientX = e.center.x;
+        e.clientY = e.center.y;
+
+        // mouse coordinates
+        var coords = controls.panorama.getMouseCoords(e);
+
+        // set panorama coordinates
+        controls.panorama.lon = controls.panorama.mousedownPos.lon-(coords.lon-controls.panorama.mousedownPos.mouseCoords.lon);
+        controls.panorama.lat = controls.panorama.mousedownPos.lat-(coords.lat-controls.panorama.mousedownPos.mouseCoords.lat);
+
+        // draw
+        controls.panorama.drawScene();
 
     },
 
@@ -423,8 +523,15 @@ $.extend(true,Controls.prototype, {
         window._controls_devicemotion = controls;
 
         // html5 device motion
-        if (window.DeviceMotionEvent)
+        if (window.DeviceMotionEvent) {
+
+            // turn touch move off to avoid interferences
+            controls.touch.move.active = false;
+
+            // register event
             window.addEventListener('devicemotion',controls._device_move_by_device_motion,false);
+
+        }
 
     },
 
