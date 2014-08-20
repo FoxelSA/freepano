@@ -254,7 +254,7 @@ $.extend(true,Controls.prototype, {
     _register_touch: function(controls) {
 
         // keep a reference to controls
-        window._freepano_controls = controls;
+        window._controls_touch = controls;
 
         // instanciate hammer.js
         if (controls.touch.internal.hammer == null)
@@ -313,7 +313,7 @@ $.extend(true,Controls.prototype, {
     // [private] _touch_move_panstart() method
     _touch_move_panstart: function(e) {
 
-        var controls = window._freepano_controls;
+        var controls = window._controls_touch;
         if (!controls.touch.move.active)
             return;
 
@@ -337,7 +337,7 @@ $.extend(true,Controls.prototype, {
     // [private] _touch_move_panmove() method
     _touch_move_panmove: function(e) {
 
-        var controls = window._freepano_controls;
+        var controls = window._controls_touch;
         if (!controls.touch.move.active)
             return;
 
@@ -366,7 +366,7 @@ $.extend(true,Controls.prototype, {
     // [private] _touch_zoom() method
     _touch_zoom: function(e) {
 
-        var controls = window._freepano_controls;
+        var controls = window._controls_touch;
         if (!controls.touch.zoom.active)
             return;
 
