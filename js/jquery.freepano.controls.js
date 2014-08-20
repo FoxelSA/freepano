@@ -70,7 +70,6 @@ $.extend(true,Controls.prototype, {
                 step: null  // value, or [null] meaning the same as panorama.camera.zoom.step
             },
             internal: {
-                pinch: null,
                 hammer: null,
                 movestate: false
             }
@@ -294,16 +293,18 @@ $.extend(true,Controls.prototype, {
         // activate event
         controls.touch.internal.hammer.get('pinch').set({enable:true});
 
-        // register event
-        controls.touch.internal.hammer.on('pinch',controls._touch_zoom);
+        // register events
+        controls.touch.internal.hammer.on('pinchin',controls._touch_zoom_pinchin);
+        controls.touch.internal.hammer.on('pinchout',controls._touch_zoom_pinchout);
 
     },
 
     // [private] _unregister_touch_zoom() method
     _unregister_touch_zoom: function(controls) {
 
-        // unregister event
-        controls.touch.internal.hammer.off('pinch',controls._touch_zoom);
+        // unregister events
+        controls.touch.internal.hammer.off('pinchin',controls._touch_zoom_pinchin);
+        controls.touch.internal.hammer.off('pinchout',controls._touch_zoom_pinchout);
 
         // desactivate event
         controls.touch.internal.hammer.get('pinch').set({enable:false});
@@ -363,26 +364,27 @@ $.extend(true,Controls.prototype, {
 
     },
 
-    // [private] _touch_zoom() method
-    _touch_zoom: function(e) {
+    // [private] _touch_zoom_pinch() method
+    _touch_zoom_pinch: function(sign) {
 
         var controls = window._controls_touch;
         if (!controls.touch.zoom.active)
             return;
 
-        // initial scale
-        if (controls.touch.internal.pinch == null) {
-            controls.touch.internal.pinch = e.scale;
-            return;
-        }
-
-        // direction
-        var sign = controls.touch.internal.pinch > e.scale ? 1 : -1;
-
         // zoom
-        controls.panorama.camera.zoom.current += sign * (controls.touch.zoom.step / 5);
+        controls.panorama.camera.zoom.current += sign * (controls.touch.zoom.step / 10);
         controls.panorama.zoomUpdate();
 
+    },
+
+    // [private] _touch_zoom_pinchin() method
+    _touch_zoom_pinchin: function(e) {
+        window._controls_touch._touch_zoom_pinch(1);
+    },
+
+    // [private] _touch_zoom_pinchout() method
+    _touch_zoom_pinchout: function(e) {
+        window._controls_touch._touch_zoom_pinch(-1);
     },
 
     // [private] _init_keyboard() method
