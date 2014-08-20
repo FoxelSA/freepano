@@ -71,7 +71,8 @@ $.extend(true,Controls.prototype, {
             },
             internal: {
                 pinch: null,
-                hammer: null
+                hammer: null,
+                movestate: false
             }
         },
 
@@ -529,7 +530,10 @@ $.extend(true,Controls.prototype, {
         if (window.DeviceMotionEvent) {
 
             // turn touch move off to avoid interferences
-            controls.touch.move.active = false;
+            if (controls.touch.move.active) {
+                controls.touch.internal.movestate = true; // keep initial state
+                controls.touch.move.active = false;
+            }
 
             // register event
             window.addEventListener('devicemotion',controls._device_move_by_device_motion,false);
@@ -542,8 +546,18 @@ $.extend(true,Controls.prototype, {
     _unregister_devicemotion_move: function(controls) {
 
         // motion
-        if (window.DeviceMotionEvent)
+        if (window.DeviceMotionEvent) {
+
+            // unregister event
             window.removeEventListener('devicemotion',controls._device_move_by_device_motion,false);
+
+            // turn touch move on again if it was initialy requested
+            if (controls.touch.internal.movestate) {
+                controls.touch.internal.movestate = false;
+                controls.touch.move.active = true;
+            }
+
+        }
 
         // reset internals
         controls.devicemotion.internal.ticks.time = 0;
