@@ -147,6 +147,9 @@ $.extend(true,Controls.prototype, {
             // keyboard
             controls._init_keyboard();
 
+            // devicemotion switch
+            controls._init_devicemotion_switch();
+
         });
 
         // callback!
@@ -635,6 +638,36 @@ $.extend(true,Controls.prototype, {
         // draw scene
         if (needDrawScene)
             controls.panorama.drawScene();
+
+    },
+
+    // [private] _init_devicemotion_switch() method
+    _init_devicemotion_switch: function() {
+
+        var controls = this;
+
+        // html5 device motion not available or not a mobile
+        if (!window.DeviceMotionEvent || !$.browser.mobile)
+            return;
+
+        // dom
+        var container = $(controls.panorama.container);
+        var gyro = $('<div>',{'class':'gyro'});
+        var button = $('<div>',{'class':'button'});
+        var img = $('<img>',{src:'img/gyro.png',width:45,height:45,alt:''});
+
+        // button event
+        button.on('click',function(e) {
+
+            e.preventDefault();
+            e.stopPropagation();
+
+            controls.devicemotion.move.active = !controls.devicemotion.move.active;
+
+        });
+
+        // append switch
+        container.append(gyro.append(button.append(img)));
 
     }
 

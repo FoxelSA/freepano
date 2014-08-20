@@ -62,6 +62,12 @@ Public License and/or a compatible license and other copyright notices.
     Copyright (c) 2010 akquinet<br />
     jQuery ToastMessage Plugin is licensed under the [Apache License 2.0](http://opensource.org/licenses/Apache-2.0).
 
+*   __jQuery Browser Plugin 0.0.6__<br />
+    <[https://github.com/gabceb/jquery-browser-plugin](https://github.com/gabceb/jquery-browser-plugin)><br />
+    Copyright (c) 2014 Gabriel Cebrian<br />
+    Copyright (c) 2005, 2013 jQuery Foundation, Inc. and other contributors<br />
+    jQuery Browser Plugin is licensed under the [MIT license](http://opensource.org/licenses/MIT).
+
 *   __Watch.js 1.3.0__<br />
     <[https://github.com/melanke/Watch.JS](https://github.com/melanke/Watch.JS)><br />
     Copyright (c) 2012 Gil Lopes Bueno a.k.a melanke<br />

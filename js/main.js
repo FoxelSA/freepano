@@ -80,7 +80,7 @@ $(document).ready(function(){
         },
         devicemotion: {
             move: {
-                active: true
+                active: false
             }
         }
     },

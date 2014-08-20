@@ -58,12 +58,28 @@ html, body {
 }
 
 .freepano {
+    position:relative;
     padding:0;
     margin:0;
     height:100%;
     width:100%;
     overflow:hidden;
 }
+
+.gyro {
+    position:absolute;
+    bottom:100px;
+    right:55px;
+    width:1px;
+    height:1px;
+}
+
+    .gyro .button {
+        position:absolute;
+        top:-15px;
+        width:45px;
+        height:45px;
+    }
 
 footer, footer > .shade, footer > .main {
     position:absolute;
