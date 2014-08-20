@@ -228,6 +228,10 @@ $.extend(true,Controls.prototype, {
                 controls._unregister_touch_zoom(controls);
         });
 
+        // zoom step
+        if (controls.touch.zoom.step == null)
+            controls.touch.zoom.step = controls.panorama.camera.zoom.step;
+
     },
 
     // [private] _register_touch_zoom() method
@@ -235,10 +239,6 @@ $.extend(true,Controls.prototype, {
 
         // pass controls
         window._freepano_controls = controls;
-
-        // zoom step
-        if (controls.touch.zoom.step == null)
-            controls.touch.zoom.step = controls.panorama.camera.zoom.step;
 
         // register hammer on pinch event
         controls.touch.internal.hammer = new Hammer($('canvas:first',controls.panorama.container).get(0));
@@ -310,6 +310,10 @@ $.extend(true,Controls.prototype, {
                 controls._unregister_keyboard_zoom(controls);
         });
 
+        // zoom step
+        if (controls.keyboard.zoom.step == null)
+            controls.keyboard.zoom.step = controls.panorama.camera.zoom.step;
+
     },
 
     // [private] _register_keyboard_move() method
@@ -324,14 +328,7 @@ $.extend(true,Controls.prototype, {
 
     // [private] _register_keyboard_zoom() method
     _register_keyboard_zoom: function(controls) {
-
-        // zoom step
-        if (controls.keyboard.zoom.step == null)
-            controls.keyboard.zoom.step = controls.panorama.camera.zoom.step;
-
-        // register
         $(document).on('keydown',{controls: controls},controls._keyboard_zoom);
-
     },
 
     // [private] _unregister_keyboard_zoom() method
