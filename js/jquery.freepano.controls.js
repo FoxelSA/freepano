@@ -268,7 +268,7 @@ $.extend(true,Controls.prototype, {
         controls._register_touch(controls);
 
         // activate event
-        controls.touch.internal.hammer.get('pan').set({enable:true});
+        controls.touch.internal.hammer.get('pan').set({enable:true,direction:Hammer.DIRECTION_ALL});
 
         // register events
         controls.touch.internal.hammer.on('panstart',controls._touch_move_panstart);
