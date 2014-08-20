@@ -135,15 +135,18 @@ $.extend(true,Controls.prototype, {
             controls.devicemotion.internal.gravity.aligned = false;
         });
 
-        // keyboard
-        controls._init_keyboard();
-
         // devicemotion
         controls._init_devicemotion();
 
-        // touch
+        // panorama ready
         $(controls.panorama.container).on('ready',function() {
+
+            // touch
             controls._init_touch();
+
+            // keyboard
+            controls._init_keyboard();
+
         });
 
         // callback!
