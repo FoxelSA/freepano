@@ -202,13 +202,23 @@ $.extend(true,Controls.prototype, {
                            + this.devicemotion.internal.gravity.acceleration.y * this.devicemotion.internal.gravity.acceleration.y
                            + this.devicemotion.internal.gravity.acceleration.z * this.devicemotion.internal.gravity.acceleration.z);
 
+        // sign
+        var sp = 1;
+        var sm = -1;
+
+        // sign specific per device
+        if ($.browser.iphone || $.browser.ipad) { // apple i* mobile
+            sp = -1;
+            sm = 1;
+        }
+
         // sign per orientation
         if (this.orientation.portrait) {
             this.devicemotion.internal.gravity.sign
-                = _sign_polyfill(this.devicemotion.internal.gravity.acceleration.y) >= 0 ? 1 : -1;
+                = _sign_polyfill(this.devicemotion.internal.gravity.acceleration.y) >= 0 ? sp : sm;
         } else {
             this.devicemotion.internal.gravity.sign
-                = _sign_polyfill(this.devicemotion.internal.gravity.acceleration.x) >= 0 ? -1 : 1;
+                = _sign_polyfill(this.devicemotion.internal.gravity.acceleration.x) >= 0 ? sm : sp;
         }
 
         // longitude
