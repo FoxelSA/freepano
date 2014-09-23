@@ -176,11 +176,10 @@ $.extend(true,Controls.prototype, {
     gravity_alignment: function(acc) {
 
         var _sign_polyfill = function(x) {
-            alert("sign polyfill");
-            x = +x // convert to a number
+            x = +x;
             if (x === 0 || isNaN(x))
-                return x
-            return x > 0 ? 1 : -1
+                return x;
+            return x > 0 ? 1 : -1;
         };
 
         // accumulation
