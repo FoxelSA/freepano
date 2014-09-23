@@ -175,6 +175,14 @@ $.extend(true,Controls.prototype, {
     // gravity_alignment() method
     gravity_alignment: function(acc) {
 
+        var _sign_polyfill = function(x) {
+            alert("sign polyfill");
+            x = +x // convert to a number
+            if (x === 0 || isNaN(x))
+                return x
+            return x > 0 ? 1 : -1
+        };
+
         // accumulation
         this.devicemotion.internal.gravity.acceleration.x += acc.x;
         this.devicemotion.internal.gravity.acceleration.y += acc.y;
@@ -198,10 +206,10 @@ $.extend(true,Controls.prototype, {
         // sign per orientation
         if (this.orientation.portrait) {
             this.devicemotion.internal.gravity.sign
-                = Math.sign(this.devicemotion.internal.gravity.acceleration.y) >= 0 ? 1 : -1;
+                = _sign_polyfill(this.devicemotion.internal.gravity.acceleration.y) >= 0 ? 1 : -1;
         } else {
             this.devicemotion.internal.gravity.sign
-                = Math.sign(this.devicemotion.internal.gravity.acceleration.x) >= 0 ? -1 : 1;
+                = _sign_polyfill(this.devicemotion.internal.gravity.acceleration.x) >= 0 ? -1 : 1;
         }
 
         // longitude
