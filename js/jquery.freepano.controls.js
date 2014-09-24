@@ -528,10 +528,6 @@ $.extend(true,Controls.prototype, {
 
         var controls = this;
 
-        // devicemotion move
-        if (controls.devicemotion.move.active)
-            controls._register_devicemotion_move(controls);
-
         // watch devicemotion move properties
         watch(controls.devicemotion.move,['active'], function() {
             if (controls.devicemotion.move.active)
@@ -539,6 +535,10 @@ $.extend(true,Controls.prototype, {
             else
                 controls._unregister_devicemotion_move(controls);
         });
+
+        // devicemotion move
+        if (controls.devicemotion.move.active)
+            controls._register_devicemotion_move(controls);
 
     },
 
@@ -560,6 +560,9 @@ $.extend(true,Controls.prototype, {
             // register event
             window.addEventListener('devicemotion',controls._device_move_by_device_motion,false);
 
+        // not supported
+        } else {
+            controls.devicemotion.move.active = false;
         }
 
     },
