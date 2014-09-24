@@ -628,8 +628,14 @@ $.extend(true,Controls.prototype, {
 
             // benefit to check device compatibility
             if (!controls.device_compatibility(e)) {
+
                 controls.devicemotion.move.active = false;
+
+                $.notify('Unable to track device motion.',{type:'warning',sticky:false,stayTime:5000});
+                $(controls.panorama.container).children('.gyro').remove();
+
                 return;
+
             }
 
             // align
