@@ -172,8 +172,30 @@ $.extend(true,Controls.prototype, {
         this.orientation.landscape = !this.orientation.portrait;
     },
 
+    // device_compatibility() method
+    device_compatibility: function(e) {
+
+        var compatible = true;
+
+        if (typeof e.accelerationIncludingGravity !== 'object'
+                || typeof e.rotationRate !== 'object'
+                || $.isEmptyObject(e.accelerationIncludingGravity)
+                || $.isEmptyObject(e.rotationRate))
+            compatible = false;
+
+        else if (!$.isNumeric(e.accelerationIncludingGravity.x)
+                || !$.isNumeric(e.accelerationIncludingGravity.y)
+                || !$.isNumeric(e.accelerationIncludingGravity.z)
+                || !$.isNumeric(e.rotationRate.alpha)
+                || !$.isNumeric(e.rotationRate.beta))
+            compatible = false;
+
+        return compatible;
+
+    },
+
     // gravity_alignment() method
-    gravity_alignment: function(acc) {
+    gravity_alignment: function(e) {
 
         var _sign_polyfill = function(x) {
             x = +x;
@@ -183,9 +205,9 @@ $.extend(true,Controls.prototype, {
         };
 
         // accumulation
-        this.devicemotion.internal.gravity.acceleration.x += acc.x;
-        this.devicemotion.internal.gravity.acceleration.y += acc.y;
-        this.devicemotion.internal.gravity.acceleration.z += acc.z;
+        this.devicemotion.internal.gravity.acceleration.x += e.accelerationIncludingGravity.x;
+        this.devicemotion.internal.gravity.acceleration.y += e.accelerationIncludingGravity.y;
+        this.devicemotion.internal.gravity.acceleration.z += e.accelerationIncludingGravity.z;
 
         // limit
         this.devicemotion.internal.gravity.count++;
@@ -232,6 +254,7 @@ $.extend(true,Controls.prototype, {
         // gravity set
         this.devicemotion.internal.ticks.time = 0;
         this.devicemotion.internal.gravity.aligned = true;
+
     },
 
     // [private] _init_touch() method
@@ -602,8 +625,17 @@ $.extend(true,Controls.prototype, {
 
         // check for gravity alignment
         if (!controls.devicemotion.internal.gravity.aligned) {
-            controls.gravity_alignment(e.accelerationIncludingGravity);
+
+            // benefit to check device compatibility
+            if (!controls.device_compatibility(e)) {
+                controls.devicemotion.move.active = false;
+                return;
+            }
+
+            // align
+            controls.gravity_alignment(e);
             return;
+
         }
 
         // first tick after gravity is aligned
