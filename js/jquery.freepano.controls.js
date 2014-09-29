@@ -124,7 +124,7 @@ $.extend(true,Controls.prototype, {
     },
 
     // init() method
-    init: function controls_init() {
+    init: function() {
 
         var controls = this;
 
@@ -141,27 +141,35 @@ $.extend(true,Controls.prototype, {
         // devicemotion
         controls._init_devicemotion();
 
-        // panorama ready
-        $(controls.panorama.container).on('ready',function() {
-
-            // touch
-            controls._init_touch();
-
-            // keyboard
-            controls._init_keyboard();
-
-            // devicemotion switch
-            controls._init_devicemotion_switch();
-
-        });
-
         // callback!
         controls.callback();
 
     },
 
+    // ready() method
+    ready: function(callback) {
+
+        var controls = this;
+
+        // touch
+        controls._init_touch();
+
+        // keyboard
+        controls._init_keyboard();
+
+        // devicemotion switch
+        controls._init_devicemotion_switch();
+
+        // callback!
+        callback();
+
+    },
+
     // panorama_init() method
     panorama_init: Panorama.prototype.init,
+
+    // panorama_ready() method
+    panorama_ready: Panorama.prototype.ready,
 
     // orientation
     orientation: {
@@ -740,11 +748,11 @@ $.extend(true,Controls.prototype, {
 $.extend(Panorama.prototype, {
 
     // init() method
-    init: function panorama_init() {
+    init: function() {
 
         var panorama = this;
 
-        // controls defined in freepano options
+        // controls is defined in freepano options, instanciate it.
         if (typeof panorama.controls !== 'undefined') {
             if (!(panorama.controls instanceof Controls)) {
                 // convert options to instanciated class
@@ -758,6 +766,16 @@ $.extend(Panorama.prototype, {
         } else {
             Controls.prototype.panorama_init.call(panorama);
         }
+
+    },
+
+    // ready() method
+    ready: function() {
+
+        var panorama = this;
+        panorama.controls.ready(function() {
+            Controls.prototype.panorama_ready.call(panorama);
+        });
 
     }
 

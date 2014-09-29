@@ -214,6 +214,10 @@ $.extend(true,Panorama.prototype,{
       }
     },
 
+    ready: function() {
+        // can be implemented in submodules.
+    },
+
     init: function panorama_init(){
       var panorama=this;
 
@@ -232,7 +236,7 @@ $.extend(true,Panorama.prototype,{
             callback: function(){
               panorama.resize();
               panorama.callback();
-              $(panorama.container).trigger('ready');
+              panorama.ready();
             }
           },panorama.sphere));
         }
