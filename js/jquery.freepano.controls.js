@@ -773,9 +773,15 @@ $.extend(Panorama.prototype, {
     ready: function() {
 
         var panorama = this;
-        panorama.controls.ready(function() {
+
+        // controls is defined in freepano options, instanciate it.
+        if (typeof panorama.controls !== 'undefined' && typeof panorama.controls.ready === 'function') {
+            panorama.controls.ready(function() {
+                Controls.prototype.panorama_ready.call(panorama);
+            });
+        } else {
             Controls.prototype.panorama_ready.call(panorama);
-        });
+        }
 
     }
 
