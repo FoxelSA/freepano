@@ -65,6 +65,9 @@ $.extend(true,Controls.prototype, {
 
         // touch
         touch: {
+            move: {
+                active: false
+            },
             zoom: {
                 active: false,
                 step: null  // value, or [null] meaning the same as panorama.camera.zoom.step
