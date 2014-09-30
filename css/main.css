@@ -74,6 +74,14 @@ html, body {
     height:1px;
 }
 
+#mapContainer {
+    position:absolute;
+    bottom:60px;
+    left:10px;
+    width:250px;
+    height:250px;
+}
+
     .gyro .button {
         position:absolute;
         top:-15px;

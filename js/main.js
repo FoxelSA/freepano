@@ -13,6 +13,7 @@
  * Contributor(s):
  *
  *      Alexandre Kraft <a.kraft@foxel.ch>
+ *      Kevin Velickovic <k.velickovic@foxel.ch>
  *
  *
  * This file is part of the FOXEL project <http://foxel.ch>.
@@ -59,6 +60,10 @@ $(document).ready(function(){
 
     fov: {
       max: 140
+    },
+
+    map: {
+
     },
 
     controls: {
@@ -117,6 +122,26 @@ $(document).ready(function(){
       */
     },
 
+    // Panoramas array
+    tiles: [
+        {
+            dirName: 'examples/result_1403179805_224762-0-25-1',
+            baseName: 'result_1403179805_224762-0-25-1',
+            lon: 3.902137,
+            lat: 43.600233,
+            columns: 16,
+            rows: 8
+        }/*,
+        {
+            dirName: 'examples/result_1403179809_224762-0-25-1',
+            baseName: 'result_1403179809_224762-0-25-1',
+            lon: 3.901933,
+            lat: 43.600545,
+            columns: 16,
+            rows: 8
+        }*/
+    ],
+
     sphere: {
       texture: {
         dirName: 'examples/result_1403179805_224762-0-25-1',
@@ -165,6 +190,10 @@ $(document).ready(function(){
     case 50:
       toggleEffect(panorama.postProcessing.edge2);
       break;
+    case 109:
+      if(panorama.map !== 'undefined')
+          panorama.map.active = !panorama.map.active;
+      break;
     }
     panorama.postProcessing.enabled=panorama.postProcessing.edge.pass.enabled||panorama.postProcessing.edge2.pass.enabled;
   });
@@ -175,4 +204,3 @@ $(document).ready(function(){
   }
 
 });
-
