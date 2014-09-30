@@ -164,16 +164,24 @@ $.extend(true, Map.prototype, {
             attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
 
+        // Compute icon sizes and anchors
+        var iconSize     = [22.5, 36.25];
+        var shadowSize   = [40.75, 36.25];
+        var iconAnchor   = [iconSize[0] / 2, 36.25];
+        var shadowAnchor = [iconSize[0] / 2, 36.25];
+
         // Create eyesis icon
         var eyesisIcon = L.icon({
-            iconUrl: 'img/eyesis_icon.png',
-            shadowUrl: 'img/eyesis_shadow.png',
+            iconUrl:     'img/eyesis_icon.png', // Icon image file path
+            shadowUrl:   'img/eyesis_shadow.png', // Shadow image file path
 
-            iconSize:     [22.5, 36.25], // size of the icon
-            shadowSize:   [40.75, 36.25], // size of the shadow
-            iconAnchor:   [0, 0], // point of the icon which will correspond to marker's location
-            shadowAnchor: [0, 0],  // the same for the shadow
-            popupAnchor:  [10, 0] // point from which the popup should open relative to the iconAnchor
+            iconSize:     iconSize, // size of the icon
+            shadowSize:   shadowSize, // size of the shadow
+
+            iconAnchor:   iconAnchor, // point of the icon which will correspond to marker's location
+            shadowAnchor: shadowAnchor,  // the same for the shadow
+
+            popupAnchor:  [0, 0] // point from which the popup should open relative to the iconAnchor
         });
 
         // Markers array

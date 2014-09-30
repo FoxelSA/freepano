@@ -92,7 +92,7 @@ $(document).ready(function(){
     },
 
     map: {
-        enabled: false
+        active: false
     },
 
     renderer: {
