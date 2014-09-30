@@ -67,7 +67,7 @@ $(document).ready(function(){
       }
     },
 
-    _controls: {
+    controls: {
         touch: {
             move: {
                 active: true
