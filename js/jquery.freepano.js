@@ -181,8 +181,19 @@ function Panorama(options) {
   $.extend(true,this,this.defaults,options);
   this.num=pano_count++;
 
-  // Initialize default textures paths
-  $.extend( this.sphere.texture, this.tiles[ this.default_tile ] );
+  // Check if default_tile option is specified
+  if(this.default_tile !== undefined && this.default_tile.length > 0 && this.default_tile !== null)
+  {
+
+      //If specified define default panorama based on it
+      $.extend( this.sphere.texture, this.tiles[ this.default_tile ] );
+
+  } else {
+
+      // If not specified define default panorama based on the first element
+      for(first in this.tiles) break;
+      $.extend( this.sphere.texture, this.tiles[ first ] );
+  }
 
   this.init();
   $(this.container).data('pano',this);
