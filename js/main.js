@@ -179,7 +179,7 @@ $(document).ready(function(){
 
   var panorama=$('#pano').data('pano');
 
-  $(document).on('keypress',function(e){
+  $(document).on('keydown',function(e){
     switch(e.keyCode) {
     case 32:
       console.log('lon ['+panorama.lon+'] lat ['+panorama.lat+'] tilt ['+panorama.rotation.tilt+'] roll ['+panorama.rotation.roll+']');
@@ -190,7 +190,7 @@ $(document).ready(function(){
     case 50:
       toggleEffect(panorama.postProcessing.edge2);
       break;
-    case 109:
+    case 77:
       if(panorama.map !== 'undefined')
           panorama.map.active = !panorama.map.active;
       break;
