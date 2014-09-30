@@ -70,8 +70,14 @@ $.extend(true, Map.prototype, {
     // Function to load a panorama dynamicaly
     LoadPanorama: function(Pano)
     {
-        // Get pano object
+        // Get panorama sphere
+        var Sphere = $("#pano").data("pano").sphere;
+
+        // Get panorama objects
         var Objects = $("#pano").data("pano").sphere.object3D.children;
+
+        // Change panorama paths
+        $.extend( Sphere.texture, Pano);
 
         // Unload previous tiles
         for(var i = 0; i < Objects.length; i++)
@@ -179,7 +185,13 @@ $.extend(true, Map.prototype, {
             // Create marker
             var Marker = L.marker([value.lat, value.lon], {icon: eyesisIcon})
             .on('click', function(e) {
-                Map.prototype.LoadPanorama(e.target.panorama);
+
+                // Retrive actual panorama name
+                var OriginPanorama = $("#pano").data("pano").sphere.texture.baseName;
+
+                // Check if panorama has changed, then change it
+                if(e.target.panorama.baseName != OriginPanorama)
+                    Map.prototype.LoadPanorama(e.target.panorama);
             });
 
             // Extend marker with panorama object
