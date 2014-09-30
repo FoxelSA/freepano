@@ -67,7 +67,7 @@ $(document).ready(function(){
       }
     },
 
-    controls: {
+    _controls: {
         touch: {
             move: {
                 active: true
@@ -89,6 +89,10 @@ $(document).ready(function(){
                 active: false
             }
         }
+    },
+
+    map: {
+        enabled: false
     },
 
     renderer: {
@@ -188,7 +192,7 @@ $(document).ready(function(){
       toggleEffect(panorama.postProcessing.edge2);
       break;
     case 77:
-      if(panorama.map !== 'undefined')
+      if(panorama.map !== undefined)
           panorama.map.active = !panorama.map.active;
       break;
     }

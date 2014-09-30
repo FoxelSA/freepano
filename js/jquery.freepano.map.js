@@ -277,11 +277,6 @@ $.extend(true, Map.prototype, {
  */
 $.extend(Panorama.prototype, {
 
-    // Default structure for Map plugin
-    map: {
-
-    },
-
     // init() method
     init: function() {
 
