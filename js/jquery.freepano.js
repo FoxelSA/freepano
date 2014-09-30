@@ -182,7 +182,7 @@ function Panorama(options) {
   this.num=pano_count++;
 
   // Check if default_tile option is specified
-  if(this.default_tile !== undefined && this.default_tile.length > 0 && this.default_tile !== null)
+  if(this.default_tile !== undefined && this.default_tile !== null && this.default_tile.length > 0)
   {
 
       //If specified define default panorama based on it
