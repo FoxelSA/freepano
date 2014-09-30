@@ -77,3 +77,9 @@ Public License and/or a compatible license and other copyright notices.
     <[https://github.com/hammerjs/hammer.js](https://github.com/hammerjs/hammer.js)><br />
     Copyright (c) 2014 Jorik Tangelder (j.tangelder@gmail.com)<br />
     Hammer.js is licensed under the [MIT license](http://opensource.org/licenses/MIT).
+
+*   __Leaflet 0.7.3__<br />
+    <[http://leafletjs.com](http://leafletjs.com)><br />
+    Copyright (c) 2010-2014, Vladimir Agafonkin<br />
+    Copyright (c) 2010-2011, CloudMade<br />
+    Leaflet is licensed under the [BSD 2-Clause license](http://opensource.org/licenses/BSD-2-Clause).
