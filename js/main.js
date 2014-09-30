@@ -62,8 +62,9 @@ $(document).ready(function(){
       max: 140
     },
 
-    map: {
-
+    sphere: {
+      texture: {
+      }
     },
 
     controls: {
@@ -122,8 +123,9 @@ $(document).ready(function(){
       */
     },
 
-    // Panoramas array
-    tiles: [
+    // Panorama tiles array
+    tiles: {
+        "1403179805_224762":
         {
             dirName: 'examples/result_1403179805_224762-0-25-1',
             baseName: 'result_1403179805_224762-0-25-1',
@@ -131,7 +133,8 @@ $(document).ready(function(){
             lat: 43.600233,
             columns: 16,
             rows: 8
-        }/*,
+        },/*
+        "1403179809_224762":
         {
             dirName: 'examples/result_1403179809_224762-0-25-1',
             baseName: 'result_1403179809_224762-0-25-1',
@@ -140,16 +143,10 @@ $(document).ready(function(){
             columns: 16,
             rows: 8
         }*/
-    ],
-
-    sphere: {
-      texture: {
-        dirName: 'examples/result_1403179805_224762-0-25-1',
-        baseName: 'result_1403179805_224762-0-25-1',
-        columns: 16,
-        rows: 8
-      }
     },
+
+    // Default panorama to display
+    default_tile: "1403179805_224762",
 
     postProcessing: {
       enabled: false,

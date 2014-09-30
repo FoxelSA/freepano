@@ -54,7 +54,6 @@ function Map(options) {
 
 }
 
-
 /**
  * Extends Map prototype
  */
@@ -265,6 +264,11 @@ $.extend(true, Map.prototype, {
  * Extends Panorama prototype
  */
 $.extend(Panorama.prototype, {
+
+    // Default structure for Map plugin
+    map: {
+
+    },
 
     // init() method
     init: function() {

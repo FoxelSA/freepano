@@ -13,6 +13,7 @@
  * Contributor(s):
  *
  *      Alexandre Kraft <a.kraft@foxel.ch>
+ *      Kevin Velickovic <k.velickovic@foxel.ch>
  *
  *
  * This file is part of the FOXEL project <http://foxel.ch>.
@@ -179,6 +180,10 @@ function Panorama(options) {
   }
   $.extend(true,this,this.defaults,options);
   this.num=pano_count++;
+
+  // Initialize default textures paths
+  $.extend( this.sphere.texture, this.tiles[ this.default_tile ] );
+
   this.init();
   $(this.container).data('pano',this);
 }
