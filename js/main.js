@@ -205,8 +205,9 @@ $(document).ready(function(){
       toggleEffect(panorama.postProcessing.edge2);
       break;
     case 77:
-      if(panorama.map !== undefined)
-          panorama.map.active = !panorama.map.active;
+      var Map = panorama.PluginEngine.getPlugin("Map");
+      if(Map !== undefined)
+          Map.active = !Map.active;
       break;
     }
     panorama.postProcessing.enabled=panorama.postProcessing.edge.pass.enabled||panorama.postProcessing.edge2.pass.enabled;

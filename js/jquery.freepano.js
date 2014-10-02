@@ -260,7 +260,11 @@ function Panorama(options) {
   }
   $.extend(true,this,this.defaults,options);
 
+  // Initialize plugin loader
+  this.PluginEngine = new JSLoader();
+
   this.init();
+
   $(this.container).data('pano',this);
 }
 
@@ -317,6 +321,8 @@ $.extend(true,Panorama.prototype,{
             callback: function(){
               panorama.resize();
               panorama.callback();
+
+              panorama.PluginEngine.callEvent('ready');
               panorama.ready();
             }
           },panorama.sphere));
@@ -716,7 +722,7 @@ $.extend(true,PanoList.prototype,{
 
   },
 
-  // get panorama image options 
+  // get panorama image options
   getTextureOptions: function panoList_getTextureOptions(imageId) {
     var pano_list=this;
     if (!pano_list.images || !pano_list.images[imageId]) {
@@ -767,4 +773,3 @@ $.extend(Panorama.prototype,{
   }
 
 });
-
