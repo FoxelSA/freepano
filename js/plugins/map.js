@@ -1,5 +1,5 @@
 /*
- * JSLoader - A simple JavaScript plugin architecture
+ * freepano - WebGL panorama viewer
  *
  * Copyright (c) 2014 FOXEL SA - http://foxel.ch
  * Please read <http://foxel.ch/license> for more information.
