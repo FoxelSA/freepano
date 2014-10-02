@@ -62,9 +62,48 @@ $(document).ready(function(){
       max: 140
     },
 
+/*
+    // for a single panorama (when not using list below) , or for sphere and texture defaults
     sphere: {
       texture: {
-      }
+        dirName: 'examples/result_1403179805_224762-0-25-1/',
+        baseName: 'result_1403179805_224762-0-25-1',
+        columns: 4,
+        rows: 2
+      }  
+    },
+*/
+
+    list: 
+        defaults: {
+          dirName: 'examples/result_1403179805_224762-0-25-1',
+          prefix: 'result_',
+          suffix: '-0-25-1',
+          columns: 16,
+          rows: 8
+        },
+
+//      initialImage: '1403179809_224762',
+
+        images: {
+          '1403179805_224762': {
+             coords: {
+               lon: 3.902137,
+               lat: 43.600233,
+             }
+          }/*,
+  
+          '1403179809_224762': {
+             dirName: 'examples/result_1403179809_224762-0-25-1',
+             baseName: 'result_1403179809_224762-0-25-1',
+             coords: {
+               lon: 3.901933,
+               lat: 43.600545,
+             },
+             columns: 16,
+             rows: 8
+          }*/
+        }
     },
 
     controls: {
@@ -101,6 +140,8 @@ $(document).ready(function(){
       alpha: false
 
     },
+
+// incompatible with panorama.list below yet
     __pyramid: { /* remove the two underscores to use it */
       dirName: 'examples/result_1403179805_224762-0-25-1/512',
       baseName: 'result_1403179805_224762-0-25-1',
@@ -126,31 +167,6 @@ $(document).ready(function(){
       ]
       */
     },
-
-    // Panorama tiles array
-    tiles: {
-        "1403179805_224762":
-        {
-            dirName: 'examples/result_1403179805_224762-0-25-1',
-            baseName: 'result_1403179805_224762-0-25-1',
-            lon: 3.902137,
-            lat: 43.600233,
-            columns: 16,
-            rows: 8
-        }/*,
-        "1403179809_224762":
-        {
-            dirName: 'examples/result_1403179809_224762-0-25-1',
-            baseName: 'result_1403179809_224762-0-25-1',
-            lon: 3.901933,
-            lat: 43.600545,
-            columns: 16,
-            rows: 8
-        }*/
-    },
-
-    // Default panorama to display
-    default_tile: "",
 
     postProcessing: {
       enabled: false,
