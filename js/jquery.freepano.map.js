@@ -67,51 +67,6 @@ $.extend(true, Map.prototype, {
 
     },
 
-    // Function to load a panorama dynamicaly
-    LoadPanorama: function(Pano)
-    {
-        // Get panorama object
-        var _Pano = $("#pano").data("pano");
-
-        // Get panorama sphere
-        var Sphere = $("#pano").data("pano").sphere;
-
-        // Get panorama objects
-        var Objects = $("#pano").data("pano").sphere.object3D.children;
-
-        // Change panorama paths
-        $.extend( Sphere.texture, Pano);
-
-        // Loop index
-        var idx = 0;
-
-        // Iterate over columns and rows
-        for( var col = 0; col < Pano.columns; col++ ) {
-
-            for( var row = 0; row < Pano.rows; row++ ) {
-
-                // Calculate texture filename
-                var Texture = Pano.dirName + '/' + Pano.baseName + '_' + row + '_' + col + '.jpg';
-
-                // Tell to update this tile
-                Objects[idx].material.needsUpdate = true;
-
-                // Change and refresh tile texture when material is loaded
-                Objects[idx].material.map = THREE.ImageUtils.loadTexture( Texture, THREE.UVMapping, function() {
-
-                    // Refesh scene
-                    _Pano.drawScene()
-
-                });
-
-                // Increment loop index
-                idx++;
-
-            }
-
-        }
-    },
-
     // Function to retrive HTML hash arguments
     GetHashParameter: function(sParam)
     {
@@ -141,7 +96,7 @@ $.extend(true, Map.prototype, {
 
         // dom
         var container = $(map.panorama.container);
-        var panoramas = map.panorama.tiles;
+        var panoramas = map.panorama.list.images;
 
         // Create map container
         var mapContainer = $('<div>',{'id':'mapContainer'});
@@ -184,21 +139,24 @@ $.extend(true, Map.prototype, {
         $.each(panoramas, function( index, value ) {
 
             // Create marker
-            var Marker = L.marker([value.lat, value.lon], {icon: eyesisIcon})
+            var Marker = L.marker([value.coords.lat, value.coords.lon], {icon: eyesisIcon})
             .on('click', function(e) {
 
                 // Retrive actual panorama name
-                var OriginPanorama = $("#pano").data("pano").sphere.texture.baseName;
+                var Pano = $("#pano").data("pano");
 
                 // Check if panorama has changed, then change it
-                if(e.target.panorama.baseName != OriginPanorama)
-                    Map.prototype.LoadPanorama(e.target.panorama);
+                if(e.target.panorama.index != Pano.list.currentImage)
+                    Pano.list.show(e.target.panorama.index);
             });
 
             // Extend marker with panorama object
             $.extend( Marker,
             {
-                panorama: value
+                panorama: {
+                    index: index,
+                    value: value
+                }
             });
 
             // Add marker to array
@@ -225,7 +183,11 @@ $.extend(true, Map.prototype, {
     // init() method
     init: function() {
 
+        // Get map object
         var map = this;
+
+        // Initialize map view
+        map._init_map();
 
         // callback!
         map.callback();
@@ -234,11 +196,6 @@ $.extend(true, Map.prototype, {
 
     // ready() method
     ready: function(callback) {
-
-        var map = this;
-
-        // Map initialization
-        map._init_map();
 
         // callback!
         callback();
