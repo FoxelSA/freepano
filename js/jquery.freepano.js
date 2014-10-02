@@ -128,19 +128,21 @@ $.extend(true,Sphere.prototype,{
         var tileTexture=THREE.ImageUtils.loadTexture(
           sphere.texture.getTileName(col,row),
           new THREE.UVMapping(),
-          function onload(){
+          function loadTexture_onload(){
 
             // redraw panorama
-            setTimeout(sphere.panorama.drawScene,0);
+            setTimeout(function(){
+              sphere.panorama.drawScene.call(sphere.panorama);
+            },0);
 
             --remaining;
             if (!remaining) {
+              // panorama loaded
               setTimeout(function(){
                 // set texture height
                 sphere.texture.height=rows*tileTexture.image.height;
                 // set sphere radius
                 sphere.r=sphere.texture.height/Math.PI;
-                // sphere is done, 
                 sphere.done=true;
                 if (callback) {
                   callback.call(sphere);
@@ -148,9 +150,9 @@ $.extend(true,Sphere.prototype,{
                   sphere.callback()
                 }
               },0);
-          }
+            }
           },
-        function onerror(){
+        function loadTexture_onerror(){
           $.notify('Cannot load panorama.');
         });
 
@@ -180,15 +182,21 @@ $.extend(true,Sphere.prototype,{
     var remaining=columns*rows;
 
     $.each(sphere.object3D.children,function(){
+
       var mesh=this;
+
       var row=mesh.material.map.row;
       var col=mesh.material.map.col;
+
       var tileTexture=THREE.ImageUtils.loadTexture(
+
         sphere.texture.getTileName(col,row),
         new THREE.UVMapping(),
-        function(){
+        function loadTexture_onload(){
           mesh.material.needsUpdate=true;
-          setTimeout(sphere.panorama.drawScene,0);
+          setTimeout(function(){
+            sphere.panorama.drawScene.call(sphere.panorama);
+          },0);
           --remaining;
           if (!remaining) {
             setTimeout(function(){
@@ -203,11 +211,18 @@ $.extend(true,Sphere.prototype,{
             },0);
           }
         },
-        function(){
+        function loadTexture_onerror(){
           $.notify('Cannot load panorama.');
         }
       );
+
+      $.extend(tileTexture,sphere.texture.options,{
+        col: col,
+        row: row
+      });
+
       mesh.material.map=tileTexture;
+
     });
   }
 });
