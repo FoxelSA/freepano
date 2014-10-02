@@ -137,7 +137,7 @@ $(document).ready(function(){
             lat: 43.600233,
             columns: 16,
             rows: 8
-        }/*,
+        },
         "1403179809_224762":
         {
             dirName: 'examples/result_1403179809_224762-0-25-1',
@@ -146,7 +146,7 @@ $(document).ready(function(){
             lat: 43.600545,
             columns: 16,
             rows: 8
-        }*/
+        }
     },
 
     // Default panorama to display

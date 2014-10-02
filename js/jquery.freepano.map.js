@@ -70,6 +70,9 @@ $.extend(true, Map.prototype, {
     // Function to load a panorama dynamicaly
     LoadPanorama: function(Pano)
     {
+        // Get panorama object
+        var _Pano = $("#pano").data("pano");
+
         // Get panorama sphere
         var Sphere = $("#pano").data("pano").sphere;
 
@@ -78,16 +81,6 @@ $.extend(true, Map.prototype, {
 
         // Change panorama paths
         $.extend( Sphere.texture, Pano);
-
-        // Unload previous tiles
-        for(var i = 0; i < Objects.length; i++)
-        {
-            // Unload mesh texture
-            Objects[i].material.dispose();
-        }
-
-        // Refesh scene
-        $("#pano").data("pano").drawScene()
 
         // Loop index
         var idx = 0;
@@ -107,7 +100,7 @@ $.extend(true, Map.prototype, {
                 Objects[idx].material.map = THREE.ImageUtils.loadTexture( Texture, THREE.UVMapping, function() {
 
                     // Refesh scene
-                    $("#pano").data("pano").drawScene()
+                    _Pano.drawScene()
 
                 });
 
