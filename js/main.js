@@ -87,19 +87,19 @@ $(document).ready(function(){
 
         images: {
           '1403179805_224762': {
-             coords: {
-               lon: 3.902137,
-               lat: 43.600233,
-             }
+            coords: {
+              lon: 3.902137,
+              lat: 43.600233,
+            }
           },
 
           '1403179809_224762': {
-             dirName: 'examples/result_1403179809_224762-0-25-1',
-             coords: {
-               lon: 3.901933,
-               lat: 43.600545,
-             }
-           }
+            dirName: 'examples/result_1403179809_224762-0-25-1',
+            coords: {
+              lon: 3.901933,
+              lat: 43.600545,
+            }
+          }
         }
     },
 
