@@ -201,6 +201,18 @@ $.extend(true,Controls.prototype, {
                 || !$.isNumeric(e.rotationRate.beta))
             compatible = false;
 
+        // incompatible
+        if (!compatible) {
+
+            // unregister
+            this.devicemotion.move.active = false;
+
+            // visual notification
+            $.notify('Unable to track device motion.',{type:'warning',sticky:false,stayTime:5000});
+            $(this.panorama.container).children('.gyro').remove();
+
+        }
+
         return compatible;
 
     },
@@ -223,6 +235,11 @@ $.extend(true,Controls.prototype, {
         // limit
         this.devicemotion.internal.gravity.count++;
         if (this.devicemotion.internal.gravity.count <= this.devicemotion.internal.gravity.nth)
+            return;
+
+        // device compatibility
+        // this is done after accumulation as rotation rate needs a few ticks to initialize
+        if (!this.device_compatibility(e))
             return;
 
         // average acceleration
@@ -588,7 +605,7 @@ $.extend(true,Controls.prototype, {
             // turn touch move off to avoid interferences
             if (controls.touch.move.active) {
                 controls.touch.internal.movestate = true; // keep initial state
-                controls.touch.move.active = false;
+                controls.touch.move.active = false; // unregister
             }
 
             // register event
@@ -596,7 +613,7 @@ $.extend(true,Controls.prototype, {
 
         // not supported
         } else {
-            controls.devicemotion.move.active = false;
+            controls.devicemotion.move.active = false; // unregister
         }
 
     },
@@ -613,7 +630,7 @@ $.extend(true,Controls.prototype, {
             // turn touch move on again if it was initialy requested
             if (controls.touch.internal.movestate) {
                 controls.touch.internal.movestate = false;
-                controls.touch.move.active = true;
+                controls.touch.move.active = true; // register
             }
 
         }
@@ -636,23 +653,8 @@ $.extend(true,Controls.prototype, {
 
         // check for gravity alignment
         if (!controls.devicemotion.internal.gravity.aligned) {
-
-            // benefit to check device compatibility
-            if (!controls.device_compatibility(e)) {
-
-                controls.devicemotion.move.active = false;
-
-                $.notify('Unable to track device motion.',{type:'warning',sticky:false,stayTime:5000});
-                $(controls.panorama.container).children('.gyro').remove();
-
-                return;
-
-            }
-
-            // align
             controls.gravity_alignment(e);
             return;
-
         }
 
         // first tick after gravity is aligned
