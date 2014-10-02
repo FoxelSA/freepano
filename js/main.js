@@ -70,11 +70,11 @@ $(document).ready(function(){
         baseName: 'result_1403179805_224762-0-25-1',
         columns: 4,
         rows: 2
-      }  
+      }
     },
 */
 
-    list: 
+    list: {
         defaults: {
           dirName: 'examples/result_1403179805_224762-0-25-1',
           prefix: 'result_',
@@ -91,18 +91,14 @@ $(document).ready(function(){
                lon: 3.902137,
                lat: 43.600233,
              }
-          }/*,
-  
+         }/*,
+
           '1403179809_224762': {
-             dirName: 'examples/result_1403179809_224762-0-25-1',
-             baseName: 'result_1403179809_224762-0-25-1',
              coords: {
                lon: 3.901933,
                lat: 43.600545,
-             },
-             columns: 16,
-             rows: 8
-          }*/
+             }
+         }*/
         }
     },
 
