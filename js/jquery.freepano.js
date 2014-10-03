@@ -315,7 +315,7 @@ $.extend(true,Panorama.prototype,{
               panorama.resize();
               panorama.callback({type: 'ready'});
               $(panorama.container).trigger('panoready');
-              panorama.PluginEngine.callEvent('ready');
+              panorama.pluginEngine.callEvent('ready');
             }
           },panorama.sphere));
         }
