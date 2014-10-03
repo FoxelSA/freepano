@@ -202,6 +202,10 @@ $(document).ready(function(){
     panorama: panorama
   }));
 
+  $(panorama.container).on('panoready',function(e) {
+    panorama.pluginEngine.callEvent('ready');
+  });
+
   $(document).on('keydown',function(e){
     switch(e.keyCode) {
     case 32:

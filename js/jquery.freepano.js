@@ -262,7 +262,6 @@ function Panorama(options) {
 
   this.init();
 
-  $(this.container).data('pano',this);
 }
 
 $.extend(true,Panorama.prototype,{
@@ -296,12 +295,9 @@ $.extend(true,Panorama.prototype,{
       }
     },
 
-    ready: function() {
-        // can be implemented in submodules.
-    },
-
     init: function panorama_init(){
       var panorama=this;
+      $(panorama.container).data('pano',this);
 
       panorama.scene=new THREE.Scene();
 
@@ -317,10 +313,8 @@ $.extend(true,Panorama.prototype,{
           panorama.sphere=new Sphere($.extend(true,{
             callback: function(){
               panorama.resize();
-              panorama.callback();
-
-              panorama.PluginEngine.callEvent('ready');
-              panorama.ready();
+              panorama.callback('ready');
+              $(panorama.container).trigger('panoready');
             }
           },panorama.sphere));
         }
@@ -679,7 +673,13 @@ $.extend(true,PanoList.prototype,{
     prefix: '',
     suffix: '',
     initialImage: null,
-    callback: function() {},
+    callback: function panorama_callback(panorama_event) {
+      switch(panorama_event.type) {
+        default:
+          console.log(panorama_event);
+          break;
+      }
+    },
   },
 
   init: function panoList_init(){
