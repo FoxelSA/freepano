@@ -168,8 +168,8 @@ $.extend(true,Controls.prototype, {
     // panorama_init() method
     panorama_init: Panorama.prototype.init,
 
-    // panorama_ready() method
-    panorama_ready: Panorama.prototype.ready,
+    // panorama_callback() method
+    panorama_callback: Panorama.prototype.callback,
 
     // orientation
     orientation: {
@@ -326,7 +326,7 @@ $.extend(true,Controls.prototype, {
         // keep a reference to controls
         window._controls_touch = controls;
 
-        // instanciate hammer.js
+        // instantiate hammer.js
         if (controls.touch.internal.hammer == null)
             controls.touch.internal.hammer = new Hammer($('canvas:first',controls.panorama.container).get(0));
 
@@ -754,10 +754,10 @@ $.extend(Panorama.prototype, {
 
         var panorama = this;
 
-        // controls is defined in freepano options, instanciate it.
+        // controls is defined in freepano options, instantiate it.
         if (typeof panorama.controls !== 'undefined') {
             if (!(panorama.controls instanceof Controls)) {
-                // convert options to instanciated class
+                // convert options to instantiate class
                 panorama.controls = new Controls($.extend(true,{
                     panorama: panorama,
                     callback: function() {
@@ -771,18 +771,21 @@ $.extend(Panorama.prototype, {
 
     },
 
-    // ready() method
-    ready: function() {
+    // callback() method
+    callback: function(panorama_event) {
 
         var panorama = this;
 
-        // controls is defined in freepano options, instanciate it.
-        if (typeof panorama.controls !== 'undefined' && typeof panorama.controls.ready === 'function') {
-            panorama.controls.ready(function() {
-                Controls.prototype.panorama_ready.call(panorama);
-            });
-        } else {
-            Controls.prototype.panorama_ready.call(panorama);
+        switch(panorama_event.type) {
+        case 'ready':
+            // controls is defined in freepano options, instantiate it.
+            if (typeof panorama.controls !== 'undefined' && typeof panorama.controls.ready === 'function') {
+                panorama.controls.ready(function() {
+                    Controls.prototype.panorama_callback.apply([panorama, panorama_event]);
+                });
+            } else {
+                Controls.prototype.panorama_callback.apply([panorama, panorama_event]);
+            }
         }
 
     }
