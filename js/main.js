@@ -189,9 +189,18 @@ $(document).ready(function(){
         }
       }
     }
-  });
+  }); // panorama
 
   var panorama=$('#pano').data('pano');
+
+  // Initialize PluginEngine
+  panorama.pluginEngine = new JSLoader({
+    panorama: panorama
+  });
+
+  panorama.pluginEngine.registerPlugin(new Map({
+    panorama: panorama
+  }));
 
   $(document).on('keydown',function(e){
     switch(e.keyCode) {
@@ -205,9 +214,9 @@ $(document).ready(function(){
       toggleEffect(panorama.postProcessing.edge2);
       break;
     case 77:
-      var Map = panorama.PluginEngine.getPlugin("Map");
-      if(Map !== undefined)
-          Map.active = !Map.active;
+      var map = panorama.pluginEngine.getPlugin("Map");
+      if(map !== undefined)
+          map.active = !map.active;
       break;
     }
     panorama.postProcessing.enabled=panorama.postProcessing.edge.pass.enabled||panorama.postProcessing.edge2.pass.enabled;
@@ -219,3 +228,5 @@ $(document).ready(function(){
   }
 
 });
+
+

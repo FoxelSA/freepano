@@ -37,8 +37,11 @@
  */
 
 // Plugin constructor
-function Map()
+function Map(options)
 {
+    // merge specified options with default options and extend this instance
+    $.extend(true,this,Map.prototype.defaults,options);
+
     // Initialize plugin
     this.init();
 }
@@ -58,7 +61,7 @@ $.extend(true, Map.prototype, {
     _register_mapView: function(map) {
 
         // dom
-        var pano = $("#pano").data("pano");
+        var pano = map.panorama;
         var container = $(pano.container);
         var panoramas = pano.list.images;
 
@@ -203,13 +206,5 @@ $.extend(true, Map.prototype, {
         map._init_map();
 
     }
-
-});
-
-$(document).ready(function(){
-
-    // Register this plugin
-    var Engine = $("#pano").data('pano').PluginEngine;
-    Engine.registerPlugin( new Map() )
 
 });

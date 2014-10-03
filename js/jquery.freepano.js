@@ -260,9 +260,6 @@ function Panorama(options) {
   }
   $.extend(true,this,this.defaults,options);
 
-  // Initialize plugin loader
-  this.PluginEngine = new JSLoader();
-
   this.init();
 
   $(this.container).data('pano',this);
