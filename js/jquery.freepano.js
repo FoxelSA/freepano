@@ -313,8 +313,9 @@ $.extend(true,Panorama.prototype,{
           panorama.sphere=new Sphere($.extend(true,{
             callback: function(){
               panorama.resize();
-              panorama.callback('ready');
+              panorama.callback({type: 'ready'});
               $(panorama.container).trigger('panoready');
+              panorama.PluginEngine.callEvent('ready');
             }
           },panorama.sphere));
         }
