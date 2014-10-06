@@ -37,7 +37,7 @@
  */
 
 // Plugin Loader main class
-function JSLoader()
+function JSLoader(options)
 {
 
     // Default variables
@@ -137,6 +137,27 @@ function JSLoader()
 
         // Return result
         return List;
+    }
+
+    // Register plugins
+    if (options.plugins !== undefined)
+    {
+        for (var i = 0; i < options.plugins.length; i++ )
+        {
+            // Create new plugin instance
+            var _class = new window[options.plugins[i]]();
+
+            // Extends class
+            if (options.patch !== undefined)
+            {
+                for (var property in options.patch) {
+                    _class[property] = options.patch[property];
+                }
+            }
+
+            // Register the plugin
+            this.registerPlugin( _class );
+        }
     }
 
 }

@@ -193,14 +193,15 @@ $(document).ready(function(){
 
   var panorama=$('#pano').data('pano');
 
-  // Initialize PluginEngine
-  panorama.pluginEngine = new JSLoader({
-    panorama: panorama
-  });
-
-  panorama.pluginEngine.registerPlugin(new Map({
-    panorama: panorama
-  }));
+    // Initialize PluginEngine
+    panorama.pluginEngine = new JSLoader({
+        plugins: [
+            "Map"
+        ],
+        patch: {
+            panorama: panorama
+        }
+    });
 
   $(panorama.container).on('panoready',function(e) {
     panorama.pluginEngine.callEvent('ready');
@@ -232,5 +233,3 @@ $(document).ready(function(){
   }
 
 });
-
-
