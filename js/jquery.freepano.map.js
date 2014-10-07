@@ -118,7 +118,7 @@ $.extend(true, Map.prototype, {
         $.each(pano.list.images, function( index, value ) {
 
             // Determine if the marker is highlighted
-            var Icon = markerIcon;
+            var icon = markerIcon;
 
             if ( pano.list.currentImage == index )
                 icon = markerIcon_Highlighted;
