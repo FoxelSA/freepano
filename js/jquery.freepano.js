@@ -314,8 +314,7 @@ $.extend(true,Panorama.prototype,{
             callback: function(){
               panorama.resize();
               panorama.callback({type: 'ready'});
-              $(panorama.container).trigger('panoready');
-              panorama.pluginEngine.callEvent('ready');
+              $(panorama).trigger('panoready');
             }
           },panorama.sphere));
         }

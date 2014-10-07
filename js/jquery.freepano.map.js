@@ -187,7 +187,6 @@ $.extend(true, Map.prototype, {
 
 });
 
-
 // register freepano.map plugin
 
 $.extend(Map.prototype,{
