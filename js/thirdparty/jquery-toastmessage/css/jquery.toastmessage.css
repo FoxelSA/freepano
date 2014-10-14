@@ -1,10 +1,8 @@
-.toast-container, .toast-item-wrapper {
+.toast-container {
+	width: 280px;
 	z-index: 9999;
-  width: auto;
-  height: auto;
-  overflow: visible;
-  margin: auto;
 }
+
 
 * html .toast-container {
 	position: absolute;
@@ -33,11 +31,10 @@
 .toast-item p {
     text-align: left;
     margin-left: 50px;
-    margin-right: 50px;
 }
 
 .toast-item-close {
-    background:url(./images/close.gif);
+    background:url(../images/close.gif);
     width:22px;
     height:22px;
     position: absolute;
@@ -55,19 +52,19 @@
 }
 
 .toast-item-image-notice {
-    background:url(./images/notice.png);
+    background:url(../images/notice.png);
 }
 
 .toast-item-image-success {
-    background:url(./images/success.png);
+    background:url(../images/success.png);
 }
 
 .toast-item-image-warning {
-    background:url(./images/warning.png);
+    background:url(../images/warning.png);
 }
 
 .toast-item-image-error {
-    background:url(./images/error.png);
+    background:url(../images/error.png);
 }
 
 
