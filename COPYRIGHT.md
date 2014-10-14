@@ -42,8 +42,8 @@ Public License and/or a compatible license and other copyright notices.
     Copyright (c) 2010-2014 three.js authors<br />
     three.js is licensed under the [MIT license](http://opensource.org/licenses/MIT).
 
-*   __jQuery 2.1.0__<br />
-    <[http://jquery.org](http://jquery.org)><br />
+*   __jQuery 2.1.1__<br />
+    <[http://jquery.com](http://jquery.com)><br />
     Copyright (c) 2005, 2014 jQuery Foundation, Inc. and other contributors<br />
     jQuery is licensed under the [MIT license](http://opensource.org/licenses/MIT).
 
