@@ -52,7 +52,7 @@ Public License and/or a compatible license and other copyright notices.
     Copyright (c) 2008 George McGinley Smith<br />
     jQuery Easing is licensed under the [BSD 3-Clause license](http://opensource.org/licenses/BSD-3-Clause).
 
-*   __jQuery Mouse Wheel Plugin 3.1.9__<br />
+*   __jQuery Mouse Wheel Plugin 3.1.12__<br />
     <[https://github.com/brandonaaron/jquery-mousewheel](https://github.com/brandonaaron/jquery-mousewheel)><br />
     Copyright (c) 2013 Brandon Aaron (http://brandon.aaron.sh)<br />
     jQuery Mouse Wheel Plugin is licensed under the [MIT license](http://opensource.org/licenses/MIT).
