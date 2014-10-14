@@ -756,6 +756,7 @@ $.extend(Panorama.prototype, {
 
         // controls is defined in freepano options, instantiate it.
         if (typeof panorama.controls !== 'undefined') {
+            
             if (!(panorama.controls instanceof Controls)) {
                 // convert options to instantiate class
                 panorama.controls = new Controls($.extend(true,{
@@ -781,10 +782,10 @@ $.extend(Panorama.prototype, {
             // controls is defined in freepano options, instantiate it.
             if (typeof panorama.controls !== 'undefined' && typeof panorama.controls.ready === 'function') {
                 panorama.controls.ready(function() {
-                    Controls.prototype.panorama_callback.apply([panorama, panorama_event]);
+                    Controls.prototype.panorama_callback.apply(panorama, [panorama_event]);
                 });
             } else {
-                Controls.prototype.panorama_callback.apply([panorama, panorama_event]);
+                Controls.prototype.panorama_callback.apply(panorama, [panorama_event]);
             }
         }
 
