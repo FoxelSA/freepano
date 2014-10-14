@@ -280,7 +280,6 @@ $.extend(true,Panorama.prototype,{
       lat: 0,
       phi: 0,
       theta: 0,
-      callback: function(){},
       rotation: {
         heading: 0,
         tilt: 0,
@@ -374,6 +373,14 @@ $.extend(true,Panorama.prototype,{
       }
 
       this.eventsInit();
+    },
+
+    callback: function(e){
+      var panorama=this;
+      switch(e.type) {
+        case 'ready':
+          break;
+      }
     },
 
     updateRotationMatrix: function panorama_updateRotationMatrix() {
