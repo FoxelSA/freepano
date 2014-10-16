@@ -383,6 +383,7 @@ $.extend(true,Panorama.prototype,{
       }
     },
 
+    // to update rotation matrix after changing panorama.rotation values
     updateRotationMatrix: function panorama_updateRotationMatrix() {
       var panorama=this;
       panorama.rotation.matrix=new THREE.Matrix4();
@@ -409,7 +410,7 @@ $.extend(true,Panorama.prototype,{
       console.log(e);
     },
 
-    worldToTextureCoords:function(worldCoords){
+    worldToTextureCoords: function panorama_worldToTextureCoords(worldCoords){
       this.inversePanoramaRotationMatrix=new THREE.Matrix4();
       this.inversePanoramaRotationMatrix.getInverse(this.sphere.object3D.matrix);
 
@@ -430,7 +431,7 @@ $.extend(true,Panorama.prototype,{
       }
     },
 
-    textureToWorldCoords: function(x,y) {
+    textureToWorldCoords: function panorama_textureToWorldCoords(x,y) {
         var theta=(x*360-180)*(Math.PI/180);
         var phi=(y*180-180)*(Math.PI/180);
         var v=new THREE.Vector4();
@@ -538,7 +539,13 @@ $.extend(true,Panorama.prototype,{
     },
 
     getFov: function() {
-      var fov=360*((this.renderer.domElement.width*this.camera.zoom.current/4)/this.sphere.texture.height*2);
+      return 360*((this.renderer.domElement.width*this.camera.zoom.current/4)/this.sphere.texture.height*2);
+    },
+
+    updateFov: function() {
+
+      var fov=this.getFov();
+
       if (fov>this.fov.max) {
         var fovRatio=fov/this.fov.max;
         fov=this.fov.max;
@@ -557,7 +564,7 @@ $.extend(true,Panorama.prototype,{
     zoomUpdate: function panorama_zoomUpdate() {
       var fov=this.camera.instance.fov;
       this.camera.zoom.current=1/Math.min(this.camera.zoom.max,Math.max(this.camera.zoom.min,1/this.camera.zoom.current));
-      this.camera.instance.fov=this.getFov();
+      this.camera.instance.fov=this.updateFov();
       if (fov!=this.camera.instance.fov) {
         this.camera.instance.updateProjectionMatrix();
         this.drawScene();
