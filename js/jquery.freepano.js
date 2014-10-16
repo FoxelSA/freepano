@@ -570,6 +570,7 @@ $.extend(true,Panorama.prototype,{
     },
 
     mousewheel: function panorama_mousewheel(e){
+      e.preventDefault();
       if (!this.sphere.done) {
         return;
       }
