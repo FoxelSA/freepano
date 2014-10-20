@@ -46,6 +46,21 @@ $(document).ready(function(){
 
   $('#pano').panorama({
 
+    poi_list: {
+      list: {
+        test: 
+          {
+            shape: {
+              type: 'sphere'
+            },
+            coords: {
+              lon: 0,
+              lat: 0
+            }
+          }
+      }
+    },
+
     rotation: {
       heading: -90,
       tilt: 0,

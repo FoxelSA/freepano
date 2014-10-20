@@ -610,22 +610,26 @@ $.extend(true,Panorama.prototype,{
     },
 
     render: function render() {
-      if (!this.sphere.done) {
+      var panorama=this;
+
+      if (!panorama.sphere.done) {
         return;
       }
-      this.lat=Math.max(this.limits.lat.min,Math.min(this.limits.lat.max,this.lat));
+      panorama.lat=Math.max(panorama.limits.lat.min,Math.min(panorama.limits.lat.max,panorama.lat));
 
-      var rotationMatrix=new THREE.Matrix4();
-      rotationMatrix.multiply((new THREE.Matrix4()).makeRotationAxis((new THREE.Vector3(1,0,0)).normalize(),THREE.Math.degToRad(this.lat)));
-      rotationMatrix.multiply((new THREE.Matrix4()).makeRotationAxis((new THREE.Vector3(0,1,0)).normalize(),THREE.Math.degToRad(this.lon)));
-      this.sphere.object3D.matrix.copy(this.rotation.matrix.clone());
-      this.sphere.object3D.applyMatrix(rotationMatrix);
+      panorama.viewRotationMatrix=new THREE.Matrix4();
+      panorama.viewRotationMatrix.multiply((new THREE.Matrix4()).makeRotationAxis(new THREE.Vector3(1,0,0),THREE.Math.degToRad(panorama.lat)));
+      panorama.viewRotationMatrix.multiply((new THREE.Matrix4()).makeRotationAxis(new THREE.Vector3(0,1,0),THREE.Math.degToRad(panorama.lon)));
+      panorama.sphere.object3D.matrix.copy(panorama.rotation.matrix.clone());
+      panorama.sphere.object3D.applyMatrix(panorama.viewRotationMatrix);
 
+      panorama.callback('render');
 
-      if (this.postProcessing && this.postProcessing.enabled) {
-        this.composer.render(this.scene,this.camera.instance);
+      // TODO move this in eg jquery.freepano.postprocessing.js
+      if (panorama.postProcessing && panorama.postProcessing.enabled) {
+        panorama.composer.render(panorama.scene,panorama.camera.instance);
       } else {
-        this.renderer.render(this.scene,this.camera.instance);
+        panorama.renderer.render(panorama.scene,panorama.camera.instance);
       }
     },
 
