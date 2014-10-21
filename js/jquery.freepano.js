@@ -628,7 +628,7 @@ $.extend(true,Panorama.prototype,{
       panorama.sphere.object3D.matrix.copy(panorama.rotation.matrix.clone());
       panorama.sphere.object3D.applyMatrix(panorama.viewRotationMatrix);
 
-      panorama.callback('update');
+      panorama.callback({type: 'update'});
 
       // TODO move this in eg jquery.freepano.postprocessing.js
       if (panorama.postProcessing && panorama.postProcessing.enabled) {
