@@ -373,25 +373,27 @@ $.extend(true,Panorama.prototype,{
       }
 
       this.eventsInit();
-    },
 
-    callback: function(e){
+    }, // panorama_init
+
+    callback: function panorama_callback(e){
       var panorama=this;
       switch(e.type) {
         case 'ready':
           break;
       }
-    },
+    }, // panorama_callback
 
-    // to update rotation matrix after changing panorama.rotation values
+    // update rotation matrix after changing panorama.rotation values
     updateRotationMatrix: function panorama_updateRotationMatrix() {
+
       var panorama=this;
       panorama.rotation.matrix=new THREE.Matrix4();
       panorama.rotation.matrix.makeRotationAxis((new THREE.Vector3(0, 1, 0)).normalize(),THREE.Math.degToRad(this.rotation.heading));
       panorama.rotation.matrix.multiply((new THREE.Matrix4()).makeRotationAxis((new THREE.Vector3(1,0,0)).normalize(),THREE.Math.degToRad(this.rotation.tilt)));
       panorama.rotation.matrix.multiply((new THREE.Matrix4()).makeRotationAxis((new THREE.Vector3(0,0,1)).normalize(),THREE.Math.degToRad(this.rotation.roll)));
 
-    },
+    }, // panorama_updateRotationMatrix
 
     eventsInit: function panorama_eventsInit(){
       var panorama=this;
@@ -404,11 +406,8 @@ $.extend(true,Panorama.prototype,{
       .on('mousewheel.panorama'+this.num, canvas, function(e){panorama.mousewheel(e)})
       .on('zoom.panorama'+this.num, canvas, function(e,zoom){panorama.zoom(e,zoom)});
       $(window).on('resize.panorama'+this.num, function(e){panorama.resize(e)});
-    },
 
-    pinch: function panorama_pinch(e){
-      console.log(e);
-    },
+    }, // panorama_eventsInit
 
     worldToTextureCoords: function panorama_worldToTextureCoords(worldCoords){
       this.inversePanoramaRotationMatrix=new THREE.Matrix4();
@@ -429,7 +428,7 @@ $.extend(true,Panorama.prototype,{
         left: (180+longitude)/360,
         top: (180-latitude)/180
       }
-    },
+    }, // worldToTextureCoords
 
     textureToWorldCoords: function panorama_textureToWorldCoords(x,y) {
         var theta=(x*360-180)*(Math.PI/180);
@@ -449,8 +448,9 @@ $.extend(true,Panorama.prototype,{
           longitude: longitude,
           latitude: latitude
         }
-    },
+    }, // textureToWorldCoords
 
+    // set mouseCoords (xyz/phi/theta) and return lon/lat
     getMouseCoords: function panorama_getMouseCoords(e) {
 
       this.iMatrix=new THREE.Matrix4();
@@ -495,7 +495,8 @@ $.extend(true,Panorama.prototype,{
         lon: this.mouseCoords.phi/(Math.PI/180),
         lat: this.mouseCoords.theta/(Math.PI/180)
       }
-    },
+
+    }, // getMouseCoords
 
     mousedown: function panorama_mousedown(e){
       this.mode.mousedown=true;
@@ -532,12 +533,14 @@ $.extend(true,Panorama.prototype,{
       this.mode.mousedown=false;
     },
 
+    // return current zoom factor
     getZoom: function panorama_getZoom() {
       var visible;
       visible=this.sphere.texture.height*this.camera.instance.fov/180;
       return this.renderer.domElement.height/visible;
     },
 
+    // return current field of view
     getFov: function() {
       return 360*((this.renderer.domElement.width*this.camera.zoom.current/4)/this.sphere.texture.height*2);
     },
@@ -623,7 +626,7 @@ $.extend(true,Panorama.prototype,{
       panorama.sphere.object3D.matrix.copy(panorama.rotation.matrix.clone());
       panorama.sphere.object3D.applyMatrix(panorama.viewRotationMatrix);
 
-      panorama.callback('render');
+      panorama.callback('update');
 
       // TODO move this in eg jquery.freepano.postprocessing.js
       if (panorama.postProcessing && panorama.postProcessing.enabled) {
