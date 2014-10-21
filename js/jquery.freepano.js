@@ -542,7 +542,9 @@ $.extend(true,Panorama.prototype,{
 
     // return current field of view
     getFov: function() {
-      return 360*((this.renderer.domElement.width*this.camera.zoom.current/4)/this.sphere.texture.height*2);
+      return (this.renderer.domElement.width>this.renderer.domElement.height) ?
+        360*((this.renderer.domElement.width*this.camera.zoom.current/4)/this.sphere.texture.height*2) :
+        180*((this.renderer.domElement.height*this.camera.zoom.current/2)/this.sphere.texture.height);
     },
 
     updateFov: function() {
