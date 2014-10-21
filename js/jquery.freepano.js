@@ -538,7 +538,11 @@ $.extend(true,Panorama.prototype,{
     },
 
     getFov: function() {
-      var fov=360*((this.renderer.domElement.width*this.camera.zoom.current/4)/this.sphere.texture.height*2);
+      
+      var fov=(this.renderer.domElement.width>this.renderer.domElement.height) ?
++        360*((this.renderer.domElement.width*this.camera.zoom.current/4)/this.sphere.texture.height*2) :
++        180*((this.renderer.domElement.height*this.camera.zoom.current/2)/this.sphere.texture.height);
+
       if (fov>this.fov.max) {
         var fovRatio=fov/this.fov.max;
         fov=this.fov.max;
