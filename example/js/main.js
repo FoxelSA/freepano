@@ -54,7 +54,7 @@ $(document).ready(function(){
               type: 'sphere'
             },
             coords: {
-              lon: 0,
+              lon: -90,
               lat: 0
             }
           }
