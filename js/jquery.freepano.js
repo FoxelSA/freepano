@@ -42,15 +42,22 @@
  *      Attribution" section of <http://foxel.ch/license>.
  */
 
+
+// Texture constructor
+
 function Texture(options) {
+
   if (!(this instanceof Texture)) {
     return new Texture(options);
   }
+
   $.extend(true,this,this.defaults,options);
   this.init();
-}
+
+} // Texture
 
 $.extend(true,Texture.prototype,{
+
   defaults: {
     dirName: null,
     baseName: null,
@@ -62,14 +69,20 @@ $.extend(true,Texture.prototype,{
     },
     columns: 2,
     rows: 1,
-    getTileName: function(col,row) {
-      return this.dirName+'/'+this.baseName+'_'+row+'_'+col+'.jpg';
-    }
-  },
-  init: function texture_init(){
-  }
-});
+  }, // Texture defaults
 
+  init: function texture_init(){
+  },
+
+  getTileName: function texture_getTileName(col,row) {
+    return this.dirName+'/'+this.baseName+'_'+row+'_'+col+'.jpg';
+  }
+
+}); // extend Texture.prototype
+
+
+// Sphere constructor
+ 
 function Sphere(options) {
   if (!(this instanceof Sphere)) {
     return new Sphere(options);
@@ -79,6 +92,7 @@ function Sphere(options) {
 }
 
 $.extend(true,Sphere.prototype,{
+
   defaults: {
     done: false,
     radius: 15,
@@ -87,9 +101,11 @@ $.extend(true,Sphere.prototype,{
     texture: null,
     object3D: null,
     callback: function(){}
-  },
+
+  }, // sphere defaults
 
   init: function sphere_init(callback) {
+
     var sphere=this;
     if (sphere.texture!==undefined) {
       if (!(sphere.texture instanceof Texture)) {
@@ -99,7 +115,8 @@ $.extend(true,Sphere.prototype,{
     }
     sphere.object3D=new THREE.Object3D();
     sphere.build(callback);
-  },
+
+  }, // sphere_init
 
   build: function sphere_build(callback) {
 
@@ -113,8 +130,8 @@ $.extend(true,Sphere.prototype,{
     var phiLength=2*Math.PI/columns;
     var thetaLength=Math.PI/rows;
 
-    // segments to go
-    var remaining=columns*rows;
+    // tiles to go 
+    sphere.tilesToLoad=columns*rows;
 
     var transform=new THREE.Matrix4().makeScale(-1,1,1);
 
@@ -128,33 +145,13 @@ $.extend(true,Sphere.prototype,{
         var tileTexture=THREE.ImageUtils.loadTexture(
           sphere.texture.getTileName(col,row),
           new THREE.UVMapping(),
-          function loadTexture_onload(){
-
-            // redraw panorama
-            setTimeout(function(){
-              sphere.panorama.drawScene.call(sphere.panorama);
-            },0);
-
-            --remaining;
-            if (!remaining) {
-              // panorama loaded
-              setTimeout(function(){
-                // set texture height
-                sphere.texture.height=rows*tileTexture.image.height;
-                // set sphere radius
-                sphere.r=sphere.texture.height/Math.PI;
-                sphere.done=true;
-                if (callback) {
-                  callback.call(sphere);
-                } else {
-                  sphere.callback()
-                }
-              },0);
-            }
+          function loadTexture_onload(texture) {
+            sphere.texture_onload(texture,callback);
           },
-        function loadTexture_onerror(){
-          $.notify('Cannot load panorama.');
-        });
+          function loadTexture_onerror(){
+            $.notify('Cannot load panorama.');
+          }
+        );
 
         $.extend(tileTexture,sphere.texture.options,{
           col: col,
@@ -170,7 +167,63 @@ $.extend(true,Sphere.prototype,{
         sphere.object3D.add(mesh);
       }
     }
+  }, // sphere_build
+
+  loadTile: function sphere_loadTile(col,row,callback) {
+
+    var sphere=this;
+
+    var tileTexture=THREE.ImageUtils.loadTexture(
+      sphere.texture.getTileName(col,row),
+      new THREE.UVMapping(),
+      function loadTexture_onload(texture){
+        sphere.loadTexture_onload(texture,callback);
+      },
+      function loadTexture_onerror(){
+        $.notify('Cannot load panorama.');
+      }
+    );
+
+    $.extend(tileTexture,sphere.texture.options,{
+      col: col,
+      row: row
+    });
+
+    return tileTexture;
+    
   },
+
+  texture_onload: function sphere_loadTextureOnload(texture,callback){
+    var sphere=this;
+
+    // redraw panorama after a texture is loaded
+    setTimeout(function(){
+      sphere.panorama.drawScene.call(sphere.panorama);
+    },0);
+
+    // check for remaining textures to load
+    --sphere.tilesToLoad;
+    if (!sphere.tilesToLoad) {
+
+      // panorama loaded
+      setTimeout(function(){
+
+        // set texture height and sphere radius
+        sphere.texture.height=sphere.texture.rows*texture.image.height;
+        sphere.r=sphere.texture.height/Math.PI;
+
+        sphere.done=true;
+       
+        // run callback passed to sphere_build if specified, else default sphere callback
+        if (callback) {
+          callback.call(sphere);
+        } else {
+          sphere.callback()
+        }
+
+      },0);
+    }
+  }, // sphere_texture_onload
 
   setTexture: function sphere_setTexture(texture_options,callback) {
     var sphere=this;
@@ -179,7 +232,7 @@ $.extend(true,Sphere.prototype,{
 
     var columns=sphere.texture.columns;
     var rows=sphere.texture.rows;
-    var remaining=columns*rows;
+    sphere.tilesToLoad=columns*rows;
 
     $.each(sphere.object3D.children,function(){
 
@@ -188,45 +241,17 @@ $.extend(true,Sphere.prototype,{
       var row=mesh.material.map.row;
       var col=mesh.material.map.col;
 
-      var tileTexture=THREE.ImageUtils.loadTexture(
-
-        sphere.texture.getTileName(col,row),
-        new THREE.UVMapping(),
-        function loadTexture_onload(){
-          mesh.material.needsUpdate=true;
-          setTimeout(function(){
-            sphere.panorama.drawScene.call(sphere.panorama);
-          },0);
-          --remaining;
-          if (!remaining) {
-            setTimeout(function(){
-              sphere.texture.height=rows*tileTexture.image.height;
-              sphere.r=sphere.texture.height/Math.PI;
-              sphere.done=true;
-              if (callback) {
-                callback.call(sphere);
-              } else {
-                sphere.callback()
-              }
-            },0);
-          }
-        },
-        function loadTexture_onerror(){
-          $.notify('Cannot load panorama.');
-        }
-      );
-
-      $.extend(tileTexture,sphere.texture.options,{
-        col: col,
-        row: row
-      });
+      var tileTexture=sphere.loadTile(col,row,callback);
 
       mesh.material.map=tileTexture;
+      mesh.material.needsUpdate=true;
 
     });
-  }
+
+  } // sphere_setTexture
 });
 
+// Camera constructor
 function Camera(options) {
   if (!(this instanceof Camera)){
     return new Camera(options);
@@ -236,6 +261,7 @@ function Camera(options) {
 }
 
 $.extend(true,Camera.prototype,{
+
     defaults: {
       fov: 120,
       nearPlane: 0.1,
@@ -246,23 +272,37 @@ $.extend(true,Camera.prototype,{
         step: 0.05,
         current: 1
       }
-    },
-    init: function camera_init() {
-      var camera=this;
-      camera.instance=new THREE.PerspectiveCamera(camera.fov,$(camera.panorama.container).width()/$(camera.panorama.container).height(), camera.nearPlane, camera.farPlane);
-      camera.target=new THREE.Vector3(0,0,0);
-    }
-});
+    }, // Camera defaults
 
+    init: function camera_init() {
+
+      var camera=this;
+
+      camera.instance=new THREE.PerspectiveCamera(
+        camera.fov,
+        $(camera.panorama.container).width()/$(camera.panorama.container).height(),
+        camera.nearPlane,
+        camera.farPlane
+      );
+
+      camera.target=new THREE.Vector3(0,0,0);
+
+    }
+
+}); // extend Camera.prototype
+
+// Panorama constructor
 function Panorama(options) {
+
   if (!(this instanceof Panorama)) {
     return new Panorama(options);
   }
+
   $.extend(true,this,this.defaults,options);
 
   this.init();
 
-}
+} // Panorama constructor
 
 $.extend(true,Panorama.prototype,{
     defaults: {
@@ -292,7 +332,7 @@ $.extend(true,Panorama.prototype,{
             max: 85
         }
       }
-    },
+    }, // panorama defaults
 
     init: function panorama_init(){
       var panorama=this;
@@ -300,6 +340,7 @@ $.extend(true,Panorama.prototype,{
 
       panorama.scene=new THREE.Scene();
 
+      // instantiate camera
       if (!(panorama.camera instanceof Camera)) {
         panorama.camera=new Camera($.extend(true,{
           panorama: panorama,
@@ -307,6 +348,7 @@ $.extend(true,Panorama.prototype,{
         },panorama.camera));
       }
 
+      // instantiate sphere
       if (panorama.sphere!==undefined) {
         if (!(panorama.sphere instanceof Sphere)) {
           panorama.sphere=new Sphere($.extend(true,{
@@ -322,12 +364,15 @@ $.extend(true,Panorama.prototype,{
 
       panorama.updateRotationMatrix();
 
+      // instantiate renderer
       if (!(panorama.renderer instanceof THREE.WebGLRenderer)) {
+        // try webgl renderer
         try {
           panorama.renderer=new THREE.WebGLRenderer(panorama.renderer);
           panorama.renderer.renderPluginsPre=[];
           panorama.renderer.renderPluginsPost=[];
         } catch(e) {
+          // fallback to 2D canvas
           try {
             panorama.renderer=new THREE.CanvasRenderer();
             panorama.renderer.renderPluginsPre=[];
@@ -345,13 +390,16 @@ $.extend(true,Panorama.prototype,{
       panorama.renderer.setSize($(panorama.container).width(),$(panorama.container).height());
       $(panorama.container).append(panorama.renderer.domElement);
 
+      // TODO: move post-processing in speparate module
       if (panorama.postProcessing) {
 
-        // renderer pass
+        // instantiate composer
         panorama.composer=new THREE.EffectComposer(panorama.renderer);
+
+        // add renderer pass
         panorama.composer.addPass(new THREE.RenderPass(panorama.scene,panorama.camera.instance));
 
-        // shader passes
+        // add shader passes
         $.each(panorama.postProcessing,function() {
           if (this instanceof Boolean) {
             return true;
@@ -365,12 +413,14 @@ $.extend(true,Panorama.prototype,{
           panorama.composer.addPass(this.pass);
         });
 
+        // copy result to screen
         if (this.postProcessing.renderToScreen!==false) {
           var effect=new THREE.ShaderPass(THREE.CopyShader);
           effect.renderToScreen=true;
           this.composer.addPass(effect);
         }
-      }
+
+      } // panorama.postProcessing
 
       this.eventsInit();
 
