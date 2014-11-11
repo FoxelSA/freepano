@@ -8,7 +8,12 @@
  * Author(s):
  *
  *      Kevin Velickovic <k.velickovic@foxel.ch>
+ *
+ *
+ * Contributor(s):
+ *
  *      Luc Deschenaux <l.deschenaux@foxel.ch>
+ *      Alexandre Kraft <a.kraft@foxel.ch>
  *
  *
  * This file is part of the FOXEL project <http://foxel.ch>.
@@ -71,7 +76,7 @@ $.extend(true, Map.prototype, {
         container.append(mapContainer);
 
         // Create leaflet map object
-        var map = L.map('mapContainer').setView([51.505, -0.09], 0);
+        var map = L.map('mapContainer').setView([51.505, -0.09], 1);
 
         // add an OpenStreetMap tile layer
         L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
@@ -117,6 +122,10 @@ $.extend(true, Map.prototype, {
         // Iterate over panoramas and create markers
         $.each(pano.list.images, function( index, value ) {
 
+            // No geo coordinates
+            if (value.coords === undefined)
+                return;
+
             // Icon
             var icon = markerIcon;
 
@@ -160,6 +169,10 @@ $.extend(true, Map.prototype, {
             marker.addTo(map)
 
         });
+
+        // No elligible markers
+        if (markers.length == 0)
+            return;
 
         // Create makers featureGroup
         var markersGroup = new L.featureGroup(markers);
