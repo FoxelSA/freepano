@@ -145,8 +145,12 @@ $.extend(true, Map.prototype, {
             // Icon
             var icon = markerIcon;
 
+            // Use initial image if set and currentImage is not defined
+            if (pano.list.currentImage === undefined && pano.list.initialImage !== undefined)
+                pano.list.currentImage = pano.list.initialImage;
+
             // Use first image if currentImage is not defined
-            if (pano.list.currentImage === undefined)
+            else if (pano.list.currentImage === undefined)
                 pano.list.currentImage = Object.keys(pano.list.images)[0];
 
             // Determine if the marker is highlighted
