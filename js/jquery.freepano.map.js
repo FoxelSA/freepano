@@ -123,7 +123,7 @@ $.extend(true, Map.prototype, {
         $.each(pano.list.images, function( index, value ) {
 
             // No geo coordinates
-            if (value.coords === undefined)
+            if (value.coords === undefined || value.coords === null)
                 return;
 
             // Icon
