@@ -538,7 +538,7 @@ $.extend(true,Panorama.prototype,{
     },
 
     getFov: function() {
-      
+
       var fov=(this.renderer.domElement.width>this.renderer.domElement.height) ?
 +        360*((this.renderer.domElement.width*this.camera.zoom.current/4)/this.sphere.texture.height*2) :
 +        180*((this.renderer.domElement.height*this.camera.zoom.current/2)/this.sphere.texture.height);
@@ -724,6 +724,7 @@ $.extend(true,PanoList.prototype,{
        panorama.sphere.texture,
        pano_list.getTextureOptions(pano_list.initialImage)
       );
+      pano_list.overrideSettings(pano_list.initialImage);
     }
 
     pano_list.currentImage=pano_list.initialImage;
@@ -745,6 +746,42 @@ $.extend(true,PanoList.prototype,{
     );
   },
 
+  // set panorama overrided settings
+  overrideSettings: function panoList_overrideSettings(imageId) {
+
+    var pano_list=this;
+    if (pano_list.images[imageId].override===undefined)
+        return;
+    var override = pano_list.images[imageId].override;
+
+    // rotation
+    if (override.rotation!==undefined) {
+
+        // heading
+        if (override.rotation.heading!==undefined) {
+            pano_list.panorama.lon = 0;
+            pano_list.panorama.rotation.heading = override.rotation.heading;
+        }
+
+        // tilt
+        if (override.rotation.tilt!==undefined)
+            pano_list.panorama.rotation.tilt = override.rotation.tilt;
+
+        // roll
+        if (override.rotation.roll!==undefined)
+            pano_list.panorama.rotation.roll = override.rotation.roll;
+
+    }
+
+    // latitude
+    if (override.lat!==undefined)
+        pano_list.panorama.lat = override.lat;
+
+    // update rotation matrix
+    pano_list.panorama.updateRotationMatrix();
+
+  },
+
   // show panorama image
   show: function panoList_show(imageId,callback) {
     var pano_list=this;
@@ -754,6 +791,7 @@ $.extend(true,PanoList.prototype,{
     pano_list.currentImage=imageId;
     var texture_options=pano_list.getTextureOptions(imageId);
     pano_list.panorama.sphere.setTexture(texture_options,callback);
+    pano_list.overrideSettings(imageId);
   }
 
 });
