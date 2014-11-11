@@ -67,14 +67,11 @@ $.extend(true, Map.prototype, {
         var pano = map.panorama;
         var container = $(pano.container);
 
-        // Create map container
-        var mapContainer = $('<div>',{
-            id: 'mapContainer'
-        });
-
         // Append map
+        var mapContainer = $('<div>',{'class':'map'});
         container.append(mapContainer);
 
+        // Zoom Levels
         var zoom = {
             base: 4,
             min: 3,
@@ -84,7 +81,7 @@ $.extend(true, Map.prototype, {
         };
 
         // Create leaflet map object
-        var map = L.map('mapContainer', {
+        var map = L.map(mapContainer[0], {
             keyboard: false,
             scrollWheelZoom: true,
             minZoom: zoom.min,
@@ -211,7 +208,9 @@ $.extend(true, Map.prototype, {
     },
 
     hide: function map_hide(map) {
-        $("#mapContainer").remove();
+        var pano = map.panorama;
+        var container = $(pano.container);
+        container.find('.map').remove();
     },
 
     init: function map_init() {
