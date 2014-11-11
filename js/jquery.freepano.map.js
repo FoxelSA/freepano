@@ -79,7 +79,8 @@ $.extend(true, Map.prototype, {
             base: 4,
             min: 3,
             max: 25,
-            native: 18
+            native: 18,
+            bounds: 17
         };
 
         // Create leaflet map object
@@ -198,7 +199,10 @@ $.extend(true, Map.prototype, {
         map.fitBounds(markersGroup.getBounds());
 
         // Unzoom from bounds
-        map.setZoom(map.getZoom()-1);
+        if (map.getZoom() > zoom.bounds)
+            map.setZoom(zoom.bounds);
+        else
+            map.setZoom(map.getZoom()-1);
 
     },
 
