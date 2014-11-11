@@ -692,6 +692,7 @@ $.extend(true,PanoList.prototype,{
           break;
       }
     },
+    overrided: null
   },
 
   init: function panoList_init(){
@@ -750,32 +751,57 @@ $.extend(true,PanoList.prototype,{
   overrideSettings: function panoList_overrideSettings(imageId) {
 
     var pano_list=this;
-    if (pano_list.images[imageId].override===undefined || pano_list.images[imageId].override===null)
-        return;
-    var override = pano_list.images[imageId].override;
 
-    // rotation
-    if (override.rotation!==undefined) {
-
-        // heading
-        if (override.rotation.heading!==undefined) {
-            pano_list.panorama.lon = 0;
-            pano_list.panorama.rotation.heading = override.rotation.heading;
-        }
-
-        // tilt
-        if (override.rotation.tilt!==undefined)
-            pano_list.panorama.rotation.tilt = override.rotation.tilt;
-
-        // roll
-        if (override.rotation.roll!==undefined)
-            pano_list.panorama.rotation.roll = override.rotation.roll;
-
+    // store current state
+    if (pano_list.overrided===null) {
+        pano_list.overrided = {
+            lat: pano_list.panorama.lat,
+            lon: pano_list.panorama.lon,
+            rotation: pano_list.panorama.rotation,
+            limits: pano_list.panorama.limits
+        };
     }
 
+    // override settings
+    var override = pano_list.images[imageId].override;
+    if (override===undefined || override===null)
+        override = new Object();
+
+    // rotation
+    var rotation = $.extend(true,{},pano_list.overrided.rotation);
+    if (override.rotation!==undefined) {
+        // heading
+        if (override.rotation.heading!==undefined) {
+            pano_list.panorama.lon = pano_list.overrided.lon;
+            rotation.heading = override.rotation.heading;
+        }
+        // tilt
+        if (override.rotation.tilt!==undefined)
+            rotation.tilt = override.rotation.tilt;
+        // roll
+        if (override.rotation.roll!==undefined)
+            rotation.roll = override.rotation.roll;
+    }
+    pano_list.panorama.rotation = $.extend(true,{},rotation);
+
     // latitude
+    var lat = pano_list.overrided.lat;
     if (override.lat!==undefined)
-        pano_list.panorama.lat = override.lat;
+        lat = override.lat;
+    pano_list.panorama.lat = lat;
+
+    // limits
+    var limits = pano_list.overrided.limits;
+    if (override.limits!==undefined) {
+        // latitude
+        if (override.limits.lat!==undefined) {
+            if (override.limits.lat.max!==undefined)
+                limits.lat.max = override.limits.lat.max;
+            if (override.limits.lat.min!==undefined)
+                limits.lat.min = override.limits.lat.min;
+        }
+    }
+    pano_list.panorama.limits = limits;
 
     // update rotation matrix
     pano_list.panorama.updateRotationMatrix();
