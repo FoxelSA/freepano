@@ -117,9 +117,14 @@ $.extend(true, Map.prototype, {
         // Iterate over panoramas and create markers
         $.each(pano.list.images, function( index, value ) {
 
-            // Determine if the marker is highlighted
+            // Icon
             var icon = markerIcon;
 
+            // Use first image if currentImage is not defined
+            if (pano.list.currentImage === undefined)
+                pano.list.currentImage = Object.keys(pano.list.images)[0];
+
+            // Determine if the marker is highlighted
             if ( pano.list.currentImage == index )
                 icon = markerIcon_Highlighted;
 
