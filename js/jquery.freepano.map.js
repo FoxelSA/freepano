@@ -75,12 +75,27 @@ $.extend(true, Map.prototype, {
         // Append map
         container.append(mapContainer);
 
+        var zoom = {
+            base: 4,
+            min: 3,
+            max: 25,
+            native: 18
+        };
+
         // Create leaflet map object
-        var map = L.map('mapContainer').setView([51.505, -0.09], 1);
+        var map = L.map('mapContainer', {
+            keyboard: false,
+            scrollWheelZoom: true,
+            minZoom: zoom.min,
+            maxZoom: zoom.max
+        }).setView([51.505, -0.09], zoom.base);
 
         // add an OpenStreetMap tile layer
         L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+            attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
+            minZoom: zoom.min,
+            maxZoom: zoom.max,
+            maxNativeZoom: zoom.native
         }).addTo(map);
 
         // Compute icon sizes and anchors
@@ -181,6 +196,9 @@ $.extend(true, Map.prototype, {
 
         // Fit map to markers
         map.fitBounds(markersGroup.getBounds());
+
+        // Unzoom from bounds
+        map.setZoom(map.getZoom()-1);
 
     },
 
