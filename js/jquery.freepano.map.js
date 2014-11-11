@@ -171,8 +171,10 @@ $.extend(true, Map.prototype, {
         });
 
         // No elligible markers
-        if (markers.length == 0)
+        if (markers.length == 0) {
+            this.hide(this);
             return;
+        }
 
         // Create makers featureGroup
         var markersGroup = new L.featureGroup(markers);
