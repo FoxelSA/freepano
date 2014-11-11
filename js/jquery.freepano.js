@@ -750,7 +750,7 @@ $.extend(true,PanoList.prototype,{
   overrideSettings: function panoList_overrideSettings(imageId) {
 
     var pano_list=this;
-    if (pano_list.images[imageId].override===undefined)
+    if (pano_list.images[imageId].override===undefined || pano_list.images[imageId].override===null)
         return;
     var override = pano_list.images[imageId].override;
 
