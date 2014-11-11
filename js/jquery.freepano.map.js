@@ -81,7 +81,7 @@ $.extend(true, Map.prototype, {
         };
 
         // Create leaflet map object
-        var map = L.map(mapContainer[0], {
+        var leaflet = L.map(mapContainer[0], {
             keyboard: false,
             scrollWheelZoom: true,
             minZoom: zoom.min,
@@ -94,7 +94,7 @@ $.extend(true, Map.prototype, {
             minZoom: zoom.min,
             maxZoom: zoom.max,
             maxNativeZoom: zoom.native
-        }).addTo(map);
+        }).addTo(leaflet);
 
         // Compute icon sizes and anchors
         var iconSize     = [22.5, 36.25];
@@ -167,8 +167,13 @@ $.extend(true, Map.prototype, {
                 marker.setIcon(markerIcon_Highlighted);
 
                 // Check if panorama has changed, then change it
-                if(e.target.panorama.index != pano.list.currentImage)
+                var changed = e.target.panorama.index != pano.list.currentImage;
+                if(changed)
                     pano.list.show(e.target.panorama.index);
+
+                // Spread event
+                $(map).trigger('markerclick',{changed:changed,target:e.target.panorama.index});
+
             });
 
             // Extend marker with panorama object
@@ -183,7 +188,7 @@ $.extend(true, Map.prototype, {
             markers.push( marker )
 
             // Add marker to map
-            marker.addTo(map)
+            marker.addTo(leaflet)
 
         });
 
@@ -197,13 +202,13 @@ $.extend(true, Map.prototype, {
         var markersGroup = new L.featureGroup(markers);
 
         // Fit map to markers
-        map.fitBounds(markersGroup.getBounds());
+        leaflet.fitBounds(markersGroup.getBounds());
 
         // Unzoom from bounds
-        if (map.getZoom() > zoom.bounds)
-            map.setZoom(zoom.bounds);
+        if (leaflet.getZoom() > zoom.bounds)
+            leaflet.setZoom(zoom.bounds);
         else
-            map.setZoom(map.getZoom()-1);
+            leaflet.setZoom(leaflet.getZoom()-1);
 
     },
 
