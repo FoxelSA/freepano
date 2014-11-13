@@ -128,7 +128,7 @@ $(document).ready(function(){
     },
 
     map: {
-        active: false
+        active: true
     },
 
     renderer: {

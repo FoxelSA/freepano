@@ -74,20 +74,20 @@ html, body {
     height:1px;
 }
 
-#mapContainer {
-    position:absolute;
-    bottom:60px;
-    left:10px;
-    width:250px;
-    height:250px;
-}
-
     .gyro .button {
         position:absolute;
         top:-15px;
         width:45px;
         height:45px;
     }
+
+.map {
+    position:absolute;
+    bottom:60px;
+    left:10px;
+    width:350px;
+    height:250px;
+}
 
 footer, footer > .shade, footer > .main {
     position:absolute;
@@ -136,6 +136,11 @@ footer .logo {
 
     html, body {
         font-size:12px;
+    }
+
+    .map {
+        display:none;
+        bottom:70px;
     }
 
     footer > .shade, footer > .main {
