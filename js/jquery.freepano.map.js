@@ -8,7 +8,12 @@
  * Author(s):
  *
  *      Kevin Velickovic <k.velickovic@foxel.ch>
+ *
+ *
+ * Contributor(s):
+ *
  *      Luc Deschenaux <l.deschenaux@foxel.ch>
+ *      Alexandre Kraft <a.kraft@foxel.ch>
  *
  *
  * This file is part of the FOXEL project <http://foxel.ch>.
@@ -62,21 +67,34 @@ $.extend(true, Map.prototype, {
         var pano = map.panorama;
         var container = $(pano.container);
 
-        // Create map container
-        var mapContainer = $('<div>',{
-            id: 'mapContainer'
-        });
-
         // Append map
+        var mapContainer = $('<div>',{'class':'map'});
         container.append(mapContainer);
 
+        // Zoom Levels
+        var zoom = {
+            base: 4,
+            min: 3,
+            max: 25,
+            native: 18,
+            bounds: 18
+        };
+
         // Create leaflet map object
-        var map = L.map('mapContainer').setView([51.505, -0.09], 0);
+        var leaflet = L.map(mapContainer[0], {
+            keyboard: false,
+            scrollWheelZoom: true,
+            minZoom: zoom.min,
+            maxZoom: zoom.max
+        }).setView([51.505, -0.09], zoom.base);
 
         // add an OpenStreetMap tile layer
         L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
-        }).addTo(map);
+            attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
+            minZoom: zoom.min,
+            maxZoom: zoom.max,
+            maxNativeZoom: zoom.native
+        }).addTo(leaflet);
 
         // Compute icon sizes and anchors
         var iconSize     = [22.5, 36.25];
@@ -117,9 +135,22 @@ $.extend(true, Map.prototype, {
         // Iterate over panoramas and create markers
         $.each(pano.list.images, function( index, value ) {
 
-            // Determine if the marker is highlighted
+            // No geo coordinates
+            if (value.coords === undefined || value.coords === null)
+                return;
+
+            // Icon
             var icon = markerIcon;
 
+            // Use initial image if set and currentImage is not defined
+            if (pano.list.currentImage === undefined && pano.list.initialImage !== undefined)
+                pano.list.currentImage = pano.list.initialImage;
+
+            // Use first image if currentImage is not defined
+            else if (pano.list.currentImage === undefined)
+                pano.list.currentImage = Object.keys(pano.list.images)[0];
+
+            // Determine if the marker is highlighted
             if ( pano.list.currentImage == index )
                 icon = markerIcon_Highlighted;
 
@@ -136,8 +167,13 @@ $.extend(true, Map.prototype, {
                 marker.setIcon(markerIcon_Highlighted);
 
                 // Check if panorama has changed, then change it
-                if(e.target.panorama.index != pano.list.currentImage)
+                var changed = e.target.panorama.index != pano.list.currentImage;
+                if(changed)
                     pano.list.show(e.target.panorama.index);
+
+                // Spread event
+                $(map).trigger('markerclick',{changed:changed,target:e.target.panorama.index});
+
             });
 
             // Extend marker with panorama object
@@ -152,20 +188,34 @@ $.extend(true, Map.prototype, {
             markers.push( marker )
 
             // Add marker to map
-            marker.addTo(map)
+            marker.addTo(leaflet)
 
         });
+
+        // No elligible markers
+        if (markers.length == 0) {
+            this.hide(this);
+            return;
+        }
 
         // Create makers featureGroup
         var markersGroup = new L.featureGroup(markers);
 
         // Fit map to markers
-        map.fitBounds(markersGroup.getBounds());
+        leaflet.fitBounds(markersGroup.getBounds());
+
+        // Unzoom from bounds
+        if (leaflet.getZoom() > zoom.bounds)
+            leaflet.setZoom(zoom.bounds);
+        else
+            leaflet.setZoom(leaflet.getZoom()-1);
 
     },
 
     hide: function map_hide(map) {
-        $("#mapContainer").remove();
+        var pano = map.panorama;
+        var container = $(pano.container);
+        container.find('.map').remove();
     },
 
     init: function map_init() {
