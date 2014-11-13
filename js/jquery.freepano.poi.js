@@ -81,36 +81,12 @@ $.extend(true, POI.prototype, {
 
   // create default mesh
   defaultMesh: function poi_defaultMesh() {
-      function generateTexture() {
-
-        var canvas = document.createElement( 'canvas' );
-        canvas.width = 256;
-        canvas.height = 256;
-
-        var context = canvas.getContext( '2d' );
-        var image = context.getImageData( 0, 0, 256, 256 );
-
-        var x = 0, y = 0;
-
-        for ( var i = 0, j = 0, l = image.data.length; i < l; i += 4, j ++ ) {
-          image.data[ i ] = 255;
-          image.data[ i + 1 ] = 255;
-          image.data[ i + 2 ] = 255;
-          image.data[ i + 3 ] = 80;
-        }
-
-        context.putImageData( image, 0, 0 );
-
-        return canvas;
-
-      }
-
      var poi=this;
-     var texture = new THREE.Texture( generateTexture() );
-     texture.needsUpdate = true;
-
-
-     var sphere=new THREE.Mesh(new THREE.SphereGeometry(poi.size,100,100), new THREE.MeshLambertMaterial( { map: texture, transparent: true } )  );
+     var sphere=new THREE.Mesh(new THREE.SphereGeometry(poi.size,100,100), new THREE.MeshBasicMaterial({
+           color: 0x000000,
+           transparent: true,
+           opacity: 0.3
+     }));
      return sphere;
   }, // poi_defaultMesh
 
@@ -126,7 +102,7 @@ $.extend(true, POI.prototype, {
     // rotation around vertical axis
     poi.mv.multiply(new THREE.Matrix4().makeRotationY(-poi.coords.lon*Math.PI/180));
 
-    // rotation around horizonal axis
+    // rotation around horizontal axis
     poi.mv.multiply(new THREE.Matrix4().makeRotationX(-poi.coords.lat*Math.PI/180));
 
 
@@ -147,7 +123,7 @@ $.extend(true, POI.prototype, {
     poi.object3D.position.y=poi.coords.vec4.y/poi.coords.vec4.w;
     poi.object3D.position.z=poi.coords.vec4.z/poi.coords.vec4.w;
 
-    poi.object3D.rotation.setFromRotationMatrix(new THREE.Matrix4().makeRotationY(-panorama.lon*2*Math.PI/180));
+//    poi.object3D.rotation.setFromRotationMatrix(new THREE.Matrix4().makeRotationY(-panorama.lon*2*Math.PI/180));
 
 
     console.log(poi.object3D.position);

@@ -48,8 +48,7 @@ $(document).ready(function(){
 
     poi_list: {
       list: {
-        test: 
-          {
+        test: {
             shape: {
               type: 'sphere'
             },
@@ -57,7 +56,25 @@ $(document).ready(function(){
               lon: -90,
               lat: 0
             }
-          }
+        },
+        test1: {
+            shape: {
+              type: 'sphere'
+            },
+            coords: {
+              lon: -70,
+              lat: 0
+            }
+        },
+        test2: {
+            shape: {
+              type: 'sphere'
+            },
+            coords: {
+              lon: -80,
+              lat: 0
+            }
+        }
       }
     },
 
