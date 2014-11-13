@@ -426,10 +426,15 @@ $.extend(true,Panorama.prototype,{
 
     }, // panorama_init
 
+    // asynchronous callback external methods can hook to
     callback: function panorama_callback(e){
       var panorama=this;
       switch(e.type) {
-        case 'ready':
+        case 'ready': 
+          // sphere textures have been loaded
+          break;
+        case 'update': 
+          // sphere geometry has been updated (ready for rendering)
           break;
       }
     }, // panorama_callback
