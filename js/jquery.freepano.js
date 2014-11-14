@@ -141,23 +141,7 @@ $.extend(true,Sphere.prototype,{
         var geometry=new THREE.SphereGeometry(sphere.radius,sphere.widthSegments,sphere.heightSegments,col*phiLength,phiLength,row*thetaLength,thetaLength);
         geometry.applyMatrix(transform);
 
-        // load tile image
-        var tileTexture=THREE.ImageUtils.loadTexture(
-          sphere.texture.getTileName(col,row),
-          new THREE.UVMapping(),
-          function loadTexture_onload(texture) {
-            sphere.texture_onload(texture,callback);
-          },
-          function loadTexture_onerror(){
-            $.notify('Cannot load panorama.');
-          }
-        );
-
-        $.extend(tileTexture,sphere.texture.options,{
-          col: col,
-          row: row
-        });
-
+        var tileTexture=sphere.loadTile(col,row,callback);
         var material=new THREE.MeshBasicMaterial({
            map: tileTexture,
 //           wireframe: true,
@@ -177,7 +161,7 @@ $.extend(true,Sphere.prototype,{
       sphere.texture.getTileName(col,row),
       new THREE.UVMapping(),
       function loadTexture_onload(texture){
-        sphere.loadTexture_onload(texture,callback);
+        sphere.texture_onload(texture,callback);
       },
       function loadTexture_onerror(){
         $.notify('Cannot load panorama.');
