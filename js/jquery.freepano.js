@@ -772,15 +772,16 @@ $.extend(true,PanoList.prototype,{
 
     // set initial sphere texture options
     if (pano_list.initialImage) {
-      $.extend(true,
-       panorama.sphere.texture,
-       pano_list.getTextureOptions(pano_list.initialImage)
-      );
+      $.extend(true, panorama, pano_list.images[pano_list.initialImage], {
+          sphere: {
+            texture: pano_list.getTextureOptions(pano_list.initialImage)
+          }
+      });
       pano_list.overrideSettings(pano_list.initialImage);
     }
 
     pano_list.currentImage=pano_list.initialImage;
-    pano_list.callback();
+    pano_list.callback(); // fixme
 
   },
 
@@ -866,6 +867,7 @@ $.extend(true,PanoList.prototype,{
       return;
     }
     pano_list.currentImage=imageId;
+    $.extend(true, pano_list.panorama, pano_list.images[imageId]);
     var texture_options=pano_list.getTextureOptions(imageId);
     pano_list.panorama.sphere.setTexture(texture_options,callback);
     pano_list.overrideSettings(imageId);
