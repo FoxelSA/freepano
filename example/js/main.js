@@ -46,37 +46,6 @@ $(document).ready(function(){
 
   $('#pano').panorama({
 
-    poi_list: {
-      list: {
-        test: {
-            shape: {
-              type: 'sphere'
-            },
-            coords: {
-              lon: -90,
-              lat: 0
-            }
-        },
-        test1: {
-            shape: {
-              type: 'sphere'
-            },
-            coords: {
-              lon: -70,
-              lat: 0
-            }
-        },
-        test2: {
-            shape: {
-              type: 'sphere'
-            },
-            coords: {
-              lon: -80,
-              lat: 0
-            }
-        }
-      }
-    },
 
     rotation: {
       heading: -90,
@@ -122,7 +91,58 @@ $(document).ready(function(){
             coords: {
               lon: 3.902137,
               lat: 43.600233,
-            }
+            },
+            sound: {
+              list: {
+                1: {
+                  url: "ambiance1.mp3"
+                }
+                2: {
+                  url: "ambiance2.mp3"
+                }
+              }
+            },
+            poi_list: {
+              list: {
+                test: {
+                    shape: {
+                      type: 'sphere'
+                    },
+                    coords: {
+                      lon: -90,
+                      lat: 0
+                    },
+                    sound: {
+                      list: {
+                        beep: {
+                          url: "beep.mp3"
+                        },
+                        plop: {
+                          url: "plop.mp3"
+                        }
+                      }
+                    }
+                },
+                test1: {
+                    shape: {
+                      type: 'sphere'
+                    },
+                    coords: {
+                      lon: -70,
+                      lat: 0
+                    }
+                },
+                test2: {
+                    shape: {
+                      type: 'sphere'
+                    },
+                    coords: {
+                      lon: -80,
+                      lat: 0
+                    }
+                }
+              }
+            },
           },
 
           '1403179809_224762': {
