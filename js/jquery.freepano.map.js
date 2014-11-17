@@ -257,7 +257,7 @@ $.extend(Panorama.prototype,{
       // or if map is already instantiated
       if (!(panorama.map instanceof Map)) {
 
-        // intantiate map
+        // instantiate map
         panorama.map=new Map($.extend(true,{
 
           // pass panorama instance pointer to map instance

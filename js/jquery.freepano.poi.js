@@ -77,6 +77,11 @@ $.extend(true, POI.prototype, {
     // add to scene
     panorama.scene.add(poi.object3D);
 
+    poi.callback({
+        type:'ready',
+        target: poi
+    });
+
   }, // poi_init
 
   // create default mesh
@@ -125,8 +130,10 @@ $.extend(true, POI.prototype, {
 
 //    poi.object3D.rotation.setFromRotationMatrix(new THREE.Matrix4().makeRotationY(-panorama.lon*2*Math.PI/180));
 
-
-    console.log(poi.object3D.position);
+    poi.callback({
+        type:'update',
+        target: poi
+    });
 
   }, // poi_update
 
@@ -179,21 +186,35 @@ $.extend(true, POI_list.prototype, {
 });
 
 $.extend(POI_list.prototype,{
+
+    // save pointer to Panorama.prototype.init in POI_list.prototype
+    panorama_prototype_init: Panorama.prototype.init,
+
     // save pointer to Panorama.prototype.callback in POI_list.prototype
-    panorama_prototype_callback: Panorama.prototype.callback
+    panorama_prototype_callback: Panorama.prototype.callback,
+
+    on_panorama_update: function poiList_on_panorama_update(e) {
+
+      var panorama=this;
+
+      if (!panorama.poi_list) {
+        return;
+      }
+
+      // update poi list on panorama 'update' event
+      $.each(panorama.poi_list.list,function update_poi() {
+        var poiList_elem=this;
+        poiList_elem.instance.update();
+      });
+    }
+
 });
 
 $.extend(Panorama.prototype,{
 
-  // hook to Panorama.prototype.callback
-  callback: function panorama_prototype_callback_hook(e) {
+  init: function poiList_panorama_init() {
 
-    var panorama=this;
-
-    switch(e.type){
-
-    // initialize poi list on panorama 'ready' event
-    case 'ready':
+      var panorama=this;
 
       // skip POI_list instantiation if poi_list preferences undefined in panorama
       if (panorama.poi_list!==undefined) {
@@ -201,7 +222,7 @@ $.extend(Panorama.prototype,{
         // or if poi_list is already instantiated
         if (!(panorama.poi_list instanceof POI_list)) {
 
-          // intantiate poi_list
+          // instantiate poi_list
           panorama.poi_list=new POI_list($.extend(true,{
 
             // pass panorama instance pointer to poi_list instance
@@ -211,26 +232,22 @@ $.extend(Panorama.prototype,{
         }
       }
 
-      break;
+      // chain with old panorama.prototype.init
+      POI_list.prototype.panorama_prototype_init.call(panorama);
 
-    case 'update': 
+  },
 
-      if (!panorama.poi_list) {
-        break;
-      }
+  // hook to Panorama.prototype.callback
+  callback: function poiList_panorama_prototype_callback(e) {
 
-      // update poi list on panorama 'update' event
-      $.each(panorama.poi_list.list,function update_poi() {
-        var poiList_elem=this;
-        poiList_elem.instance.update();
-      });
+    var panorama=this;
 
-      break;
-
-    } // switch e.type
+    if (panorama.poi_list && panorama.poi_list['on_panorama_'+e.type]) {
+      panorama.poi_list['on_panorama_'+e.type].apply(panorama,[e]);
+    }
 
     // chain with old panorama.prototype.callback
-    POI_list.prototype.panorama_prototype_callback(e);
+    POI_list.prototype.panorama_prototype_callback.apply(panorama,[e]);
 
   } // panorama_prototype_callback_hook
 

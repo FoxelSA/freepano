@@ -60,7 +60,8 @@ $(document).ready(function(){
     },
 
     fov: {
-      max: 140
+      max: 140,
+      start: 120
     },
 
 /*
@@ -96,7 +97,7 @@ $(document).ready(function(){
               list: {
                 1: {
                   url: "ambiance1.mp3"
-                }
+                },
                 2: {
                   url: "ambiance2.mp3"
                 }

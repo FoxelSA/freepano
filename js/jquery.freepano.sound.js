@@ -59,16 +59,17 @@ $.extend(true,Sound.prototype,{
   options: {
     howler: {
       onload: function howler_onload() {
-        Sound.prototype.callback('load');
+        Sound.prototype.callback({type:'load'});
+
       },
       onloaderror: function howler_onloaderror() {
-        Sound.prototype.callback('loaderror');
+        Sound.prototype.callback({type:'loaderror'});
       },
       onpause: function howler_onpause() {
-        Sound.prototype.callback('pause');
+        Sound.prototype.callback({type:'pause'});
       },
       onplay: function howler_onplay() {
-        Sound.prototype.callback('play');
+        Sound.prototype.callback({type:'play'});
       }
     }
   },
@@ -76,22 +77,18 @@ $.extend(true,Sound.prototype,{
   init: function sound_init(){
     var sound=this;
     if (!sound.options[sound.type]) {
-      $.notify('Sound type "'+sound.type+'" unsupported !");
+      $.notify('Sound type "'+sound.type+'" unsupported !');
       return;
     }
     sound.instance=new Howl($.extend(true,{},sound.options[sound.type]));
   },
 
   callback: function sound_callback(sound_event) {
-    switch(sound_event.type) {
-    case 'load':
-    case 'loaderror':
-    case 'pause':
-    case' play':
-      break;
-    default:
-      console.log('unhandled sound event: '+sound_event.type);
-      break;
+    var sound=this;
+    if (sound['on'+sound_event.type]) {
+      sound['on'+sound_event.type](sound_event);
+    } else {
+      console.log('unhandled sound event: '+sound_event.type,sound);
     }
   },
 
@@ -116,7 +113,7 @@ $.extend(Panorama.prototype,{
       // or if sound is already instantiated
       if (!(panorama.sound instanceof Sound)) {
      
-        // intantiate sound
+        // instantiate sound
         panorama.sound=new Sound($.extend(true,{
      
           // pass panorama instance pointer to sound instance
@@ -125,7 +122,7 @@ $.extend(Panorama.prototype,{
         },panorama.sound));
       }
     }
-    Sound.prototype.panorama_prototype_init();
+    Sound.prototype.panorama_prototype_init.call(panorama);
   }, // panorama_prototype_init_hook
        
   // hook to Panorama.prototype.callback
@@ -133,28 +130,21 @@ $.extend(Panorama.prototype,{
        
     var panorama=this;
     if (panorama.sound) {
-       
-      switch(e.type){
-       
-      case 'ready':
-        panorama.sound.play();
-        break;
-       
-      case 'update':
-       
-        $.each(panorama.sound.list,function update_sound() {
-          var soundList_elem=this;
-          soundList.instance.update();
-        });
-       
-        break;
-       
-      } // switch e.type
+
+      $.each(panorama.sound.list,function sound_panorama_event_propagate(name){
+
+        var soundList_elem=this;
+
+        if (soundList_elem.instance && soundList_elem.instance['on_panorama_'+e.type]) {
+          soundList_elem.instance['on_panorama_'+e.type](e);
+        }
+
+      });
 
     } // if panorama.sound
        
     // chain with old panorama.prototype.callback
-    Sound.prototype.panorama_prototype_callback(e);
+    Sound.prototype.panorama_prototype_callback.apply(panorama,[e]);
        
   } // panorama_prototype_callback_hook
 
@@ -182,6 +172,8 @@ $.extend(POI.prototype,{
         },poi.sound));
       }
     }
+
+    Sound.prototype.poi_prototype_init.call(poi);
      
   },
 
@@ -189,30 +181,17 @@ $.extend(POI.prototype,{
   callback: function poi_prototype_callback_hook(e) {
        
     var poi=this;
-       
-    switch(e.type){
-       
-    case 'ready':
-       
-      break;
-       
-    case 'update':
-       
-      if (!poi.sound) {
-        break;
-      }                                                                                                                                                                                                                                                                       
-      // update sound on poi 'update' event
-      $.each(poi.sound.list,function update_sound() {
+    if (poi.sound) {
+      $.each(poi.sound.list,function sound_poi_event_propagate() {
         var sound_elem=this;
-        sound_elem.instance.update();
+        if (sound_elem.instance && sound_elem.instance['on'+e.type]) {
+          return sound_elem.instance['on'+e.type](e);
+        }
       });
-       
-      break;
-       
-    } // switch e.type
+    }
        
     // chain with old poi.prototype.callback
-    Sound.prototype.poi_prototype_callback(e);
+    Sound.prototype.poi_prototype_callback.apply(poi,[e]);
        
   } // poi_prototype_callback_hook
        
