@@ -215,6 +215,10 @@ $.extend(Panorama.prototype,{
 
     case 'update': 
 
+      if (!panorama.poi_list) {
+        break;
+      }
+
       // update poi list on panorama 'update' event
       $.each(panorama.poi_list.list,function update_poi() {
         var poiList_elem=this;
@@ -226,7 +230,7 @@ $.extend(Panorama.prototype,{
     } // switch e.type
 
     // chain with old panorama.prototype.callback
-    panorama.poi_list.panorama_prototype_callback(e);
+    POI_list.prototype.panorama_prototype_callback(e);
 
   } // panorama_prototype_callback_hook
 
