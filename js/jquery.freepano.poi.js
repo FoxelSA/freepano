@@ -177,10 +177,10 @@ $.extend(true, POI_list.prototype, {
       var poi_list=this;
       var panorama=poi_list.panorama;
       if (panorama.scene) {
-        $.each(panorama.poi.list,function(name) {
+        $.each(poi_list.list,function(name) {
           var poi=this;
-          poi.instance=null;
-          poi.instance=new POI($.extend(true,poi,{
+          poi_list.list[name].instance=null;
+          poi_list.list[name].instance=new POI($.extend(true,poi,{
             panorama: panorama
           }));
         });
