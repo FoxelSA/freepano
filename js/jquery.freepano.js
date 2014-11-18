@@ -211,8 +211,12 @@ $.extend(true,Sphere.prototype,{
 
   setTexture: function sphere_setTexture(texture_options,callback) {
     var sphere=this;
-
     $.extend(true,sphere.texture,texture_options);
+    sphere.updateTexture(callback);
+  }, // sphere_setTexture
+
+  updateTexture: function sphere_updateTexture(callback) {
+    var sphere=this;
 
     var columns=sphere.texture.columns;
     var rows=sphere.texture.rows;
@@ -231,8 +235,8 @@ $.extend(true,Sphere.prototype,{
       mesh.material.needsUpdate=true;
 
     });
+  } // sphere_updateTexture
 
-  } // sphere_setTexture
 });
 
 // Camera constructor
