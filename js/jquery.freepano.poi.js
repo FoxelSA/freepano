@@ -166,22 +166,27 @@ function POI_list(options) {
 $.extend(true, POI_list.prototype, {
 
     defaults: {
-      callback: function() {}
+      callback: function(e) {}
     },
 
     init: function POI_list_init() {
       var poi_list=this;
-      $(poi_list.panorama).off('.poi_list').on('panoready.poi_list',function(e){
-        var panorama=e.target;
+      var panorama=poi_list.panorama;
+      if (panorama.scene) {
         $.each(panorama.poi.list,function(name) {
           var poi=this;
           poi.instance=null;
-          poi.instance=new POI($.extend(true,poi[name],{
+          poi.instance=new POI($.extend(true,poi,{
             panorama: panorama
           }));
         });
-      });
-      poi_list.callback();
+        poi_list.callback({type: 'init'});
+      } else {
+        poi_list.on_panorama_ready=function(e) {
+          var panorama=this;
+          panorama.poi.init();
+        }
+      }
     },
 });
 
