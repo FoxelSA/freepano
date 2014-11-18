@@ -103,7 +103,7 @@ $(document).ready(function(){
                 }
               }
             },
-            poi_list: {
+            poi: {
               list: {
                 test: {
                     shape: {

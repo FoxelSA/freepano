@@ -173,10 +173,10 @@ $.extend(true, POI_list.prototype, {
       var poi_list=this;
       $(poi_list.panorama).off('.poi_list').on('panoready.poi_list',function(e){
         var panorama=e.target;
-        var poi=panorama.poi_list.list;
-        $.each(poi,function(name) {
-          poi[name].instance=null;
-          poi[name].instance=new POI($.extend(true,poi[name],{
+        $.each(panorama.poi.list,function(name) {
+          var poi=this;
+          poi.instance=null;
+          poi.instance=new POI($.extend(true,poi[name],{
             panorama: panorama
           }));
         });
@@ -197,12 +197,12 @@ $.extend(POI_list.prototype,{
 
       var panorama=this;
 
-      if (!panorama.poi_list) {
+      if (!panorama.poi) {
         return;
       }
 
       // update poi list on panorama 'update' event
-      $.each(panorama.poi_list.list,function update_poi() {
+      $.each(panorama.poi.list,function update_poi() {
         var poiList_elem=this;
         poiList_elem.instance.update();
       });
@@ -216,19 +216,19 @@ $.extend(Panorama.prototype,{
 
       var panorama=this;
 
-      // skip POI_list instantiation if poi_list preferences undefined in panorama
-      if (panorama.poi_list!==undefined) {
+      // skip POI_list instantiation if poi list preferences undefined in panorama
+      if (panorama.poi!==undefined) {
 
-        // or if poi_list is already instantiated
-        if (!(panorama.poi_list instanceof POI_list)) {
+        // or if poi list is already instantiated
+        if (!(panorama.poi instanceof POI_list)) {
 
-          // instantiate poi_list
-          panorama.poi_list=new POI_list($.extend(true,{
+          // instantiate poi list
+          panorama.poi=new POI_list($.extend(true,{
 
-            // pass panorama instance pointer to poi_list instance
+            // pass panorama instance pointer to poi list instance
             panorama: panorama,
 
-          },panorama.poi_list));
+          },panorama.poi));
         }
       }
 
@@ -242,8 +242,8 @@ $.extend(Panorama.prototype,{
 
     var panorama=this;
 
-    if (panorama.poi_list && panorama.poi_list['on_panorama_'+e.type]) {
-      panorama.poi_list['on_panorama_'+e.type].apply(panorama,[e]);
+    if (panorama.poi && panorama.poi['on_panorama_'+e.type]) {
+      panorama.poi['on_panorama_'+e.type].apply(panorama,[e]);
     }
 
     // chain with old panorama.prototype.callback
