@@ -36,6 +36,10 @@
  *      Attribution" section of <http://foxel.ch/license>.
  */
 
+if (typeof PanoList!=undefined) {
+  alert("jquery.freepano.list.js must be loaded after jquery.freepano.poi.js !")
+}
+
 function POI(options){
   if (!(this instanceof POI)) {
     return new POI(options)
