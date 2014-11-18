@@ -185,11 +185,6 @@ $.extend(true, POI_list.prototype, {
           }));
         });
         poi_list.callback({type: 'init'});
-      } else {
-        poi_list.on_panorama_ready=function(e) {
-          var panorama=this;
-          panorama.poi.init();
-        }
       }
     },
 });
@@ -211,11 +206,48 @@ $.extend(POI_list.prototype,{
       }
 
       // update poi list on panorama 'update' event
-      $.each(panorama.poi.list,function update_poi() {
+      $.each(panorama.poi.list,function poi_update() {
         var poiList_elem=this;
-        poiList_elem.instance.update();
+        if (poiList_elem.instance) {
+          poiList_elem.instance.update();
+        }
       });
-    }
+
+    }, // poiList_on_panorama_update
+
+    on_panorama_dispose: function poiList_on_panorama_dispose(e) {
+
+      var panorama=this;
+      if (!panorama.poi) {
+        return;
+      }
+
+      // remove poi objects from scene
+      $.each(panorama.poi.list,function poi_dispose() {
+        var poi=this;
+        if (poi.instance && poi.instance.object3D) {
+          panorama.scene.remove(poi.instance.object3D);
+        }
+      });
+
+      panorama.poi=null;
+
+    }, // poiList_on_panorama_dispose
+
+    // initialize or instantiate poi list
+    on_panorama_ready: function poiList_on_panorama_ready(e) {
+
+      var panorama=this;
+      if (panorama.poi instanceof POI_list) {
+        panorama.poi.init();
+
+      } else {
+        panorama.poi=new POI_list($.extend(true,{
+          panorama: panorama
+        },panorama.poi));
+      }
+
+    } // poiList_on_panorama_ready
 
 });
 
@@ -251,8 +283,14 @@ $.extend(Panorama.prototype,{
 
     var panorama=this;
 
-    if (panorama.poi && panorama.poi['on_panorama_'+e.type]) {
-      panorama.poi['on_panorama_'+e.type].apply(panorama,[e]);
+    if (panorama.poi){
+      if (panorama.poi['on_panorama_'+e.type]) {
+        panorama.poi['on_panorama_'+e.type].apply(panorama,[e]);
+      } else {
+        if (POI_list.prototype['on_panorama_'+e.type]) {
+          POI_list.prototype['on_panorama_'+e.type].apply(panorama,[e]);
+        }
+      }
     }
 
     // chain with old panorama.prototype.callback
