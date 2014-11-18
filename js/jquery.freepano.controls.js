@@ -784,11 +784,11 @@ $.extend(Panorama.prototype, {
                 panorama.controls.ready(function() {
                     Controls.prototype.panorama_callback.apply(panorama, [panorama_event]);
                 });
-            } else {
-                Controls.prototype.panorama_callback.apply(panorama, [panorama_event]);
+                return;
             }
         }
 
+        Controls.prototype.panorama_callback.apply(panorama, [panorama_event]);
     }
 
 });
