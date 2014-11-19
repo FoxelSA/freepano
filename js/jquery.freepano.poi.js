@@ -58,8 +58,6 @@ $.extend(true, POI.prototype, {
       lat: 90
     },
     size: Math.PI/36,
-    callback: function poi_callback(poi_event) {
-    }
   },
 
   // initialize poi and add to panorama scene
@@ -87,6 +85,10 @@ $.extend(true, POI.prototype, {
     });
 
   }, // poi_init
+
+  // callback other classes can hook to
+  callback: function poi_callback(poi_event) {
+  },
 
   // create default mesh
   defaultMesh: function poi_defaultMesh() {
@@ -189,7 +191,7 @@ $.extend(true, POI_list.prototype, {
     },
 });
 
-$.extend(POI_list.prototype,{
+$.extend(true,POI_list.prototype,{
 
     // save pointer to Panorama.prototype.init in POI_list.prototype
     panorama_prototype_init: Panorama.prototype.init,
@@ -247,11 +249,51 @@ $.extend(POI_list.prototype,{
         },panorama.poi));
       }
 
-    } // poiList_on_panorama_ready
+    }, // poiList_on_panorama_ready
+
+    on_panorama_mousemove: function poiList_on_panorama_mousemove(e) {
+    },
+
+    on_panorama_mousedown: function poiList_on_panorama_mousedown(e) {
+    },
+
+    on_panorama_mouseup: function poiList_on_panorama_mouseup(e) {
+    },
+
+    mousemove: function poiList_mousemove(e) {
+    },
+
+    mousedown: function poiList_mousedown(e) {
+    },
+
+    mouseup: function poiList_mouseup(e) {
+    },
+
+    on_panorama_click: function poiList_click(e) {
+      var panorama=this.panorama;
+      var container=$(panorama.container);
+      var camera=panorama.camera.instance;
+      var raycaster=panorama.poi.raycaster;
+      var objects=[];
+
+      $.each(panorama.poi.list,function(){
+        objects.push(this.instance.object3D);
+      });
+      
+      var vector=new THREE.Vector3();
+      vector.set((e.clientX/container.width())*2-1, -(e.clientY/container.height())*2+1, 0.5);
+      vector.unproject(camera);
+
+      raycaster.ray.set(camera.position, vector.sub(camera.position).normalize());
+      var intersects=raycaster.intersectObjects(objects);
+      if (intersects.length>0) {
+        console.log(intersects[0]);
+      }
+    }
 
 });
 
-$.extend(Panorama.prototype,{
+$.extend(true,Panorama.prototype,{
 
   init: function poiList_panorama_init() {
 
@@ -272,6 +314,18 @@ $.extend(Panorama.prototype,{
           },panorama.poi));
         }
       }
+
+      if (!(panorama.poi.raycaster instanceof THREE.Raycaster)) {
+        panorama.poi.raycaster=new THREE.Raycaster(panorama.poi.raycaster);
+      }
+
+      $(panorama.container)
+      .on('mousemove.poi_list',panorama.poi.on_panorama_mouseover)
+      .on('mousedown.poi_list',panorama.poi.on_panorama_mousedown)
+      .on('mouseup.poi_list',panorama.poi.on_panorama_mouseup)
+      .on('click.poi_list',function(e){
+          return panorama.poi.on_panorama_click(e);
+      });
 
       // chain with old panorama.prototype.init
       POI_list.prototype.panorama_prototype_init.call(panorama);
