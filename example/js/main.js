@@ -116,7 +116,9 @@ $(document).ready(function(){
                     sound: {
                       list: {
                         beep: {
-                          url: "beep.mp3"
+                          urls: ["sound/argo.mp3"],
+                          autoplay: true,
+                          loop: true
                         },
                         plop: {
                           url: "plop.mp3"
