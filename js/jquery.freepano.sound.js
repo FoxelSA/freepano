@@ -84,7 +84,6 @@ $.extend(true,SoundList.prototype,{
           pos.y,
           pos.z
         );
-        console.log(pos);
       }
     });
   },
