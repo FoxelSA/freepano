@@ -547,7 +547,7 @@ $.extend(true,Panorama.prototype,{
           textureCoords: this.worldToTextureCoords(this.mouseCoords)
         };
         var wc=this.textureToWorldCoords(this.mousedownPos.textureCoords.left,this.mousedownPos.textureCoords.top);
-        console.log(this.mousedownPos.textureCoords.longitude+'=='+wc.longitude,this.mousedownPos.textureCoords.latitude+'=='+wc.latitude);
+        console.log('fixme: '+this.mousedownPos.textureCoords.longitude+'=='+wc.longitude,this.mousedownPos.textureCoords.latitude+'=='+wc.latitude);
         //TODO something is wrong: this.mousedownPos.textureCoords.latitude != wc.latitude
       }
     },
