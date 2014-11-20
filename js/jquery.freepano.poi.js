@@ -88,6 +88,13 @@ $.extend(true, POI.prototype, {
 
   // callback other classes can hook to
   callback: function poi_callback(poi_event) {
+    var poi=this;
+    switch (poi_event){
+    case 'ready':
+      poi.instance.mesh.poi_name=poi.instance.name;
+      poi.panorama.poi_list.meshes.push(poi.instance.mesh);
+      break;
+    }
   },
 
   // create default mesh
@@ -159,6 +166,26 @@ $.extend(true, POI.prototype, {
       -poi.radius*Math.cos(phi)
     ];
   },
+
+  mousein: function poi_mousein(e) {
+  },
+
+  mouseout: function poi_mouseout(e) {
+  },
+
+  mouseover: function poi_mouseover(e) {
+  },
+
+  mousedown: function poi_mousedown(e) {
+  },
+
+  mouseup: function poi_mouseup(e) {
+  },
+
+  click: function poi_click(e) {
+  }
+
+
 });
 
 function POI_list(options) {
@@ -175,29 +202,47 @@ $.extend(true, POI_list.prototype, {
       callback: function(e) {}
     },
 
-    init: function POI_list_init() {
-      var poi_list=this;
-      var panorama=poi_list.panorama;
-      if (panorama.scene) {
-        $.each(poi_list.list,function(name) {
-          var poi=this;
-          poi_list.list[name].instance=null;
-          poi_list.list[name].instance=new POI($.extend(true,poi,{
-            panorama: panorama
-          }));
-        });
-        poi_list.callback({type: 'init'});
-      }
-    },
-});
-
-$.extend(true,POI_list.prototype,{
-
     // save pointer to Panorama.prototype.init in POI_list.prototype
     panorama_prototype_init: Panorama.prototype.init,
 
     // save pointer to Panorama.prototype.callback in POI_list.prototype
     panorama_prototype_callback: Panorama.prototype.callback,
+
+    init: function poiList_init() {
+
+      var poi_list=this;
+      var panorama=poi_list.panorama;
+
+      if (!panorama.scene) {
+        console.log('panorama.scene is undefined, cannot create POIs');
+        $.notify('panorama.scene is undefined, cannot create POIs');
+        return;
+      }
+
+      // clear POI mesh list
+      poi_list.meshes=[];
+
+      // instantiate POIs
+      $.each(poi_list.list,function(name) {
+        var poi=this;
+        poi_list.list[name].instance=null;
+        poi_list.list[name].instance=new POI($.extend(true,poi,{
+          name: name,
+          panorama: panorama
+        }));
+      });
+
+      poi_list.callback({type: 'init'});
+
+    }, // poiList_init
+
+    mesh_list_update: function poiList_mesh_list_update() {
+      var poi_list=this;
+      poi_list.meshes=[];
+      $.each(poi_list.list,function(name,poi) {
+        poi_list.meshes.push(poi.instance.mesh);
+      });
+    }, // poiList_mesh_list_update
 
     on_panorama_update: function poiList_on_panorama_update(e) {
 
@@ -251,45 +296,98 @@ $.extend(true,POI_list.prototype,{
 
     }, // poiList_on_panorama_ready
 
+    hover: [],
+
     on_panorama_mousemove: function poiList_on_panorama_mousemove(e) {
-    },
+
+      var poi_list=this.poi_list;
+      var hover=poi_list.get_mouseover_list(e);
+
+      // if mouse is hovering a poi now
+      if (hover.length) {
+
+        // if mouse was hovering a poi before
+        if (poi_list.hover.length) {
+
+          // and it is the same one
+          if (poi_list.hover[0].poi_name==hover[0].poi_name) {
+
+            // then trigger mouseover for the poi and return
+            poi_list[hover[0].poi_name].instance.mouseover(e);
+            return;
+
+          } else {
+            // not the same one, trigger mouseout and continue
+            poi_list[poi_list.hover[0].poi_name].instance.mouseout(e);
+          }
+        }
+
+        // store current hover list
+        poi_list.hover=hover;
+
+        // trigger mousein and mouseover for the poi mouse is hovering now
+        poi_list[hover[0].poi_name].instance.mousein(e);
+        poi_list[hover[0].poi_name].instance.mouseover(e);
+
+      } else {
+        // no hover now, but if mouse was hovering a poi before
+        if (poi_list.hover.length) {
+
+            // trigger mouseout and return
+            poi_list[poi_list.hover[0].poi_name].instance.mouseout(e);
+            poi_list.hover=[];
+            return;
+        }
+      }
+
+    }, // poiList_on_panorama_mousemove
 
     on_panorama_mousedown: function poiList_on_panorama_mousedown(e) {
+      var poi_list=this.poi_list;
+      if (poi_list.hover.length) {
+        return poi_list[poi_list.hover[0].name].instance.mousedown(e);
+      }
     },
 
     on_panorama_mouseup: function poiList_on_panorama_mouseup(e) {
-    },
-
-    mousemove: function poiList_mousemove(e) {
-    },
-
-    mousedown: function poiList_mousedown(e) {
-    },
-
-    mouseup: function poiList_mouseup(e) {
+      var poi_list=this.poi_list;
+      if (poi_list.hover.length) {
+        return poi_list[poi_list.hover[0].name].instance.mouseup(e);
+      }
     },
 
     on_panorama_click: function poiList_click(e) {
+      var poi_list=this.poi_list;
+      if (poi_list.hover.length) {
+        return poi_list[poi_list.hover[0].name].instance.click(e);
+      }
+    },
+
+    get_mouseover_list: function poiList_get_mouseover_list(e) {
+
       var panorama=this.panorama;
       var container=$(panorama.container);
       var camera=panorama.camera.instance;
       var raycaster=panorama.poi.raycaster;
-      var objects=[];
 
-      $.each(panorama.poi.list,function(){
-        objects.push(this.instance.object3D);
-      });
-      
+      // convert screen coordinates to normalized coordinates
       var vector=new THREE.Vector3();
-      vector.set((e.clientX/container.width())*2-1, -(e.clientY/container.height())*2+1, 0.5);
+      vector.set(
+        (e.clientX-container.offset().left)/container.width()*2-1,
+       -(e.clientY-container.offset().top)/container.height()*2+1,
+       0.5
+      );
+
+      // convert normalized coordinates to world coordinates
       vector.unproject(camera);
 
+      // create a ray from camera.position to world coordinates
       raycaster.ray.set(camera.position, vector.sub(camera.position).normalize());
-      var intersects=raycaster.intersectObjects(objects);
-      if (intersects.length>0) {
-        console.log(intersects[0]);
-      }
-    }
+
+      // find meshes intersecting with this ray
+      return raycaster.intersectObjects(objects);
+
+    } // poiList_get_mousover_list
 
 });
 
@@ -315,17 +413,15 @@ $.extend(true,Panorama.prototype,{
         }
       }
 
+      // setup poi mouse event detection
       if (!(panorama.poi.raycaster instanceof THREE.Raycaster)) {
         panorama.poi.raycaster=new THREE.Raycaster(panorama.poi.raycaster);
       }
-
       $(panorama.container)
-      .on('mousemove.poi_list',panorama.poi.on_panorama_mouseover)
+      .on('mousemove.poi_list',panorama.poi.on_panorama_mousemove)
       .on('mousedown.poi_list',panorama.poi.on_panorama_mousedown)
       .on('mouseup.poi_list',panorama.poi.on_panorama_mouseup)
-      .on('click.poi_list',function(e){
-          return panorama.poi.on_panorama_click(e);
-      });
+      .on('click.poi_list',panorama.poi.on_panorama_click);
 
       // chain with old panorama.prototype.init
       POI_list.prototype.panorama_prototype_init.call(panorama);
