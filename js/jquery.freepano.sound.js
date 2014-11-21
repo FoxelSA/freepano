@@ -88,6 +88,21 @@ $.extend(true,SoundList.prototype,{
     });
   },
 
+  on_panorama_dispose: function soundList_on_panorama_dispose(panorama_event) {
+
+    var panorama=this;
+    var sound=panorama.sound;
+
+    if (!sound) {
+      return;
+    }
+
+    $.each(sound.list,function(name,soundList_elem){
+        soundList_elem.dispose();
+    });
+
+  }, // soundList_on_panorama_dispose
+
   panorama_prototype_init: Panorama.prototype.init,
   panorama_prototype_callback: Panorama.prototype.callback,
   poi_prototype_init: POI.prototype.init,
@@ -156,6 +171,7 @@ $.extend(true,Sound.prototype,{
       console.log('unhandled sound event: '+sound_event.type,sound);
     }
   }
+
 }); // extend Sound.prototype
 
 // sound lists can be bound to panorama instances
@@ -187,12 +203,12 @@ $.extend(true,Panorama.prototype,{
   }, // panorama_prototype_init_hook
        
   // hook to Panorama.prototype.callback
-  callback: function panorama_prototype_callback_hook(e) {
+  callback: function soundList_panorama_prototype_callback(e) {
        
     var panorama=this;
 
     // forward panorama event to sound list object
-    var method='onpanorama'+e.type;
+    var method='on_panorama_'+e.type;
     if (panorama.sound && panorama.sound[method]) { 
       panorama.sound[method].apply(panorama,[e]);
     }
@@ -200,7 +216,7 @@ $.extend(true,Panorama.prototype,{
     // chain with old panorama.prototype.callback
     SoundList.prototype.panorama_prototype_callback.apply(panorama,[e]);
        
-  } // panorama_prototype_callback_hook
+  } // soundList_panorama_prototype_callback
 
 });  // extend Panorama.prototype for SoundList
 
