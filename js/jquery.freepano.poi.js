@@ -86,6 +86,22 @@ $.extend(true, POI.prototype, {
 
   }, // poi_init
 
+  dispose: function poi_dispose(){
+
+    var poi=this;
+    var panorama=poi.panorama;
+
+    if (poi.object3D) {
+      panorama.scene.remove(poi.object3D);
+      poi.object3D=null
+   
+    }
+    if (poi.mesh) {
+      poi.mesh=null;
+    }
+
+  }, // poi_dispose
+
   // callback other classes can hook to
   callback: function poi_callback(poi_event) {
     var poi=this;
@@ -190,7 +206,6 @@ $.extend(true, POI.prototype, {
     console.log('click',this);
   }
 
-
 });
 
 function POI_list(options) {
@@ -273,10 +288,11 @@ $.extend(true, POI_list.prototype, {
       }
 
       // remove poi objects from scene
-      $.each(panorama.poi.list,function poi_dispose() {
+      $.each(panorama.poi.list,function poiList_poi_dispose() {
         var poi=this;
-        if (poi.instance && poi.instance.object3D) {
-          panorama.scene.remove(poi.instance.object3D);
+        if (poi.instance){
+          poi.instance.dispose();
+          poi.instance=null;
         }
       });
 
@@ -303,7 +319,7 @@ $.extend(true, POI_list.prototype, {
 
     on_panorama_mousemove: function poiList_on_panorama_mousemove(e) {
 
-      var poi_list=$(this).data('pano').poi;
+      var poi_list=this
       var hover=poi_list.get_mouseover_list(e);
 
       // if mouse is hovering a poi now
@@ -345,26 +361,12 @@ $.extend(true, POI_list.prototype, {
 
     }, // poiList_on_panorama_mousemove
 
-    on_panorama_mousedown: function poiList_on_panorama_mousedown(e) {
-      var poi_list=$(this).data('pano').poi;
+    on_panorama_mouseevent: function poiList_on_panorama_mousevent(e) {
+      var poi_list=this;
       if (poi_list.hover.length) {
-        return poi_list.list[poi_list.hover[0].object.poi_name].instance.mousedown(e);
+        return poi_list.list[poi_list.hover[0].object.poi_name].instance[e.type](e);
       }
-    },
-
-    on_panorama_mouseup: function poiList_on_panorama_mouseup(e) {
-      var poi_list=$(this).data('pano').poi;
-      if (poi_list.hover.length) {
-        return poi_list.list[poi_list.hover[0].object.poi_name].instance.mouseup(e);
-      }
-    },
-
-    on_panorama_click: function poiList_click(e) {
-      var poi_list=$(this).data('pano').poi;
-      if (poi_list.hover.length) {
-        return poi_list.list[poi_list.hover[0].object.poi_name].instance.click(e);
-      }
-    },
+    }, // poiList_on_panorama_mouseevent
 
     get_mouseover_list: function poiList_get_mouseover_list(e) {
 
@@ -397,6 +399,12 @@ $.extend(true, POI_list.prototype, {
 
 });
 
+$.extend(true,POI_list.prototype,{
+    on_panorama_mousedown: POI_list.prototype.on_panorama_mouseevent,
+    on_panorama_mouseup: POI_list.prototype.on_panorama_mouseevent,
+    on_panorama_click: POI_list.prototype.on_panorama_mouseevent
+});
+
 $.extend(true,Panorama.prototype,{
 
   init: function poiList_panorama_init() {
@@ -423,11 +431,11 @@ $.extend(true,Panorama.prototype,{
       if (!(panorama.poi.raycaster instanceof THREE.Raycaster)) {
         panorama.poi.raycaster=new THREE.Raycaster(panorama.poi.raycaster);
       }
-      $(panorama.container)
-      .on('mousemove.poi_list',panorama.poi.on_panorama_mousemove)
-      .on('mousedown.poi_list',panorama.poi.on_panorama_mousedown)
-      .on('mouseup.poi_list',panorama.poi.on_panorama_mouseup)
-      .on('click.poi_list',panorama.poi.on_panorama_click);
+      $(panorama.container).on('mousemove.poi_list mousedown.poi_list mouseup.poi_list click.poi_list',function(e) {
+        if (panorama.poi) {
+          return panorama.poi['on_panorama_'+e.type](e);
+        }
+      });
 
       // chain with old panorama.prototype.init
       POI_list.prototype.panorama_prototype_init.call(panorama);
