@@ -232,10 +232,25 @@ $.extend(true, POI_list.prototype, {
       var poi_list=this;
       var panorama=poi_list.panorama;
 
+      if (panorama.poi!=poi_list) {
+        // needed when switching panoramas for obscure reason
+        panorama.poi=poi_list;
+      }
+
       if (!panorama.scene) {
         console.log('panorama.scene is undefined, cannot create POIs');
         return;
       }
+
+      // setup poi mouse event detection
+      if (!(panorama.poi.raycaster instanceof THREE.Raycaster)) {
+        panorama.poi.raycaster=new THREE.Raycaster(panorama.poi.raycaster);
+      }
+      $(panorama.container).on('mousemove.poi_list mousedown.poi_list mouseup.poi_list click.poi_list',function(e) {
+        if (panorama.poi) {
+          return panorama.poi['on_panorama_'+e.type](e);
+        }
+      });
 
       // clear POI mesh list
       poi_list.meshes=[];
@@ -427,20 +442,10 @@ $.extend(true,Panorama.prototype,{
         }
       }
 
-      // setup poi mouse event detection
-      if (!(panorama.poi.raycaster instanceof THREE.Raycaster)) {
-        panorama.poi.raycaster=new THREE.Raycaster(panorama.poi.raycaster);
-      }
-      $(panorama.container).on('mousemove.poi_list mousedown.poi_list mouseup.poi_list click.poi_list',function(e) {
-        if (panorama.poi) {
-          return panorama.poi['on_panorama_'+e.type](e);
-        }
-      });
-
       // chain with old panorama.prototype.init
       POI_list.prototype.panorama_prototype_init.call(panorama);
 
-  },
+  }, // poiList_panorama_init
 
   // hook to Panorama.prototype.callback
   callback: function poiList_panorama_prototype_callback(e) {
@@ -460,7 +465,7 @@ $.extend(true,Panorama.prototype,{
     // chain with old panorama.prototype.callback
     POI_list.prototype.panorama_prototype_callback.apply(panorama,[e]);
 
-  } // panorama_prototype_callback_hook
+  } // poiList_panorama_prototype_callback
 
 }); // extend Panorama.prototype
 
