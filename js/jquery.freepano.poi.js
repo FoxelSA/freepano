@@ -254,7 +254,7 @@ $.extend(true, POI_list.prototype, {
       if (!(panorama.poi.raycaster instanceof THREE.Raycaster)) {
         panorama.poi.raycaster=new THREE.Raycaster(panorama.poi.raycaster);
       }
-      $(panorama.container).on('mousemove.poi_list mousedown.poi_list mouseup.poi_list click.poi_list',function(e) {
+      $(panorama.container).off('.poi_list').on('mousemove.poi_list mousedown.poi_list mouseup.poi_list click.poi_list',function(e) {
         if (panorama.poi) {
           return panorama.poi['on_panorama_'+e.type](e);
         }

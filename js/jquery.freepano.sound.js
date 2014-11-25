@@ -183,8 +183,7 @@ $.extend(true,Sound.prototype,{
     var sound=this;
     sound.instance.fadeOut(/*to*/ 0, /*duration*/ 2000, /*callback*/ function() {
           sound.instance.unload();
-        }
-    );
+    });
   },
 
   callback: function sound_callback(sound_event) {
