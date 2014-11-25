@@ -57,6 +57,17 @@ $.extend(true,SoundList.prototype,{
 
   init: function soundList_init() {
     var soundList=this;
+
+    if (soundList.panorama) {
+      if (!soundList.panorama.sound || soundList.panorama.sound!=soundList){
+        soundList.panorama.sound=soundList;
+      }
+    } else if (soundList.poi) {
+      if (!soundList.poi.sound || soundList.poi.sound!=soundList){
+        soundList.poi.sound=soundList;
+      }
+    }
+
     $.each(soundList.list,function(name){
       var sound=this;
       if (!(sound instanceof Sound)) {
@@ -158,9 +169,22 @@ $.extend(true,Sound.prototype,{
     }
   },
 
+  dispose: function sound_dispose() {
+    var sound=this;
+    sound['dispose_'+sound.type]();
+  },
+
   new_howler: function sound_newHowler() {
     var sound=this;
     return new Howl($.extend(true,{},sound.options[sound.type],sound));
+  },
+
+  dispose_howler: function sound_disposeHowler() {
+    var sound=this;
+    sound.instance.fadeOut(/*to*/ 0, /*duration*/ 2000, /*callback*/ function() {
+          sound.instance.unload();
+        }
+    );
   },
 
   callback: function sound_callback(sound_event) {
@@ -249,6 +273,21 @@ $.extend(true,POI.prototype,{
             sound[set_position_method](poi.object3D.position);
           }
         }
+
+        poi.sound.on_poi_dispose=function soundList_on_poi_dispose(poi_event) {
+
+          var poi=this;
+          var sound=poi.sound;
+
+          if (!sound) {
+            return;
+          }
+
+          $.each(sound.list,function(name,soundList_elem){
+              soundList_elem.dispose();
+          });
+
+        } // soundList_on_panorama_dispose
 
       }
     }

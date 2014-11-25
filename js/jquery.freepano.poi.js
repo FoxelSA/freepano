@@ -104,13 +104,21 @@ $.extend(true, POI.prototype, {
 
   // callback other classes can hook to
   callback: function poi_callback(poi_event) {
+
     var poi=this;
+
     switch (poi_event.type){
+
     case 'ready':
       poi.mesh.poi_name=poi.name;
       poi.panorama.poi.meshes.push(poi.mesh);
       break;
+
+    case 'dispose':
+      poi.dispose();
+      break;
     }
+
   }, // poi_callback
 
   // create default mesh
@@ -306,7 +314,7 @@ $.extend(true, POI_list.prototype, {
       $.each(panorama.poi.list,function poiList_poi_dispose() {
         var poi=this;
         if (poi.instance){
-          poi.instance.dispose();
+          poi.instance.callback({type: 'dispose'});
           poi.instance=null;
         }
       });
