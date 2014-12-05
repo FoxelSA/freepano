@@ -578,7 +578,7 @@ $.extend(true,Panorama.prototype,{
       return this.renderer.domElement.height/visible;
     },
 
-    // return current field of view
+    // return current field of view for the largest dimension
     getFov: function() {
       return (this.renderer.domElement.width>this.renderer.domElement.height) ?
         360*((this.renderer.domElement.width*this.camera.zoom.current/4)/this.sphere.texture.height*2) :
@@ -594,13 +594,12 @@ $.extend(true,Panorama.prototype,{
         fov=this.fov.max;
         this.camera.zoom.current/=fovRatio;
       }
-      fov=fov/(this.renderer.domElement.width/this.renderer.domElement.height);
-      if (fov>this.fov.max){
-        var fovRatio=fov/this.fov.max;
-        fov=this.fov.max;
-        this.camera.zoom.current/=fovRatio;
+      
+      // convert to vertical fov
+      if (this.renderer.domElement.width>this.renderer.domElement.height) {
+        fov=fov/this.renderer.domElement.width*this.renderer.domElement.height;
       }
-      //console.log(this.camera.zoom.current,this.getZoom());
+      
       return fov;
     },
 

@@ -85,18 +85,25 @@ $.extend(true,SoundList.prototype,{
     soundList['on'+soundList_event.type](soundList_event);
   }, // soundList_callback
 
-  set_position_howler: function soundList_set_position_howler(pos){
+  set_position_howler: function soundList_set_position_howler(object3D){
     var sound=this
+    var pos=object3D.position;
     $.each(sound.list,function(name){
       var soundList_elem=sound.list[name];
       if (soundList_elem.instance) {
-        soundList_elem.instance.pos3d(
+        soundList_elem.instance.pos(
           pos.x,
           pos.y,
           pos.z
         );
+//        setOrientation(object3D,soundList_elem.instance);
       }
     });
+  },
+
+  on_panorama_ready: function soundList_on_panorama_ready(panorama_event) {
+    var panorama=this;
+    setListenerPosition(panorama.sphere.object3D);
   },
 
   on_panorama_dispose: function soundList_on_panorama_dispose(panorama_event) {
@@ -176,14 +183,21 @@ $.extend(true,Sound.prototype,{
 
   new_howler: function sound_newHowler() {
     var sound=this;
-    return new Howl($.extend(true,{},sound.options[sound.type],sound));
+    sound.instance=new Howl($.extend(true,{},sound.options[sound.type],sound));
+    if (sound.panner) {
+      sound.instance.pannerAttr(sound.panner);
+    }
+    return sound.instance;
   },
 
   dispose_howler: function sound_disposeHowler() {
     var sound=this;
-    sound.instance.fadeOut(/*to*/ 0, /*duration*/ 2000, /*callback*/ function() {
-          sound.instance.unload();
-    });
+    sound.instance
+    .off('faded')
+    .on('faded',function(){
+      sound.instance.unload();
+    })
+   .fade(/*from*/ sound.instance.volume(), /*to*/ 0, /*duration*/ 2000);
   },
 
   callback: function sound_callback(sound_event) {
@@ -230,10 +244,16 @@ $.extend(true,Panorama.prototype,{
        
     var panorama=this;
 
-    // forward panorama event to sound list object
+    // forward panorama event to soundList instance bound to panorama (if any)
     var method='on_panorama_'+e.type;
+    
     if (panorama.sound && panorama.sound[method]) { 
       panorama.sound[method].apply(panorama,[e]);
+    } else {
+    	// else forward panorama event to soundList prototype method
+    	if (SoundList.prototype[method]) {
+    	  SoundList.prototype[method].apply(panorama,[e]);	
+    	}
     }
        
     // chain with old panorama.prototype.callback
@@ -267,11 +287,14 @@ $.extend(true,POI.prototype,{
         poi.sound.on_poi_update=function soundList_set_position_on_poi_update() {
           var poi=this;
           var sound=poi.sound;
+          if (!sound) {
+            return;
+          }
           var set_position_method='set_position_'+sound.type;
           if (sound[set_position_method]) {
-            sound[set_position_method](poi.object3D.position);
+            sound[set_position_method](poi.object3D);
           }
-        }
+        },
 
         poi.sound.on_poi_dispose=function soundList_on_poi_dispose(poi_event) {
 
@@ -314,3 +337,42 @@ $.extend(true,POI.prototype,{
        
 }); // extend Panorama.prototype for SoundList
 
+
+function setOrientation(object, soundObject) {
+
+    var m = object.matrixWorld;
+    var mx = m.n14, my = m.n24, mz = m.n34;
+    m.n14 = m.n24 = m.n34 = 0;
+
+    var vec = new THREE.Vector3(0,0,1);
+    vec.applyMatrix3(m);
+    vec.normalize();
+
+    soundObject.orientation(vec.x, vec.y, vec.z);
+
+    m.n14 = mx;
+    m.n24 = my;
+    m.n34 = mz;
+}
+
+function setListenerPosition(object, x, y, z) {
+    var m = object.matrix;
+    
+    var mx = m.elements[12], my = m.elements[13], mz = m.elements[14];
+    m.elements[12] = m.elements[13] = m.elements[14] = 0;
+    
+    var dir = new THREE.Vector3(0,0,1);
+    dir.applyProjection(m);
+    dir.normalize(0);
+    
+    var up = new THREE.Vector3(0,-1,0);
+    up.applyProjection(m);
+    up.normalize();
+
+    m.elements[12] = mx;
+    m.elements[13] = my;
+    m.elements[14] = mz;
+    
+    Howler.orientation(dir.x, dir.y, dir.z, up.x, up.y, up.z,0);
+
+}

@@ -49,7 +49,7 @@ $(document).ready(function(){
 
     rotation: {
       heading: -90,
-      tilt: 0,
+      tilt: 90,
       roll: 0
     },
 
@@ -89,6 +89,9 @@ $(document).ready(function(){
 
         images: {
           '1403179805_224762': {
+        	rotation: {
+        	  tilt: 0
+        	},
             coords: {
               lon: 3.902137,
               lat: 43.600233,
@@ -106,9 +109,11 @@ $(document).ready(function(){
             poi: {
               list: {
                 test: {
-                    shape: {
-                      type: 'sphere'
-                    },
+                    color: {
+                  	  active: '#0000ff',
+                  	  hover: '#ffffff',
+                  	  normal: '#000000'
+                    },                      
                     coords: {
                       lon: -90,
                       lat: 0
@@ -116,36 +121,61 @@ $(document).ready(function(){
                     sound: {
                       list: {
                         beep: {
-                          urls: ["sound/argo.mp3"],
+                          src: ["sound/argo.mp3"],
                           autoplay: true,
-                          loop: true
+                          loop: true,
+                          coneInnerAngle: 90,
+                          coneOuterAngle: 180,
+                          coneOuterGain: 0,
+                          rolloffFactor: 0
                         },
                         plop: {
                           url: "plop.mp3"
                         }
                       }
                     }
-                },
+                }, // test
+/*        
                 test1: {
-                    shape: {
-                      type: 'sphere'
-                    },
+                    mesh: new THREE.Mesh(new THREE.BoxGeometry(Math.PI/18,Math.PI/18,0), new THREE.MeshBasicMaterial({
+                            color: 0x000000,
+                            transparent: true,
+                            opacity: 0.3
+                      })),
                     coords: {
                       lon: -70,
                       lat: 0
-                    }
-                },
+                    },
+                    color: {
+                 	  active: '#0000ff',
+                	  hover: '#ffffff',
+                	  normal: '#000000'
+                    },                      
+                }, // test1
+                
                 test2: {
-                    shape: {
-                      type: 'sphere'
+                    wesh: function test2_mesh() {
+                    	var poi=this;
+                    	var geometry=new THREE.Geometry();
+                    	var s=poi.size;
+                    	geometry.vertices.push(new THREE.Vector3(-s,-s,0));
+                       	geometry.vertices.push(new THREE.Vector3(s,-s,0));
+                    	geometry.vertices.push(new THREE.Vector3(0,s,0));
+                    	geometry.faces.push(new THREE.Face3(0, 2, 1));
+                    	return new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({
+                            color: 0x000000,
+                            transparent: true,
+                            opacity: 0.3
+                        }));
                     },
                     coords: {
                       lon: -80,
                       lat: 0
                     }
-                }
-              }
-            },
+                } // test2
+*/
+              } // list
+            }, // poi
           },
 
           '1403179809_224762': {
@@ -183,7 +213,7 @@ $(document).ready(function(){
     },
 
     map: {
-        active: true
+        active: false
     },
 
     renderer: {

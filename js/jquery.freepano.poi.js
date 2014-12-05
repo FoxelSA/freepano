@@ -57,7 +57,7 @@ $.extend(true, POI.prototype, {
       lon: 0,
       lat: 90
     },
-    size: Math.PI/36,
+    size: Math.PI/36
   },
 
   // initialize poi and add to panorama scene
@@ -65,7 +65,7 @@ $.extend(true, POI.prototype, {
 
     var poi=this;
     var panorama=poi.panorama;
-
+    
     // create object3D if undefined
     if (!poi.object3D) {
       // create mesh if undefined
@@ -73,14 +73,18 @@ $.extend(true, POI.prototype, {
         poi.mesh=poi.defaultMesh();
       }
       poi.object3D=new THREE.Object3D();
-      poi.object3D.add(poi.mesh);
+      poi.object3D.add((typeof(poi.mesh)=="function")?poi.mesh():mesh);
+    } else {
+    	if (typeof(poi.object3D)=="function") {
+    	  poi.object3D=poi.object3D();
+    	}
     }
 
     // add to scene
     panorama.scene.add(poi.object3D);
 
     poi.callback({
-        type:'ready',
+        type: 'ready',
         target: poi
     });
 
@@ -124,12 +128,12 @@ $.extend(true, POI.prototype, {
   // create default mesh
   defaultMesh: function poi_defaultMesh() {
      var poi=this;
-     var sphere=new THREE.Mesh(new THREE.SphereGeometry(poi.size,100,100), new THREE.MeshBasicMaterial({
+     var circle=new THREE.Mesh(new THREE.CircleGeometry(poi.size,100), new THREE.MeshBasicMaterial({
            color: 0x000000,
            transparent: true,
            opacity: 0.3
      }));
-     return sphere;
+     return circle;
   }, // poi_defaultMesh
 
   // update poi display properties and coordinates
@@ -165,6 +169,7 @@ $.extend(true, POI.prototype, {
     poi.object3D.position.y=poi.coords.vec4.y/poi.coords.vec4.w;
     poi.object3D.position.z=poi.coords.vec4.z/poi.coords.vec4.w;
 
+    poi.object3D.lookAt(new THREE.Vector3(0,0,0));
 //    poi.object3D.rotation.setFromRotationMatrix(new THREE.Matrix4().makeRotationY(-panorama.lon*2*Math.PI/180));
 
     poi.callback({
@@ -212,9 +217,50 @@ $.extend(true, POI.prototype, {
 
   click: function poi_click(e) {
     console.log('click',this);
-  }
+  },
+  
+  _mousedown: function(e){
+	var poi=this;
+	poi.panorama.poi._active=poi;
+	$(document).on('mouseup.poi_mousedown',function(){
+	  poi.panorama.poi._active=null;
+	  $(document).off('mouseup.poi_mousedown');
+	});
+	this.setColor(this.color.active);
+  },
+  
+  _mouseup: function(e){
+	this.setColor(this.color.hover);
+  },
+  
+  _mousein: function(e){
+	if (!this.color || (e.which && this._mouseio_disableOnMouseDown)) return;
+	if (this.panorama.poi._active) return;
+	this.panorama.poi._hover=this;
+	this.setColor(this.color.hover);
+  },
+  
+  _mouseout: function(e){
+	if (!this.color || (e.which && this._mouseio_disableOnMouseDown)) return;
+	if (this.panorama.poi._active) return;
+	this.panorama.poi._hover=null;
+	this.setColor(this.color.normal);
+  },
+  
+  setColor: function(color) {
+	this.mesh.material.color.set(color);
+	this.panorama.drawScene();
+  },
+  
+  scale: function(scaleFactor) {
+	this.object3D.scale(scaleFactor);
+	this.panorama.drawScene();
+  },
 
-});
+  _mouseio_disableOnMouseDown: true  
+  
+
+}); // extend POI.prototype
 
 function POI_list(options) {
     if (!(this instanceof POI_list)) {
@@ -360,6 +406,7 @@ $.extend(true, POI_list.prototype, {
 
           } else {
             // not the same one, trigger mouseout and continue
+            poi_list.list[poi_list.hover[0].object.poi_name].instance._mouseout(e);
             poi_list.list[poi_list.hover[0].object.poi_name].instance.mouseout(e);
           }
         }
@@ -368,6 +415,7 @@ $.extend(true, POI_list.prototype, {
         poi_list.hover=hover;
 
         // trigger mousein and mouseover for the poi mouse is hovering now
+        poi_list.list[hover[0].object.poi_name].instance._mousein(e);
         poi_list.list[hover[0].object.poi_name].instance.mousein(e);
         poi_list.list[hover[0].object.poi_name].instance.mouseover(e);
 
@@ -376,6 +424,7 @@ $.extend(true, POI_list.prototype, {
         if (poi_list.hover.length) {
 
             // trigger mouseout and return
+            poi_list.list[poi_list.hover[0].object.poi_name].instance._mouseout(e);
             poi_list.list[poi_list.hover[0].object.poi_name].instance.mouseout(e);
             poi_list.hover=[];
             return;
@@ -385,9 +434,21 @@ $.extend(true, POI_list.prototype, {
     }, // poiList_on_panorama_mousemove
 
     on_panorama_mouseevent: function poiList_on_panorama_mousevent(e) {
+      
       var poi_list=this;
+
       if (poi_list.hover.length) {
-        return poi_list.list[poi_list.hover[0].object.poi_name].instance[e.type](e);
+    	
+    	// call handlers for first poi from hovering list
+    	var poi=poi_list.list[poi_list.hover[0].object.poi_name].instance;
+    	
+    	// 1. private mouseevent handler (for hover / active color handling)
+    	if (poi['_'+e.type] && poi.color) {
+    	  poi['_'+e.type](e);
+    	}
+    	
+    	// 2. public mouseevent handler
+        return poi[e.type](e);
       }
     }, // poiList_on_panorama_mouseevent
 
