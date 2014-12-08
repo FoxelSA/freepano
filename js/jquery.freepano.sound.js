@@ -116,7 +116,7 @@ $.extend(true,SoundList.prototype,{
     }
 
     $.each(sound.list,function(name,soundList_elem){
-        soundList_elem.dispose();
+      if (soundList_elem.instance) soundList_elem.dispose();
     });
 
   }, // soundList_on_panorama_dispose
@@ -143,7 +143,9 @@ function Sound(options) {
 $.extend(true,Sound.prototype,{
 
   defaults: {
-    type: 'howler'
+    type: 'howler',
+    fadeOut: 0
+
   }, // Sound defaults
 
   options: {
@@ -165,7 +167,7 @@ $.extend(true,Sound.prototype,{
         Sound.prototype.callback({type:'end'});
       }
     }
-  },
+  }, // Sound.options
 
   init: function sound_init(){
     var sound=this;
@@ -174,12 +176,14 @@ $.extend(true,Sound.prototype,{
     } catch(e) {
       $.notify('Cannot instantiate sound of type '+sound.type);
     }
-  },
+  }, // sound_init
 
   dispose: function sound_dispose() {
     var sound=this;
-    sound['dispose_'+sound.type]();
-  },
+    sound['dispose_'+sound.type](function(){
+      sound.instance=null;
+    });
+  }, // sound_dispose
 
   new_howler: function sound_newHowler() {
     var sound=this;
@@ -188,17 +192,28 @@ $.extend(true,Sound.prototype,{
       sound.instance.pannerAttr(sound.panner);
     }
     return sound.instance;
-  },
+  }, // sound_newHowler
 
-  dispose_howler: function sound_disposeHowler() {
+  dispose_howler: function sound_disposeHowler(callback) {
+
     var sound=this;
-    sound.instance
-    .off('faded')
-    .on('faded',function(){
-      sound.instance.unload();
-    })
-   .fade(/*from*/ sound.instance.volume(), /*to*/ 0, /*duration*/ 2000);
-  },
+    if (!sound.instance) {
+      return;
+    }
+
+    try {
+      sound.instance
+      .off('faded')
+      .on('faded',function(){
+        sound.instance.unload();
+        callback();
+      })
+     .fade(/*from*/ sound.instance.volume(), /*to*/ 0, /*duration*/ sound.fadeOut);
+    } catch(e) {
+      console.log(e);
+    }
+
+  }, // sound_disposeHowler
 
   callback: function sound_callback(sound_event) {
     var sound=this;
@@ -207,7 +222,7 @@ $.extend(true,Sound.prototype,{
     } else {
       console.log('unhandled sound event: '+sound_event.type,sound);
     }
-  }
+  } // sound_callback
 
 }); // extend Sound.prototype
 
@@ -306,7 +321,7 @@ $.extend(true,POI.prototype,{
           }
 
           $.each(sound.list,function(name,soundList_elem){
-              soundList_elem.dispose();
+            if (soundList_elem.instance) soundList_elem.dispose();
           });
 
         } // soundList_on_panorama_dispose
