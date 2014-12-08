@@ -89,9 +89,9 @@ $(document).ready(function(){
 
         images: {
           '1403179805_224762': {
-        	rotation: {
-        	  tilt: 0
-        	},
+          rotation: {
+            tilt: 0
+          },
             coords: {
               lon: 3.902137,
               lat: 43.600233,
@@ -110,9 +110,9 @@ $(document).ready(function(){
               list: {
                 test: {
                     color: {
-                  	  active: '#0000ff',
-                  	  hover: '#ffffff',
-                  	  normal: '#000000'
+                      active: '#0000ff',
+                      hover: '#ffffff',
+                      normal: '#000000'
                     },                      
                     coords: {
                       lon: -90,
@@ -124,6 +124,7 @@ $(document).ready(function(){
                           src: ["sound/argo.mp3"],
                           autoplay: true,
                           loop: true,
+                          fadeOut: 2000,
                           coneInnerAngle: 90,
                           coneOuterAngle: 180,
                           coneOuterGain: 0,
@@ -135,45 +136,50 @@ $(document).ready(function(){
                       }
                     }
                 }, // test
-/*        
+
                 test1: {
                     mesh: new THREE.Mesh(new THREE.BoxGeometry(Math.PI/18,Math.PI/18,0), new THREE.MeshBasicMaterial({
-                            color: 0x000000,
-                            transparent: true,
-                            opacity: 0.3
-                      })),
+                      color: 0x000000,
+                      transparent: true,
+                      opacity: 0.3
+                    })),
                     coords: {
                       lon: -70,
                       lat: 0
                     },
                     color: {
-                 	  active: '#0000ff',
-                	  hover: '#ffffff',
-                	  normal: '#000000'
+                      active: '#0000ff',
+                      hover: '#ffffff',
+                      normal: '#000000'
                     },                      
                 }, // test1
                 
                 test2: {
-                    wesh: function test2_mesh() {
-                    	var poi=this;
-                    	var geometry=new THREE.Geometry();
-                    	var s=poi.size;
-                    	geometry.vertices.push(new THREE.Vector3(-s,-s,0));
-                       	geometry.vertices.push(new THREE.Vector3(s,-s,0));
-                    	geometry.vertices.push(new THREE.Vector3(0,s,0));
-                    	geometry.faces.push(new THREE.Face3(0, 2, 1));
-                    	return new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({
-                            color: 0x000000,
-                            transparent: true,
-                            opacity: 0.3
-                        }));
+                    mesh: function test2_mesh() {
+                      var poi=this;
+                      var geometry=new THREE.Geometry();
+                      var s=poi.size;
+                      geometry.vertices.push(new THREE.Vector3(-s,-s,0));
+                      geometry.vertices.push(new THREE.Vector3(s,-s,0));
+                      geometry.vertices.push(new THREE.Vector3(0,s,0));
+                      geometry.faces.push(new THREE.Face3(0,1,2));
+                      return new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({
+                        color: 0x000000,
+                        transparent: true,
+                        opacity: 0.3
+                      }));
                     },
+                    color: {
+                      active: '#0000ff',
+                      hover: '#ffffff',
+                      normal: '#000000'
+                    },                      
                     coords: {
                       lon: -80,
                       lat: 0
                     }
                 } // test2
-*/
+
               } // list
             }, // poi
           },
