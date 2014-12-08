@@ -65,7 +65,7 @@ $.extend(true, POI.prototype, {
 
     var poi=this;
     var panorama=poi.panorama;
-    
+
     // create object3D if undefined
     if (!poi.object3D) {
       // create mesh if undefined
@@ -75,9 +75,9 @@ $.extend(true, POI.prototype, {
       poi.object3D=new THREE.Object3D();
       poi.object3D.add((typeof(poi.mesh)=="function")?poi.mesh():poi.mesh);
     } else {
-    	if (typeof(poi.object3D)=="function") {
-    	  poi.object3D=poi.object3D();
-    	}
+      if (typeof(poi.object3D)=="function") {
+        poi.object3D=poi.object3D();
+      }
     }
 
     // add to scene
@@ -98,7 +98,7 @@ $.extend(true, POI.prototype, {
     if (poi.object3D) {
       panorama.scene.remove(poi.object3D);
       poi.object3D=null
-   
+
     }
     if (typeof(poi.mesh)=="object") {
       poi.mesh=null;
@@ -116,7 +116,7 @@ $.extend(true, POI.prototype, {
     case 'ready':
       poi.object3D.name=poi.name;
       $.each(poi.object3D.children,function(index,mesh){
-        poi.panorama.poi.meshes.push(this);  
+        poi.panorama.poi.meshes.push(this);
       });
       break;
     case 'dispose':
@@ -138,14 +138,14 @@ $.extend(true, POI.prototype, {
   }, // poi_defaultMesh
 
   // update poi display properties and coordinates
-  
+
   update: function poi_update() {
     var poi=this;
     var panorama=poi.panorama;
 
     // set poi model view matrix to identity
     poi.mv=new THREE.Matrix4();
-    
+
     // rotation around vertical axis
     poi.mv.multiply(new THREE.Matrix4().makeRotationY(-poi.coords.lon*Math.PI/180));
 
@@ -180,7 +180,7 @@ $.extend(true, POI.prototype, {
 
   }, // poi_update
 
-  getCoords3D:function(){                                                                                             
+  getCoords3D: function poi_getCoords3D(){
     var poi=this;
     var x=poi.mesh.position.x;
     var y=poi.mesh.position.y;
@@ -195,7 +195,7 @@ $.extend(true, POI.prototype, {
       -poi.radius*Math.sin(phi)*Math.sin(theta),
       -poi.radius*Math.cos(phi)
     ];
-  },
+  }, // poi_getCoords3D
 
   mousein: function poi_mousein(e) {
     console.log('mousein',this);
@@ -219,47 +219,48 @@ $.extend(true, POI.prototype, {
   click: function poi_click(e) {
     console.log('click',this);
   },
-  
-  _mousedown: function(e){
-	var poi=this;
-	poi.panorama.poi._active=poi;
-	$(document).on('mouseup.poi_mousedown',function(){
-	  poi.panorama.poi._active=null;
-	  $(document).off('mouseup.poi_mousedown');
-	});
-	this.setColor(this.color.active);
-  },
-  
-  _mouseup: function(e){
-	this.setColor(this.color.hover);
-  },
-  
-  _mousein: function(e){
-	if (!this.color || (e.which && this._mouseio_disableOnMouseDown)) return;
-	if (this.panorama.poi._active) return;
-	this.panorama.poi._hover=this;
-	this.setColor(this.color.hover);
-  },
-  
-  _mouseout: function(e){
-	if (!this.color || (e.which && this._mouseio_disableOnMouseDown)) return;
-	if (this.panorama.poi._active) return;
-	this.panorama.poi._hover=null;
-	this.setColor(this.color.normal);
-  },
-  
-  setColor: function(color) {
-	this.mesh.material.color.set(color);
-	this.panorama.drawScene();
-  },
-  
-  scale: function(scaleFactor) {
-	this.object3D.scale(scaleFactor);
-	this.panorama.drawScene();
-  },
 
-  _mouseio_disableOnMouseDown: true  
-  
+  _mousedown: function _poi_mousedown(e){
+    var poi=this;
+    poi.panorama.poi._active=poi;
+    $(document).on('mouseup.poi_mousedown',function(){
+      poi.panorama.poi._active=null;
+      $(document).off('mouseup.poi_mousedown');
+    });
+    this.setColor(this.color.active);
+  }, // _poi_mousedown
+
+  _mouseup: function _poi_mouseup(e){
+    this.setColor(this.color.hover);
+  }, // _poi_mouseup
+
+  _mousein: function _poi_mousein(e){
+    if (!this.color || (e.which && this._mouseio_disableOnMouseDown)) return;
+    if (this.panorama.poi._active) return;
+    this.panorama.poi._hover=this;
+    this.setColor(this.color.hover);
+  }, // _poi_mousein
+
+  _mouseout: function _poi_mouseout(e){
+    if (!this.color || (e.which && this._mouseio_disableOnMouseDown)) return;
+    if (this.panorama.poi._active) return;
+    this.panorama.poi._hover=null;
+    this.setColor(this.color.normal);
+  }, // _poi_mouseout
+
+  setColor: function poi_setColor(color) {
+    $.each(this.object3D.children,function(){
+      this.material.color.set(color);
+    });
+    this.panorama.drawScene();
+  }, // poi_setColor
+
+  scale: function poi_scale(scaleFactor) {
+    this.object3D.scale(scaleFactor);
+    this.panorama.drawScene();
+  }, // poi_scale
+
+  _mouseio_disableOnMouseDown: true
 
 }); // extend POI.prototype
 
@@ -437,20 +438,20 @@ $.extend(true, POI_list.prototype, {
     }, // poiList_on_panorama_mousemove
 
     on_panorama_mouseevent: function poiList_on_panorama_mousevent(e) {
-      
+
       var poi_list=this;
 
       if (poi_list.hover.length) {
-    	
-    	// call handlers for first poi from hovering list
-    	var poi=poi_list.list[poi_list.hover[0].object.parent.name].instance;
-    	
-    	// 1. private mouseevent handler (for hover / active color handling)
-    	if (poi['_'+e.type] && poi.color) {
-    	  poi['_'+e.type](e);
-    	}
-    	
-    	// 2. public mouseevent handler
+
+      // call handlers for first poi from hovering list
+      var poi=poi_list.list[poi_list.hover[0].object.parent.name].instance;
+
+      // 1. private mouseevent handler (for hover / active color handling)
+      if (poi['_'+e.type] && poi.color) {
+        poi['_'+e.type](e);
+      }
+
+      // 2. public mouseevent handler
         return poi[e.type](e);
       }
     }, // poiList_on_panorama_mouseevent
