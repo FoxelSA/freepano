@@ -73,7 +73,7 @@ $.extend(true, POI.prototype, {
         poi.mesh=poi.defaultMesh();
       }
       poi.object3D=new THREE.Object3D();
-      poi.object3D.add((typeof(poi.mesh)=="function")?poi.mesh():mesh);
+      poi.object3D.add((typeof(poi.mesh)=="function")?poi.mesh():poi.mesh);
     } else {
     	if (typeof(poi.object3D)=="function") {
     	  poi.object3D=poi.object3D();
