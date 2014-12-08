@@ -100,7 +100,7 @@ $.extend(true, POI.prototype, {
       poi.object3D=null
    
     }
-    if (poi.mesh) {
+    if (typeof(poi.mesh)=="object") {
       poi.mesh=null;
     }
 
@@ -114,10 +114,11 @@ $.extend(true, POI.prototype, {
     switch (poi_event.type){
 
     case 'ready':
-      poi.mesh.poi_name=poi.name;
-      poi.panorama.poi.meshes.push(poi.mesh);
+      poi.object3D.name=poi.name;
+      $.each(poi.object3D.children,function(index,mesh){
+        poi.panorama.poi.meshes.push(this);  
+      });
       break;
-
     case 'dispose':
       poi.dispose();
       break;
@@ -327,7 +328,9 @@ $.extend(true, POI_list.prototype, {
       var poi_list=this;
       poi_list.meshes=[];
       $.each(poi_list.list,function(name,poi) {
-        poi_list.meshes.push(poi.instance.mesh);
+        $.each(poi.object3D.children,function(index,mesh){
+          poi_list.meshes.push(this);
+        });
       });
     }, // poiList_mesh_list_update
 
@@ -398,16 +401,16 @@ $.extend(true, POI_list.prototype, {
         if (poi_list.hover.length) {
 
           // and it is the same one
-          if (poi_list.hover[0].object.poi_name==hover[0].object.poi_name) {
+          if (poi_list.hover[0].object.parent.name==hover[0].object.parent.name) {
 
             // then trigger mouseover for the poi and return
-            poi_list.list[hover[0].object.poi_name].instance.mouseover(e);
+            poi_list.list[hover[0].object.parent.name].instance.mouseover(e);
             return;
 
           } else {
             // not the same one, trigger mouseout and continue
-            poi_list.list[poi_list.hover[0].object.poi_name].instance._mouseout(e);
-            poi_list.list[poi_list.hover[0].object.poi_name].instance.mouseout(e);
+            poi_list.list[poi_list.hover[0].object.parent.name].instance._mouseout(e);
+            poi_list.list[poi_list.hover[0].object.parent.name].instance.mouseout(e);
           }
         }
 
@@ -415,17 +418,17 @@ $.extend(true, POI_list.prototype, {
         poi_list.hover=hover;
 
         // trigger mousein and mouseover for the poi mouse is hovering now
-        poi_list.list[hover[0].object.poi_name].instance._mousein(e);
-        poi_list.list[hover[0].object.poi_name].instance.mousein(e);
-        poi_list.list[hover[0].object.poi_name].instance.mouseover(e);
+        poi_list.list[hover[0].object.parent.name].instance._mousein(e);
+        poi_list.list[hover[0].object.parent.name].instance.mousein(e);
+        poi_list.list[hover[0].object.parent.name].instance.mouseover(e);
 
       } else {
         // no hover now, but if mouse was hovering a poi before
         if (poi_list.hover.length) {
 
             // trigger mouseout and return
-            poi_list.list[poi_list.hover[0].object.poi_name].instance._mouseout(e);
-            poi_list.list[poi_list.hover[0].object.poi_name].instance.mouseout(e);
+            poi_list.list[poi_list.hover[0].object.parent.name].instance._mouseout(e);
+            poi_list.list[poi_list.hover[0].object.parent.name].instance.mouseout(e);
             poi_list.hover=[];
             return;
         }
@@ -440,7 +443,7 @@ $.extend(true, POI_list.prototype, {
       if (poi_list.hover.length) {
     	
     	// call handlers for first poi from hovering list
-    	var poi=poi_list.list[poi_list.hover[0].object.poi_name].instance;
+    	var poi=poi_list.list[poi_list.hover[0].object.parent.name].instance;
     	
     	// 1. private mouseevent handler (for hover / active color handling)
     	if (poi['_'+e.type] && poi.color) {
