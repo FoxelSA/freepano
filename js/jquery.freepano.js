@@ -427,9 +427,9 @@ $.extend(true,Panorama.prototype,{
 
       var panorama=this;
       panorama.rotation.matrix=new THREE.Matrix4();
-      panorama.rotation.matrix.makeRotationAxis((new THREE.Vector3(0, 1, 0)).normalize(),THREE.Math.degToRad(this.rotation.heading));
-      panorama.rotation.matrix.multiply((new THREE.Matrix4()).makeRotationAxis((new THREE.Vector3(1,0,0)).normalize(),THREE.Math.degToRad(this.rotation.tilt)));
-      panorama.rotation.matrix.multiply((new THREE.Matrix4()).makeRotationAxis((new THREE.Vector3(0,0,1)).normalize(),THREE.Math.degToRad(this.rotation.roll)));
+      panorama.rotation.matrix.makeRotationAxis(new THREE.Vector3(0, 1, 0),THREE.Math.degToRad(this.rotation.heading));
+      panorama.rotation.matrix.multiply((new THREE.Matrix4()).makeRotationAxis(new THREE.Vector3(1,0,0),THREE.Math.degToRad(this.rotation.tilt)));
+      panorama.rotation.matrix.multiply((new THREE.Matrix4()).makeRotationAxis(new THREE.Vector3(0,0,1),THREE.Math.degToRad(this.rotation.roll)));
 
     }, // panorama_updateRotationMatrix
 
@@ -560,8 +560,10 @@ $.extend(true,Panorama.prototype,{
         e.preventDefault();
         if (isLeftButtonDown(e)) {
           var mouseCoords=this.getMouseCoords(e);
-          this.lon=this.mousedownPos.lon-(mouseCoords.lon-this.mousedownPos.mouseCoords.lon);
-          this.lat=this.mousedownPos.lat-(mouseCoords.lat-this.mousedownPos.mouseCoords.lat);
+          this.lon=(this.mousedownPos.lon-(mouseCoords.lon-this.mousedownPos.mouseCoords.lon))%360;
+          this.lat=(this.mousedownPos.lat-(mouseCoords.lat-this.mousedownPos.mouseCoords.lat))%180;
+          if (this.lon<0) this.lon+=360;
+          if (this.lat<0) this.lat+=180;
           this.drawScene();
         }
       }
