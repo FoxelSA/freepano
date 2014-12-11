@@ -108,7 +108,7 @@ $(document).ready(function(){
             },
             poi: {
               list: {
-                test: {
+                circle: {
                     color: {
                       active: '#0000ff',
                       hover: '#ffffff',
@@ -124,10 +124,13 @@ $(document).ready(function(){
                           src: ["sound/argo.mp3"],
                           autoplay: true,
                           loop: true,
+                          innerAngle: 15,
+                          outerAngle: 30,
+                          outerGain: 0,
                           fadeOut: 2000,
-                          coneInnerAngle: 90,
-                          coneOuterAngle: 180,
-                          coneOuterGain: 0,
+//                          coneInnerAngle: 45,
+ //                         coneOuterAngle: 90,
+  //                        coneOuterGain: 0,
                           rolloffFactor: 0
                         },
                         plop: {
@@ -135,9 +138,9 @@ $(document).ready(function(){
                         }
                       }
                     }
-                }, // test
+                }, // circle
 
-                test1: {
+                square: {
                     mesh: new THREE.Mesh(new THREE.BoxGeometry(Math.PI/18,Math.PI/18,0), new THREE.MeshBasicMaterial({
                       color: 0x000000,
                       transparent: true,
@@ -152,9 +155,9 @@ $(document).ready(function(){
                       hover: '#ffffff',
                       normal: '#000000'
                     },                      
-                }, // test1
+                }, // square
                 
-                test2: {
+                triangle: {
                     mesh: function test2_mesh() {
                       var poi=this;
                       var geometry=new THREE.Geometry();
@@ -178,7 +181,7 @@ $(document).ready(function(){
                       lon: -80,
                       lat: 0
                     }
-                } // test2
+                } // triangle
 
               } // list
             }, // poi
