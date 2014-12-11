@@ -85,9 +85,10 @@ $.extend(true,SoundList.prototype,{
     soundList['on'+soundList_event.type](soundList_event);
   }, // soundList_callback
 
-  set_position_howler: function soundList_set_position_howler(object3D){
-    var sound=this
+  set_position_howler: function soundList_set_position_howler(panorama,object3D){
+    var sound=this;
     var pos=object3D.position;
+    var poi=sound.poi;
     $.each(sound.list,function(name){
       var soundList_elem=sound.list[name];
       if (soundList_elem.instance) {
@@ -96,14 +97,14 @@ $.extend(true,SoundList.prototype,{
           pos.y,
           pos.z
         );
-//        setOrientation(object3D,soundList_elem.instance);
+        soundList_elem.updateConeEffect();
       }
     });
-  },
+  }, // soundList_set_position_howler
 
   on_panorama_ready: function soundList_on_panorama_ready(panorama_event) {
     var panorama=this;
-    setListenerPosition(panorama.sphere.object3D);
+//    Howler.orientation(0.5,0,-1,0,1,0);
   },
 
   on_panorama_dispose: function soundList_on_panorama_dispose(panorama_event) {
@@ -144,7 +145,10 @@ $.extend(true,Sound.prototype,{
 
   defaults: {
     type: 'howler',
-    fadeOut: 0
+    fadeOut: 0,
+    innerAngle: 0,
+    outerAngle: 0,
+    outerGain: 0
 
   }, // Sound defaults
 
@@ -187,7 +191,11 @@ $.extend(true,Sound.prototype,{
 
   new_howler: function sound_newHowler() {
     var sound=this;
-    sound.instance=new Howl($.extend(true,{},sound.options[sound.type],sound));
+    try {
+      sound.instance=new Howl($.extend(true,{},sound.options[sound.type],sound));
+    } catch (e) {
+      console.log(e)
+    }
     if (sound.panner) {
       sound.instance.pannerAttr(sound.panner);
     }
@@ -222,7 +230,27 @@ $.extend(true,Sound.prototype,{
     } else {
       console.log('unhandled sound event: '+sound_event.type,sound);
     }
-  } // sound_callback
+  }, // sound_callback
+
+  updateConeEffect: function sound_updateConeEffect() {
+    var sound=this;
+    if (sound.innerAngle && sound.instance._pos) { 
+      var v=new THREE.Vector3(sound.instance._pos[0],sound.instance._pos[1],sound.instance._pos[2]).normalize(); 
+      var alpha=Math.abs(v.angleTo(new THREE.Vector3(0,0,-1))/(Math.PI/180));
+      var gain;
+      if (alpha<sound.innerAngle) {
+        gain=1;
+      } else if (alpha>=sound.outerAngle) {
+        gain=sound.outerGain;
+      } else {
+        var n=(alpha-sound.innerAngle)/(sound.outerAngle-sound.innerAngle);
+        gain=(1-n)+sound.outerGain*n;
+      }
+      if (sound.instance._volume!=gain) {
+        sound.instance.volume(gain);
+      }
+    }
+  } // sound_updateConeEffect
 
 }); // extend Sound.prototype
 
@@ -307,7 +335,7 @@ $.extend(true,POI.prototype,{
           }
           var set_position_method='set_position_'+sound.type;
           if (sound[set_position_method]) {
-            sound[set_position_method](poi.object3D);
+            sound[set_position_method](poi.panorama,poi.object3D);
           }
         },
 
@@ -353,7 +381,7 @@ $.extend(true,POI.prototype,{
 }); // extend Panorama.prototype for SoundList
 
 
-function setOrientation(object, soundObject) {
+function setOrientation(panorama,object,soundObject) {
 
     var m = object.matrixWorld;
     var mx = m.n14, my = m.n24, mz = m.n34;
@@ -363,7 +391,7 @@ function setOrientation(object, soundObject) {
     vec.applyMatrix3(m);
     vec.normalize();
 
-    soundObject.orientation(vec.x, vec.y, vec.z);
+//    soundObject.orientation(vec.x, vec.y, vec.z);
 
     m.n14 = mx;
     m.n24 = my;
@@ -388,6 +416,6 @@ function setListenerPosition(object, x, y, z) {
     m.elements[13] = my;
     m.elements[14] = mz;
     
-    Howler.orientation(dir.x, dir.y, dir.z, up.x, up.y, up.z,0);
+//    Howler.orientation(dir.x, dir.y, dir.z, up.x, up.y, up.z,0);
 
 }
