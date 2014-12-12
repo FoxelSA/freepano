@@ -561,9 +561,8 @@ $.extend(true,Panorama.prototype,{
         if (isLeftButtonDown(e)) {
           var mouseCoords=this.getMouseCoords(e);
           this.lon=(this.mousedownPos.lon-(mouseCoords.lon-this.mousedownPos.mouseCoords.lon))%360;
-          this.lat=(this.mousedownPos.lat-(mouseCoords.lat-this.mousedownPos.mouseCoords.lat))%180;
+          this.lat=this.mousedownPos.lat-(mouseCoords.lat-this.mousedownPos.mouseCoords.lat);
           if (this.lon<0) this.lon+=360;
-          if (this.lat<0) this.lat+=180;
           this.drawScene();
         }
       }
