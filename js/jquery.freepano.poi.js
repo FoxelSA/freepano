@@ -152,10 +152,6 @@ $.extend(true, POI.prototype, {
     // rotation around horizontal axis
     poi.mv.multiply(new THREE.Matrix4().makeRotationX(-poi.coords.lat*Math.PI/180));
 
-
-    // translation towards unity vector
-//    poi.mv.multiplyVector4(new THREE.Vector4(0,0,poi.radius,1));
-
     // compute poi coords
     poi.coords.vec4=new THREE.Vector4(0,0,-poi.radius,1);
     poi.coords.vec4.applyMatrix4(poi.mv);
@@ -182,9 +178,9 @@ $.extend(true, POI.prototype, {
 
   getCoords3D: function poi_getCoords3D(){
     var poi=this;
-    var x=poi.mesh.position.x;
-    var y=poi.mesh.position.y;
-    var z=poi.mesh.position.z;
+    var x=poi.object3D.position.x;
+    var y=poi.object3D.position.y;
+    var z=poi.object3D.position.z;
     // rectangular to polar coordinates
     var r=Math.sqrt(x*x+y*y+z*z);
     var phi=Math.acos(z/r);

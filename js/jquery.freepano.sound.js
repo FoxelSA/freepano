@@ -92,19 +92,23 @@ $.extend(true,SoundList.prototype,{
     $.each(sound.list,function(name){
       var soundList_elem=sound.list[name];
       if (soundList_elem.instance) {
+        soundList_elem.updateConeEffect(pos);
         soundList_elem.instance.pos(
           pos.x,
           pos.y,
-          pos.z
+          (soundList_elem.innerAngle)?((soundList_elem.coneEffect)?pos.z/soundList_elem.coneEffect-pos.z:9999999):pos.z
         );
-        soundList_elem.updateConeEffect();
+        var v=new THREE.Vector3(pos.x,pos.y,pos.z).normalize();
+        v.z=1;
+        v.normalize();
+        soundList_elem.instance.orientation(v.x,v.y,v.z);
       }
     });
   }, // soundList_set_position_howler
 
   on_panorama_ready: function soundList_on_panorama_ready(panorama_event) {
     var panorama=this;
-//    Howler.orientation(0.5,0,-1,0,1,0);
+    Howler.orientation(0,0,-1,0,1,0);
   },
 
   on_panorama_dispose: function soundList_on_panorama_dispose(panorama_event) {
@@ -232,10 +236,10 @@ $.extend(true,Sound.prototype,{
     }
   }, // sound_callback
 
-  updateConeEffect: function sound_updateConeEffect() {
+  updateConeEffect: function sound_updateConeEffect(pos) {
     var sound=this;
-    if (sound.innerAngle && sound.instance._pos) { 
-      var v=new THREE.Vector3(sound.instance._pos[0],sound.instance._pos[1],sound.instance._pos[2]).normalize(); 
+    if (sound.innerAngle) { 
+      var v=new THREE.Vector3(pos.x,pos.y,pos.z).normalize(); 
       var alpha=Math.abs(v.angleTo(new THREE.Vector3(0,0,-1))/(Math.PI/180));
       var gain;
       if (alpha<sound.innerAngle) {
@@ -246,9 +250,10 @@ $.extend(true,Sound.prototype,{
         var n=(alpha-sound.innerAngle)/(sound.outerAngle-sound.innerAngle);
         gain=(1-n)+sound.outerGain*n;
       }
-      if (sound.instance._volume!=gain) {
-        sound.instance.volume(gain);
-      }
+//      if (sound.instance._volume!=gain) {
+//        sound.instance.volume(gain);
+//      }
+      sound.coneEffect=gain;
     }
   } // sound_updateConeEffect
 

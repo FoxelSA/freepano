@@ -124,13 +124,10 @@ $(document).ready(function(){
                           src: ["sound/argo.mp3"],
                           autoplay: true,
                           loop: true,
-                          innerAngle: 15,
-                          outerAngle: 30,
-                          outerGain: 0,
                           fadeOut: 2000,
-//                          coneInnerAngle: 45,
- //                         coneOuterAngle: 90,
-  //                        coneOuterGain: 0,
+                          coneInnerAngle: 30,
+                          coneOuterAngle: 90,
+                          coneOuterGain: 0,
                           rolloffFactor: 0
                         },
                         plop: {
