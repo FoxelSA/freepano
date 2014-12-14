@@ -537,7 +537,7 @@ $.extend(true,Panorama.prototype,{
     }, // getMouseCoords
 
     mousedown: function panorama_mousedown(e){
-      this.mode.mousedown=true;
+      this.mode.rotate=true;
       if (isLeftButtonDown(e)) {
         e.preventDefault();
         this.mousedownPos={
@@ -556,7 +556,7 @@ $.extend(true,Panorama.prototype,{
       if (!this.sphere.done) {
         return;
       }
-      if (this.mode.mousedown) {
+      if (this.mode.rotate) {
         e.preventDefault();
         if (isLeftButtonDown(e)) {
           var mouseCoords=this.getMouseCoords(e);
@@ -569,7 +569,7 @@ $.extend(true,Panorama.prototype,{
     },
 
     mouseup: function panorama_mouseup(e){
-      this.mode.mousedown=false;
+      this.mode.rotate=false;
     },
 
     // return current zoom factor
