@@ -389,7 +389,7 @@ $.extend(true,Controls.prototype, {
         if (!controls.touch.move.active)
             return;
 
-        if (controls.panorama.mode.mousedown)
+        if (controls.panorama.mode.rotate)
             return; // do not interfere with mouse events
 
         // impersonate mouse properties
@@ -413,7 +413,7 @@ $.extend(true,Controls.prototype, {
         if (!controls.touch.move.active)
             return;
 
-        if (controls.panorama.mode.mousedown)
+        if (controls.panorama.mode.rotate)
             return; // do not interfere with mouse events
 
         if (!controls.panorama.sphere.done)
@@ -423,15 +423,7 @@ $.extend(true,Controls.prototype, {
         e.clientX = e.center.x;
         e.clientY = e.center.y;
 
-        // mouse coordinates
-        var coords = controls.panorama.getMouseCoords(e);
-
-        // set panorama coordinates
-        controls.panorama.lon = controls.panorama.mousedownPos.lon-(coords.lon-controls.panorama.mousedownPos.mouseCoords.lon);
-        controls.panorama.lat = controls.panorama.mousedownPos.lat-(coords.lat-controls.panorama.mousedownPos.mouseCoords.lat);
-
-        // draw
-        controls.panorama.drawScene();
+        return controls.panorama.mousemove(e);
 
     },
 
