@@ -206,6 +206,8 @@ $.extend(true, POI.prototype, {
 
   mousedown: function poi_mousedown(e) {
     console.log('mousedown',this);
+    this.panorama.mode.rotate=false;
+    return false;
   },
 
   mouseup: function poi_mouseup(e) {
@@ -217,13 +219,29 @@ $.extend(true, POI.prototype, {
   },
 
   _mousedown: function _poi_mousedown(e){
+
     var poi=this;
-    poi.panorama.poi._active=poi;
+    var poi_list=poi.panorama.poi;
+
+    // set poi mode to active
+    poi_list._active=poi;
+    this.setColor(this.color.active);
+
+    // restore poi color on mouseup
     $(document).on('mouseup.poi_mousedown',function(){
-      poi.panorama.poi._active=null;
+      if (poi_list._active) {
+        if (poi.color && poi_list.hover.length && poi_list.hover[0].object.parent.name==poi_list._active.name) {
+          poi.setColor(poi.color.hover);
+          poi.panorama.drawScene();
+        } else {
+          poi.setColor(poi.color.normal);
+          poi.panorama.drawScene();
+        }
+        poi_list._active=null;
+      }
       $(document).off('mouseup.poi_mousedown');
     });
-    this.setColor(this.color.active);
+
   }, // _poi_mousedown
 
   _mouseup: function _poi_mouseup(e){
