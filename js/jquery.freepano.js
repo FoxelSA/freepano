@@ -556,6 +556,7 @@ $.extend(true,Panorama.prototype,{
       if (!this.sphere.done) {
         return;
       }
+
       if (this.mode.rotate) {
         e.preventDefault();
         if (isLeftButtonDown(e)) {
@@ -644,12 +645,15 @@ $.extend(true,Panorama.prototype,{
       this.zoomUpdate();
     },
 
-    drawScene: function panorama_drawScene(){
+    drawScene: function panorama_drawScene(callback){
       if (!this.sphere.done) {
         return;
       }
       var panorama=this;
-      requestAnimationFrame(function(){panorama.render()});
+      requestAnimationFrame(function(){
+        panorama.render();
+        if (callback) callback();
+      });
     },
 
     render: function render() {
