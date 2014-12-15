@@ -316,7 +316,7 @@ $.extend(true, POI_list.prototype, {
       if (!(panorama.poi.raycaster instanceof THREE.Raycaster)) {
         panorama.poi.raycaster=new THREE.Raycaster(panorama.poi.raycaster);
       }
-      $(panorama.container).off('.poi_list').on('mousemove.poi_list mousedown.poi_list mouseup.poi_list click.poi_list',function(e) {
+      $('canvas:first',panorama.container).off('.poi_list').on('mousemove.poi_list mousedown.poi_list mouseup.poi_list click.poi_list',function(e) {
         if (panorama.poi) {
           return panorama.poi['on_panorama_'+e.type](e);
         }
@@ -406,7 +406,23 @@ $.extend(true, POI_list.prototype, {
 
     on_panorama_mousemove: function poiList_on_panorama_mousemove(e) {
 
-      var poi_list=this
+      var poi_list=this;
+      var panorama=this.panorama;
+
+      if (e.pageX!=undefined) {
+        // save mouse position
+        panorama.pageX=e.pageX;
+        panorama.pageY=e.pageY;
+        panorama.clientX=e.clientX;
+        panorama.clientY=e.clientY;
+      } else {
+        // use saved mouse position
+        e.pageX=panorama.pageX;
+        e.pageY=panorama.pageY;
+        e.clientX=panorama.clientX;
+        e.clientY=panorama.clientY;
+      }
+
       var hover=poi_list.get_mouseover_list(e);
 
       // if mouse is hovering a poi now
