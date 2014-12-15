@@ -535,7 +535,9 @@ $.extend(true,Controls.prototype, {
 
         // update
         if (needDrawScene)
-            controls.panorama.drawScene();
+            controls.panorama.drawScene(function(){
+              $('canvas:first',controls.panorama.container).trigger('mousemove');
+            });
 
     },
 
