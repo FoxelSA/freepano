@@ -611,7 +611,9 @@ $.extend(true,Panorama.prototype,{
       this.camera.instance.fov=this.updateFov();
       if (fov!=this.camera.instance.fov) {
         this.camera.instance.updateProjectionMatrix();
-        this.drawScene();
+        this.drawScene(function(){
+          $('canvas:first',this.container).trigger('mousemove');
+        });
       }
     },
 
