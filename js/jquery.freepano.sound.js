@@ -92,11 +92,10 @@ $.extend(true,SoundList.prototype,{
     $.each(sound.list,function(name){
       var soundList_elem=sound.list[name];
       if (soundList_elem.instance) {
-        soundList_elem.updateConeEffect(pos);
         soundList_elem.instance.pos(
           pos.x,
           pos.y,
-          (soundList_elem.innerAngle)?((soundList_elem.coneEffect)?pos.z/soundList_elem.coneEffect-pos.z:9999999):pos.z
+          pos.z
         );
         var v=new THREE.Vector3(pos.x,pos.y,pos.z).normalize();
         v.z=1;
@@ -150,10 +149,11 @@ $.extend(true,Sound.prototype,{
   defaults: {
     type: 'howler',
     fadeOut: 0,
+/*
     innerAngle: 0,
     outerAngle: 0,
     outerGain: 0
-
+*/
   }, // Sound defaults
 
   options: {
@@ -192,6 +192,30 @@ $.extend(true,Sound.prototype,{
       sound.instance=null;
     });
   }, // sound_dispose
+
+  cmd: function sound_cmd(cmd,args) {
+    var sound=this;
+    var args=(args)?Array.prototype.slice.apply(args):[];
+    if (sound.instance[cmd+'_'+sound.type]) {
+      sound[cmd+'_'+sound.type].apply(sound,args);
+    } else if (sound.instance[cmd]) {
+      sound.instance[cmd].apply(sound.instance,args);
+    } else {
+      console.log('unknown command "'+cmd+'" for '+sound)
+    }
+  },
+
+  pause: function sound_pause() {
+    this.cmd('pause',arguments);
+  },
+
+  fade: function sound_fade() {
+    this.cmd('fade',arguments);
+  },
+
+  stop: function sound_stop() {
+    this.cmd('stop',arguments);
+  },
 
   new_howler: function sound_newHowler() {
     var sound=this;
@@ -236,6 +260,7 @@ $.extend(true,Sound.prototype,{
     }
   }, // sound_callback
 
+/*
   updateConeEffect: function sound_updateConeEffect(pos) {
     var sound=this;
     if (sound.innerAngle) { 
@@ -256,6 +281,7 @@ $.extend(true,Sound.prototype,{
       sound.coneEffect=gain;
     }
   } // sound_updateConeEffect
+*/
 
 }); // extend Sound.prototype
 
