@@ -83,3 +83,8 @@ Public License and/or a compatible license and other copyright notices.
     Copyright (c) 2010-2014, Vladimir Agafonkin<br />
     Copyright (c) 2010-2011, CloudMade<br />
     Leaflet is licensed under the [BSD 2-Clause license](http://opensource.org/licenses/BSD-2-Clause).
+
+*   __howler.js 2.0.0-beta__<br />
+    <[http://howlerjs.com](http://howlerjs.com)><br />
+    Copyright (c) 2013-2014, James Simpson of GoldFire Studios, goldfirestudios.com<br />
+    howler.js is licensed under the [MIT license](http://opensource.org/licenses/MIT).
