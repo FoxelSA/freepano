@@ -61,11 +61,22 @@ $.extend(true, Map.prototype, {
         active: false
     },
 
-    show: function map_show(map) {
+    show: function map_show() {
+        var map=this;
 
         // dom
         var pano = map.panorama;
         var container = $(pano.container);
+
+        // map container exists ?
+        var div=$('.map',container);
+        if (div.length) {
+            // then show map if hidden and/or return
+            if (!$(div).is(':visible')) {
+                div.show();
+            }
+            return;
+        }
 
         // Append map
         var mapContainer = $('<div>',{'class':'map'});
@@ -194,7 +205,7 @@ $.extend(true, Map.prototype, {
 
         // No elligible markers
         if (markers.length == 0) {
-            this.hide(this);
+            this.hide();
             return;
         }
 
@@ -210,44 +221,55 @@ $.extend(true, Map.prototype, {
         else
             leaflet.setZoom(leaflet.getZoom()-1);
 
+    }, // map_show
+
+    hide: function map_hide() {
+        $('.map',this.panorama.container).hide();
     },
 
-    hide: function map_hide(map) {
-        var pano = map.panorama;
-        var container = $(pano.container);
-        container.find('.map').remove();
+    remove: function map_remove() {
+        $('.map',this.panorama.container).remove();
     },
 
     init: function map_init() {
         var map = this;
 
-        if (map.active)
-            map.show(map);
-
         // watch touch move properties
         watch(map,['active'], function() {
             if (map.active)
-                map.show(map);
+                map.show();
             else
-                map.hide(map);
+                map.hide();
         });
 
-        map.callback();
-    }
+        map.callback({target: map, type: 'ready'});
+
+    }, // map_init
+
+    callback: function map_callback(e) {
+        var map=e.target;
+        switch(e.type){
+            case 'ready':
+                // chain with old panorama.prototype.init on callback
+                map.panorama_init.call(map.panorama);
+                break;
+        }
+    } // map_callback
 
 });
 
 // register freepano.map plugin
 
 $.extend(Map.prototype,{
-    // save pointer to Panorama.prototype.init in Map.prototype
-    panorama_init: Panorama.prototype.init
+    // save pointers to overrided Panorama.prototype methods 
+    panorama_init: Panorama.prototype.init,
+    panorama_callback: Panorama.prototype.callback
 });
 
 $.extend(Panorama.prototype,{
 
   // hook Map.prototype.init to Panorama.prototype.init
-  init: function panorama_init() {
+  init: function map_panorama_init() {
 
     var panorama=this;
 
@@ -263,14 +285,6 @@ $.extend(Panorama.prototype,{
           // pass panorama instance pointer to map instance
           panorama: panorama,
 
-          // to be run when map is instantiated
-          callback: function() {
-
-            // chain with old panorama.prototype.init on callback
-            Map.prototype.panorama_init.call(panorama);
-
-          }
-
         },panorama.map));
 
       }
@@ -281,6 +295,32 @@ $.extend(Panorama.prototype,{
       Map.prototype.panorama_init.call(panorama);
 
     }
-  }
+  }, // map_panorama_init
+
+  // hook to Panorama.prototype.callback
+  callback: function map_panorama_callback(panorama_event) {
+    var panorama=this;
+    var map=panorama.map;
+
+    if (map!=undefined) {
+      switch(panorama_event.type){
+
+        // show map on pano ready
+        case 'ready':
+          if (map.active) {
+            map.show();
+          } else {
+            map.hide();
+          }
+          break;
+
+      } // switch panorama_event.type
+    }
+
+    // chain with previous panorama callback
+    map.panorama_callback.apply(panorama,[panorama_event]);
+
+  } // map_panorama_callback
+
 });
 
