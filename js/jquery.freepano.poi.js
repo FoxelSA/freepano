@@ -249,15 +249,17 @@ $.extend(true, POI.prototype, {
   }, // _poi_mouseup
 
   _mousein: function _poi_mousein(e){
-    if (!this.color || (e.which && this._mouseio_disableOnMouseDown)) return;
-    if (this.panorama.poi._active) return;
+    if (!this.color || this.panorama.mode.rotate) return;
     this.panorama.poi._hover=this;
+    if (this.panorama.poi._active) {
+      this.setColor(this.color.active);
+      return;
+    }
     this.setColor(this.color.hover);
   }, // _poi_mousein
 
   _mouseout: function _poi_mouseout(e){
-    if (!this.color || (e.which && this._mouseio_disableOnMouseDown)) return;
-    if (this.panorama.poi._active) return;
+    if (!this.color || this.panorama.mode.rotate) return;
     this.panorama.poi._hover=null;
     this.setColor(this.color.normal);
   }, // _poi_mouseout
@@ -272,9 +274,7 @@ $.extend(true, POI.prototype, {
   scale: function poi_scale(scaleFactor) {
     this.object3D.scale(scaleFactor);
     this.panorama.drawScene();
-  }, // poi_scale
-
-  _mouseio_disableOnMouseDown: true
+  } // poi_scale
 
 }); // extend POI.prototype
 
