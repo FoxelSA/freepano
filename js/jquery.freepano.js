@@ -596,12 +596,12 @@ $.extend(true,Panorama.prototype,{
         fov=this.fov.max;
         this.camera.zoom.current/=fovRatio;
       }
-      
+
       // convert to vertical fov
       if (this.renderer.domElement.width>this.renderer.domElement.height) {
         fov=fov/this.renderer.domElement.width*this.renderer.domElement.height;
       }
-      
+
       return fov;
     },
 

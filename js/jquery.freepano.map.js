@@ -45,6 +45,10 @@
 // Plugin constructor
 function Map(options)
 {
+    if (!(this instanceof Map)) {
+      return new Map(options);
+    }
+
     // merge specified options with default options and extend this instance
     $.extend(true,this,Map.prototype.defaults,options);
 
@@ -58,10 +62,54 @@ $.extend(true, Map.prototype, {
     // default values
     defaults: {
         // active
-        active: false
+        active: false,
+
+        // leaflet defaults
+        leaflet: {
+
+            // see http://leafletjs.com/reference.html#tilelayer-options
+            tileLayer: {
+
+                url_template: 'http://{s}.tile.osm.org/{z}/{x}/{y}.png',
+
+                options: {
+                     attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+                }
+
+            },
+
+            origin: [51.505, -0.09], // default geographical coordinates
+
+            zoom: {
+                base: 4,
+                min: 3,
+                max: 25,
+                native: 18,
+                bounds: 18
+            },
+
+            // see http://leafletjs.com/reference.html#map-zoompanoptions
+            zoompan_options: undefined,
+
+            icon: {
+                iconUrl: 'img/marker_icon.png', // marker icon url
+                shadowUrl: 'img/marker_shadow.png', // marker shadow image url
+                iconSize: [22.5, 36.25], // marker size
+                shadowSize: [40.75, 36.25], // marker shadow size
+                iconAnchor: [22.5/2, 36.25], // point corresponding to marker's location
+                shadowAnchor: [22.5/2, 36.25],
+                popupAnchor: [0, 0] // point from which menu should popup relative to the iconAnchor
+            },
+
+            icon_highlighted: {
+                iconUrl:     'img/marker_icon_highlight.png',
+                shadowUrl:   'img/marker_shadow.png'
+            }
+        }
     },
 
     show: function map_show() {
+
         var map=this;
 
         // dom
@@ -82,72 +130,34 @@ $.extend(true, Map.prototype, {
         var mapContainer = $('<div>',{'class':'map'});
         container.append(mapContainer);
 
-        // Zoom Levels
-        var zoom = {
-            base: 4,
-            min: 3,
-            max: 25,
-            native: 18,
-            bounds: 18
-        };
-
         // Create leaflet map object
-        var leaflet = L.map(mapContainer[0], {
+        map.leaflet.instance = L.map(mapContainer[0], {
             keyboard: false,
             scrollWheelZoom: true,
-            minZoom: zoom.min,
-            maxZoom: zoom.max
-        }).setView([51.505, -0.09], zoom.base);
+            minZoom: map.leaflet.zoom.min,
+            maxZoom: map.leaflet.zoom.max
+        }).setView(map.leaflet.origin, map.leaflet.zoom.base, map.leaflet.zoompan_options);
 
-        // add an OpenStreetMap tile layer
-        L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
-            minZoom: zoom.min,
-            maxZoom: zoom.max,
-            maxNativeZoom: zoom.native
-        }).addTo(leaflet);
-
-        // Compute icon sizes and anchors
-        var iconSize     = [22.5, 36.25];
-        var shadowSize   = [40.75, 36.25];
-        var iconAnchor   = [iconSize[0] / 2, 36.25];
-        var shadowAnchor = [iconSize[0] / 2, 36.25];
+        // add a tile layer
+        L.tileLayer(map.leaflet.tileLayer.url_template, $.extend(true,{},map.leaflet.tileLayer.options,{
+            minZoom: map.leaflet.zoom.min,
+            maxZoom: map.leaflet.zoom.max,
+            maxNativeZoom: map.leaflet.zoom.native
+        })).addTo(leaflet);
 
         // Create marker icon
-        var markerIcon = L.icon({
-            iconUrl:     'img/marker_icon.png', // Icon image file path
-            shadowUrl:   'img/marker_shadow.png', // Shadow image file path
-
-            iconSize:     iconSize, // size of the icon
-            shadowSize:   shadowSize, // size of the shadow
-
-            iconAnchor:   iconAnchor, // point of the icon which will correspond to marker's location
-            shadowAnchor: shadowAnchor,  // the same for the shadow
-
-            popupAnchor:  [0, 0] // point from which the popup should open relative to the iconAnchor
-        });
+        var markerIcon = L.icon(map.leaflet.icon);
 
         // Create highlighted marker icon
-        var markerIcon_Highlighted = L.icon({
-            iconUrl:     'img/marker_icon_highlight.png', // Icon image file path
-            shadowUrl:   'img/marker_shadow.png', // Shadow image file path
-
-            iconSize:     iconSize, // size of the icon
-            shadowSize:   shadowSize, // size of the shadow
-
-            iconAnchor:   iconAnchor, // point of the icon which will correspond to marker's location
-            shadowAnchor: shadowAnchor,  // the same for the shadow
-
-            popupAnchor:  [0, 0] // point from which the popup should open relative to the iconAnchor
-        });
+        var markerIcon_Highlighted = L.icon($.extend(true,{},map.leaflet.icon,map.leaflet.icon_highlighted));
 
         var markers = [];
 
         // Iterate over panoramas and create markers
-        $.each(pano.list.images, function( index, value ) {
+        $.each(pano.list.images, function( index, image ) {
 
             // No geo coordinates
-            if (value.coords === undefined || value.coords === null)
+            if (image.coords === undefined || image.coords === null)
                 return;
 
             // Icon
@@ -166,16 +176,17 @@ $.extend(true, Map.prototype, {
                 icon = markerIcon_Highlighted;
 
             // Create marker
-            var marker = L.marker([value.coords.lat, value.coords.lon], {icon: icon})
+            var marker = L.marker([image.coords.lat, image.coords.lon], {icon: icon})
             .on('click', function(e) {
 
                 // Reset all markers to default icon
-                $.each(markers, function( index, value ) {
-                    value.setIcon(markerIcon);
+                $.each(markers, function( index, marker ) {
+                    if (marker!==e.target)
+                      marker.setIcon(markerIcon);
                 });
 
                 // Set highlighted icon for marker
-                marker.setIcon(markerIcon_Highlighted);
+                e.target.setIcon(markerIcon_Highlighted);
 
                 // Check if panorama has changed, then change it
                 var changed = e.target.panorama.index != pano.list.currentImage;
@@ -191,7 +202,7 @@ $.extend(true, Map.prototype, {
             $.extend( marker, {
                 panorama: {
                     index: index,
-                    value: value
+                    image: image
                 }
             });
 
@@ -216,8 +227,8 @@ $.extend(true, Map.prototype, {
         leaflet.fitBounds(markersGroup.getBounds());
 
         // Unzoom from bounds
-        if (leaflet.getZoom() > zoom.bounds)
-            leaflet.setZoom(zoom.bounds);
+        if (leaflet.getZoom() > map.leaflet.zoom.bounds)
+            leaflet.setZoom(map.leaflet.zoom.bounds);
         else
             leaflet.setZoom(leaflet.getZoom()-1);
 
