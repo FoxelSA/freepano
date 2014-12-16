@@ -131,7 +131,7 @@ $.extend(true, Map.prototype, {
         container.append(mapContainer);
 
         // Create leaflet map object
-        map.leaflet.instance = L.map(mapContainer[0], {
+        var leaflet = map.leaflet.instance = L.map(mapContainer[0], {
             keyboard: false,
             scrollWheelZoom: true,
             minZoom: map.leaflet.zoom.min,
