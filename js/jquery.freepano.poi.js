@@ -274,7 +274,15 @@ $.extend(true, POI.prototype, {
   }, // poi_setColor
 
   scale: function poi_scale(scaleFactor) {
-    this.object3D.scale(scaleFactor);
+    if (scaleFactor instanceof THREE.Vector3) {
+      this.object3D.scale.x=scaleFactor.x;
+      this.object3D.scale.y=scaleFactor.y;
+      this.object3D.scale.z=scaleFactor.z;
+    } else {
+      this.object3D.scale.x=scaleFactor;
+      this.object3D.scale.y=scaleFactor;
+      this.object3D.scale.z=scaleFactor;
+    }
     this.panorama.drawScene();
   } // poi_scale
 

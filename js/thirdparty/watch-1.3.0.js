@@ -452,7 +452,7 @@
 
     };
 
-    setInterval(loop, 50);
+//    setInterval(loop, 50);
 
     WatchJS.watch = watch;
     WatchJS.unwatch = unwatch;

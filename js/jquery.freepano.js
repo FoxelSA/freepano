@@ -61,6 +61,11 @@ $.extend(true,Texture.prototype,{
   defaults: {
     dirName: null,
     baseName: null,
+    renderer: {
+      precision: 'lowp',
+      antialias: false,
+      alpha: false
+    },
     options: {
       wrapS: THREE.clampToEdgeWrapping,
       wrapT: THREE.clampToEdgeWrapping,
