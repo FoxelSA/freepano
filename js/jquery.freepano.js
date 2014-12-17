@@ -562,15 +562,17 @@ $.extend(true,Panorama.prototype,{
         return;
       }
 
-      if (this.mode.rotate) {
-        e.preventDefault();
-        if (isLeftButtonDown(e)) {
+      if (isLeftButtonDown(e)) {
+        if (this.mode.rotate) {
+          e.preventDefault();
           var mouseCoords=this.getMouseCoords(e);
           this.lon=(this.mousedownPos.lon-(mouseCoords.lon-this.mousedownPos.mouseCoords.lon))%360;
           this.lat=this.mousedownPos.lat-(mouseCoords.lat-this.mousedownPos.mouseCoords.lat);
           if (this.lon<0) this.lon+=360;
           this.drawScene();
         }
+      } else {
+        this.mode.rotate=false;
       }
     },
 
