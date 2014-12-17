@@ -252,7 +252,9 @@ $.extend(true, POI.prototype, {
     if (!this.color || this.panorama.mode.rotate) return;
     this.panorama.poi._hover=this;
     if (this.panorama.poi._active) {
-      this.setColor(this.color.active);
+      if (this.panorama.poi._active==this) {
+        this.setColor(this.color.active);
+      }
       return;
     }
     this.setColor(this.color.hover);
