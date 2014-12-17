@@ -89,6 +89,10 @@ html, body {
     height:250px;
 }
 
+footer {
+  pointer-events: none;
+}
+
 footer, footer > .shade, footer > .main {
     position:absolute;
     bottom:0;
@@ -126,6 +130,7 @@ footer .caption {
         }
 
 footer .logo {
+    pointer-events: all;
     position:absolute;
     top:18px;
     right:10px;
