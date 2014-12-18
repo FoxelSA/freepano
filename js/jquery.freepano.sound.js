@@ -153,10 +153,11 @@ $.extend(true,Sound.prototype,{
   }, // Sound defaults
 
   options: {
+
+    // redirect sound.type specific event handlers calls to sound instance via sound.callback
     howler: {
       onload: function howler_onload() {
         Sound.prototype.callback({type:'load'});
-
       },
       onloaderror: function howler_onloaderror() {
         Sound.prototype.callback({type:'loaderror'});
@@ -247,12 +248,13 @@ $.extend(true,Sound.prototype,{
 
   }, // sound_disposeHowler
 
-  callback: function sound_callback(sound_event) {
+  callback: function sound_callback(_sound_event) {
     var sound=this;
+    var sound_event=$.extend(true,{target: sound},_sound_event);
     if (sound['on'+sound_event.type]) {
       sound['on'+sound_event.type](sound_event);
     } else {
-      console.log('unhandled sound event: '+sound_event.type,sound);
+      console.log('unhandled sound event: '+sound_event.type,sound_event);
     }
   }, // sound_callback
 
