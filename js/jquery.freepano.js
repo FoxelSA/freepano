@@ -543,8 +543,8 @@ $.extend(true,Panorama.prototype,{
     }, // getMouseCoords
 
     mousedown: function panorama_mousedown(e){
-      this.mode.rotate=true;
       if (isLeftButtonDown(e)) {
+        this.mode.rotate=true;
         e.preventDefault();
         this.mousedownPos={
           lon: this.lon,
