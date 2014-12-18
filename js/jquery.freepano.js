@@ -61,11 +61,6 @@ $.extend(true,Texture.prototype,{
   defaults: {
     dirName: null,
     baseName: null,
-    renderer: {
-      precision: 'lowp',
-      antialias: false,
-      alpha: false
-    },
     options: {
       wrapS: THREE.clampToEdgeWrapping,
       wrapT: THREE.clampToEdgeWrapping,
@@ -309,6 +304,11 @@ $.extend(true,Panorama.prototype,{
       camera: undefined,
       sphere: undefined,
       postProcessing: undefined,
+      renderer: {
+        precision: 'lowp',
+        antialias: false,
+        alpha: false
+      },
       lon: 0,
       lat: 0,
       phi: 0,
@@ -345,6 +345,7 @@ $.extend(true,Panorama.prototype,{
       if (panorama.sphere!==undefined) {
         if (!(panorama.sphere instanceof Sphere)) {
           panorama.sphere=new Sphere($.extend(true,{
+            panorama: panorama,
             callback: function(){
               panorama.resize();
               panorama.callback({type: 'ready'});

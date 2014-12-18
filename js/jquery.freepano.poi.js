@@ -339,7 +339,7 @@ $.extend(true, POI_list.prototype, {
       $.each(poi_list.list,function(name) {
         var poi=this;
         poi_list.list[name].instance=null;
-        poi_list.list[name].instance=new POI($.extend(true,poi,{
+        poi_list.list[name].instance=new POI($.extend(true,{},poi_list.defaults,poi,{
           name: name,
           panorama: panorama
         }));

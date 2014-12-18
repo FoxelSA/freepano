@@ -46,52 +46,254 @@ $(document).ready(function(){
 
   $('#pano').panorama({
 
-
-    rotation: {
-      heading: -90,
-      tilt: 90,
-      roll: 0
-    },
-
-    camera: {
-      zoom: {
-        max: 1.5
-      }
-    },
+/*
+    // camera field of view
 
     fov: {
-      max: 140,
-      start: 120
-    },
 
-/*
-    // for a single panorama (when not using list below) , or for sphere and texture defaults
-    sphere: {
-      texture: {
-        dirName: 'panoramas/result_1403179805_224762-0-25-1/',
-        baseName: 'result_1403179805_224762-0-25-1',
-        columns: 4,
-        rows: 2
-      }
-    },
+      // initial field of view
+      start: 120,
+
+      // minimal field of view
+      min: 1,
+
+      // maximal field of view
+      // fov > 120 results non-rectilinear projection
+      max: 120
+
+    }, // fov
+
 */
 
-    list: {
-        defaults: {
-          dirName: 'panoramas/result_1403179805_224762-0-25-1',
-          prefix: 'result_',
-          suffix: '-0-25-1',
-          columns: 16,
-          rows: 8
+/*
+    // initial panorama sphere rotation
+
+    rotation: {
+
+      // vertical axis rotation
+      heading: 0,
+
+      // horizontal axis rotation
+      // adjust in the viewer using <shift>-mousewheel
+      tilt: 0,
+
+      // depth axis rotation
+      // adjust in the viewer using <alt>-mousewheel
+      roll: 0,
+
+      // rotation step for tilt and roll adjustment
+      step: 0.1
+
+    }, // rotation
+
+*/
+
+/*
+    limits: {
+
+      // panorama vertical rotation limits
+      lat: {
+        min: -85,
+        max: 85
+      }
+
+    }
+
+*/
+
+/*
+    // camera object options
+
+    camera: {
+
+      zoom: {
+
+        // initial zoom value
+        current: 1.0,
+
+        // maximal zoom value
+        max: 1.5
+
+      }
+
+    }, // camera
+*/
+
+    // sphere object defaults
+    // normally you dont need to change the parameters
+
+    sphere: {
+
+    /*
+
+      radius: 15,
+
+      widthSegments: 36,
+
+      heightSegments: 18,
+
+    */
+
+      // texture options
+      // You don't need this if you are using the panorama list object below
+
+      texture: {
+
+        // relative url of tiles directory
+        dirName: 'panoramas/result_1403179805_224762-0-25-1/',
+
+        // tile filename prefix
+        baseName: 'result_1403179805_224762-0-25-1',
+
+        // full panorama dimension, in tiles
+        columns: 16,
+        rows: 8
+
+      } // texture
+
+    }, // sphere
+
+ /*
+    // sound options
+
+    sound: {
+
+      list: {
+
+        ambiance1: {
+          src: ["ambiance1.mp3"]
         },
 
+        ambiance2: {
+          src: ["ambiance2.mp3"]
+        }
+      }
+
+    },
+
+*/
+
+/*
+    // points of interest
+
+    poi: {
+
+      // default values for POIs
+
+      defaults: {
+
+          // when color is set mouse event handlers are called
+          color: {
+             active: '#0000ff',
+             hover: '#ffffff',
+             normal: '#000000'
+          },
+
+          // event handlers below are already filtered
+          // eg: mousein and mouseout are not triggered during panorama rotation
+          // if you really need, you can bind to the private methods (eg: _mousein)
+
+          mousein: function poi_mousein(e) {
+            console.log('mousein',this);
+          },
+
+          mouseout: function poi_mouseout(e) {
+            console.log('mouseout',this);
+          },
+
+          mouseover: function poi_mouseover(e) {
+          },
+
+          mousedown: function poi_mousedown(e) {
+            console.log('mousedown',this);
+            this.panorama.mode.rotate=false;
+            return false;
+          },
+
+          mouseup: function poi_mouseup(e) {
+            console.log('mouseup',this);
+          },
+
+
+          click: function poi_click(e) {
+            console.log('click',this);
+          },
+      }
+
+      list: {
+
+        circle: {
+
+            coords: {
+              lon: -90,
+              lat: 0
+            },
+
+            // sound bound to a poi
+            sound: {
+
+              list: {
+                beep: {
+                  src: ["sound/argo.mp3"],
+                  autoplay: true,
+                  loop: true,
+                  fadeOut: 2000,
+                  coneInnerAngle: 30,
+                  coneOuterAngle: 90,
+                  coneOuterGain: 0,
+                  rolloffFactor: 0
+                },
+                plop: {
+                  src: ["plop.mp3"]
+                }
+              }
+            }
+        } // circle
+      } // poi.list
+    }, // poi
+
+/*
+    // when using jquery.freepano.list.js,
+    // you can set the preferences for several images below
+    // instead of sphere.texture above
+
+    list: {
+
+        // default options for elements of the 'images' object below
+        // (will be merged with the sphere.texture properties above)
+
+        defaults: {
+
+          // tiles directory name
+          dirName: 'panoramas/result_1403179805_224762-0-25-1',
+
+          // tile filename prefix
+          prefix: 'result_',
+
+          // tile filename suffix
+          suffix: '-0-25-1',
+
+          // full panorama dimension, in tiles
+          columns: 16,
+          rows: 8
+
+        },
+
+        // initial image
+        // default is the first element of 'images' below
 //      initialImage: '1403179809_224762',
 
+        // panorama list
         images: {
+
+          // the panorama instance will be extended
+          // 1. with the list.defaults above
+          // 2. with the object below
+
           '1403179805_224762': {
-          rotation: {
-            tilt: 0
-          },
+            rotation: {
+               tilt: 0
+            },
             coords: {
               lon: 3.902137,
               lat: 43.600233,
@@ -113,7 +315,7 @@ $(document).ready(function(){
                       active: '#0000ff',
                       hover: '#ffffff',
                       normal: '#000000'
-                    },                      
+                    },
                     coords: {
                       lon: -90,
                       lat: 0
@@ -131,7 +333,7 @@ $(document).ready(function(){
                           rolloffFactor: 0
                         },
                         plop: {
-                          url: "plop.mp3"
+                          src: ["plop.mp3"]
                         }
                       }
                     }
@@ -151,9 +353,9 @@ $(document).ready(function(){
                       active: '#0000ff',
                       hover: '#ffffff',
                       normal: '#000000'
-                    },                      
+                    },
                 }, // square
-                
+
                 triangle: {
                     mesh: function test2_mesh() {
                       var poi=this;
@@ -173,7 +375,7 @@ $(document).ready(function(){
                       active: '#0000ff',
                       hover: '#ffffff',
                       normal: '#000000'
-                    },                      
+                    },
                     coords: {
                       lon: -80,
                       lat: 0
@@ -184,6 +386,7 @@ $(document).ready(function(){
             }, // poi
           },
 
+          // second image
           '1403179809_224762': {
             dirName: 'panoramas/result_1403179809_224762-0-25-1',
             coords: {
@@ -222,20 +425,27 @@ $(document).ready(function(){
         active: true
     },
 
+/*
+    // THREE.js renderer options
+
     renderer: {
+
       precision: 'lowp',
+
       antialias: false,
+
       alpha: false
 
     },
 
-// incompatible with panorama.list below yet
-    __pyramid: { /* remove the two underscores to use it */
+*/
+
+/* incompatible with panorama.list below yet
+    pyramid: {
       dirName: 'panoramas/result_1403179805_224762-0-25-1/512',
       baseName: 'result_1403179805_224762-0-25-1',
       levels: 4,
       preload: true
-      /*
       sphere: [
         {
           radius: 1
@@ -253,9 +463,10 @@ $(document).ready(function(){
           radius: 16
         },
       ]
-      */
     },
+*/
 
+    /*
     postProcessing: {
       enabled: false,
       edge: {
@@ -280,6 +491,8 @@ $(document).ready(function(){
         }
       }
     }
+
+    */
   }); // panorama
 
   var panorama=$('#pano').data('pano');
