@@ -329,7 +329,7 @@ $.extend(Panorama.prototype,{
     }
 
     // chain with previous panorama callback
-    map.panorama_callback.apply(panorama,[panorama_event]);
+    Map.prototype.panorama_callback.apply(panorama,[panorama_event]);
 
   } // map_panorama_callback
 
