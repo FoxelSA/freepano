@@ -206,8 +206,6 @@ $.extend(true, POI.prototype, {
 
   mousedown: function poi_mousedown(e) {
     console.log('mousedown',this);
-    this.panorama.mode.rotate=false;
-    return false;
   },
 
   mouseup: function poi_mouseup(e) {
@@ -306,6 +304,9 @@ $.extend(true, POI_list.prototype, {
 
     // save pointer to Panorama.prototype.callback in POI_list.prototype
     panorama_prototype_callback: Panorama.prototype.callback,
+
+    // save pointer to Panorama.prototype.mousedown in POI_list.prototype
+    panorama_prototype_mousedown: Panorama.prototype.mousedown,
 
     init: function poiList_init() {
 
@@ -578,7 +579,24 @@ $.extend(true,Panorama.prototype,{
     // chain with old panorama.prototype.callback
     POI_list.prototype.panorama_prototype_callback.apply(panorama,[e]);
 
-  } // poiList_panorama_prototype_callback
+  }, // poiList_panorama_prototype_callback
+
+  // hook to Panorama.prototype.mousedown
+  mousedown: function poiList_panorama_prototype_mousedown(e) {
+
+    var panorama=this;
+
+    // call previous panorama.prototype.callback
+    var ret=POI_list.prototype.panorama_prototype_mousedown.apply(panorama,[e]);
+
+    // unset panorama.mode.rotate when mousedown activated a poi
+    if (panorama.poi && panorama.poi._active){
+      panorama.mode.rotate=false;
+    }
+
+    return ret;
+
+  }
 
 }); // extend Panorama.prototype
 
