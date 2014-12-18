@@ -71,9 +71,10 @@ $.extend(true,SoundList.prototype,{
     $.each(soundList.list,function(name){
       var sound=this;
       if (!(sound instanceof Sound)) {
-        soundList.list[name]=new Sound(sound);
+        soundList.list[name]=new Sound($.extend(true,{},soundList.defaults,sound));
       }
     }); // each soundList.list
+
   }, // soundList_init
 
   callback: function soundList_callback(soundList_event) {
@@ -148,12 +149,7 @@ $.extend(true,Sound.prototype,{
 
   defaults: {
     type: 'howler',
-    fadeOut: 0,
-/*
-    innerAngle: 0,
-    outerAngle: 0,
-    outerGain: 0
-*/
+    fadeOut: 0
   }, // Sound defaults
 
   options: {
