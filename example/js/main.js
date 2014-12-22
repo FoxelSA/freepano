@@ -44,6 +44,18 @@
 
 $(document).ready(function(){
 
+  var unicorn_texture=new THREE.ImageUtils.loadTexture(
+    'unicorn.png',
+    new THREE.UVMapping(),
+    function loadTexture_onload() {
+      appinit();
+    },
+    function loadTexture_onError() {
+      $.notify('Cannot load unicorn.png !');
+    }
+  );
+
+  function appinit() {
   $('#pano').panorama({
 
 /*
@@ -241,6 +253,18 @@ $(document).ready(function(){
       },
 
       list: {
+        unicorn: {
+          mesh: new THREE.Mesh(new THREE.PlaneGeometry(Math.PI/18,Math.PI/18,1,1), new THREE.MeshBasicMaterial({
+            map: unicorn_texture,
+            transparent: true,
+          })),
+          handleTransparency: true,
+          coords: {
+            lon: -70,
+            lat: 0
+          }
+        }, // unicorn
+
         // POI identifier
         circle: {
 
@@ -555,6 +579,8 @@ $(document).ready(function(){
   function toggleEffect(effect){
     effect.pass.enabled=!effect.pass.enabled;
     panorama.drawScene();
+  }
+
   }
 
 });
