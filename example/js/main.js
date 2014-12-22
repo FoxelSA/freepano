@@ -44,22 +44,43 @@
 
 $(document).ready(function(){
 
-  var unicorn_texture=new THREE.ImageUtils.loadTexture(
+  var filesToLoad=1;
+
+  function file_onload() {
+    --filesToLoad;
+    if (!filesToLoad) {
+      $(document).trigger('filesloaded');
+    }
+  }
+
+  // load image with alpha channel to use as POI
+  window.unicorn_texture=new THREE.ImageUtils.loadTexture(
     'unicorn.png',
     new THREE.UVMapping(),
-    function loadTexture_onload() {
-      appinit();
-    },
-    function loadTexture_onError() {
+    file_onload,
+    function onloaderror() {
       $.notify('Cannot load unicorn.png !');
     }
   );
 
-  function appinit() {
+}); // ready
+
+$(document).on('filesloaded', function(){
+
   $('#pano').panorama({
 
 /*
-    // camera field of view
+ * Properties and methods defined here will extend or override properties
+ * and methods of the panorama object instance before its initialization.
+ *
+ * When using panorama.list below to define several panoramas,
+ * properties and methods defined there will extend or override properties
+ * and methods of the panorama object instance.
+ *
+ */
+
+/*
+    // panorama.fov: camera field of view
 
     fov: {
 
@@ -70,14 +91,14 @@ $(document).ready(function(){
       min: 1,
 
       // maximal field of view
-      // fov > 120 results non-rectilinear projection
+      // fov > 120 results in non-rectilinear projection
       max: 120
 
     }, // fov
 
 */
-
-    // initial panorama sphere rotation
+/*
+    // panorama.rotation: initial panorama sphere rotation
 
     rotation: {
 
@@ -97,8 +118,10 @@ $(document).ready(function(){
 
     }, // rotation
 
-
+*/
 /*
+    // panorama.limits: limits
+    
     limits: {
 
       // panorama vertical rotation limits
@@ -110,9 +133,8 @@ $(document).ready(function(){
     }
 
 */
-
 /*
-    // camera object options
+    // panorama.camera: main camera options
 
     camera: {
 
@@ -128,13 +150,10 @@ $(document).ready(function(){
 
     }, // camera
 */
-
-    // sphere object defaults
+    // panorama.sphere: sphere object defaults
     // normally you dont need to modify this
 
     sphere: {
-
-    /*
 
       radius: 15,
 
@@ -142,11 +161,9 @@ $(document).ready(function(){
 
       heightSegments: 18,
 
-    */
-
-      // texture options
-      // When using 'panorama.list' below to configure several panoramas,
-      // you should use 'panorama.list.defaults' instead.
+      // panorama.sphere.texture: sphere texture options
+      // When using 'panorama.list' to configure several panoramas,
+      // 'panorama.list.defaults' will extend or override values below
 
       texture: {
 
@@ -163,16 +180,17 @@ $(document).ready(function(){
       } // texture
 
     }, // sphere
-
- /*
-    // sounds bound to panorama
-    // When using the 'panorama.list' object to configure several panoramas
-    // sounds must be defined instead in panorama.list.defaults and/or in the 
-    // panorama.list.images object elements.
+/*
+   // panorama.sound: sounds bound to panorama
+   // When using 'panorama.list' below to configure several panoramas,
+   // 'panorama.list.images[image].sound' properties and methods will
+   // extend or modify values below
 
     sound: {
 
-      // defaults for sounds defined in 'sound.list' below
+      // defaults for sounds defined in 'panorama.sound.list' below,
+      // where more sound options are described
+      
       defaults: {
 
         // sound type (only Howler is supported)
@@ -191,28 +209,34 @@ $(document).ready(function(){
 
       list: {
 
-        ambiance1: {
-          src: ["ambiance1.mp3"]
+        // sound ID
+        ambient1: {
+
+          // Howler options
+          src: ["ambient1.mp3"],
+          autoplay: true,
+          loop: true
+
         },
 
-        ambiance2: {
-          src: ["ambiance2.mp3"]
+        ambient2: {
+          src: ["welcome.mp3"]
+          autoplay: true,
+          loop: false
         }
       }
 
     },
 
 */
-
-    // points of interest
+    // panorama.poi: points of interest
+    // When using panorama.list to define several panoramas,
+    // poi options below are extended or overrided with the ones
+    // from panorama.list.images[id].poi
 
     poi: {
 
-      // default values for POIs
-      // Like sounds, POIs must be defined in the panorama.list.images object elements,
-      // or in panorama.list.defaults when you are using the 'panorama.list' object to
-      // configure several panoramas.
-
+      // panorama.poi.defaults: default values for POIs
       defaults: {
 
           // set to false to disable mouse event handling
@@ -252,17 +276,33 @@ $(document).ready(function(){
           },
       },
 
+      // panorama.poi.list
       list: {
+
+        // POI identifier
         unicorn: {
+
+          // to define the POI geometry you can either specify 'object'
+          // as THREE.Object3D (default object is null)
+          object: null,
+
+          // ... or 'mesh' as THREE.mesh, (default mesh is a circle) 
           mesh: new THREE.Mesh(new THREE.PlaneGeometry(Math.PI/18,Math.PI/18,1,1), new THREE.MeshBasicMaterial({
             map: unicorn_texture,
             transparent: true,
           })),
+
+          // for POI defined as a texture with alpha layer like this one
+          // setting 'handleTransparency' to true will disable mouse events
+          // occuring over fully transparent pixels
           handleTransparency: true,
+
+          // POI coordinates
           coords: {
             lon: -70,
             lat: 0
           }
+
         }, // unicorn
 
         // POI identifier
@@ -274,13 +314,15 @@ $(document).ready(function(){
               lat: 0
             },
 
+            // poi.list.sound:
             // sounds bound to a poi
             sound: {
 
-              // see comments for sounds bound to a panorama above
+              // for defaults, see comments for panorama.sounds above
               defaults: {
               },
 
+              // poi.list.sound.list
               list: {
 
                 beep: {
@@ -362,10 +404,10 @@ $(document).ready(function(){
             sound: {
               list: {
                 1: {
-                  url: "ambiance1.mp3"
+                  src: ["ambiance1.mp3"]
                 },
                 2: {
-                  url: "ambiance2.mp3"
+                  src: ["ambiance2.mp3"]
                 }
               }
             },
@@ -579,8 +621,6 @@ $(document).ready(function(){
   function toggleEffect(effect){
     effect.pass.enabled=!effect.pass.enabled;
     panorama.drawScene();
-  }
-
   }
 
 });
