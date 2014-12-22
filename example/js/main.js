@@ -65,13 +65,12 @@ $(document).ready(function(){
 
 */
 
-/*
     // initial panorama sphere rotation
 
     rotation: {
 
       // vertical axis rotation
-      heading: 0,
+      heading: -90,
 
       // horizontal axis rotation
       // adjust in the viewer using <shift>-mousewheel
@@ -86,7 +85,6 @@ $(document).ready(function(){
 
     }, // rotation
 
-*/
 
 /*
     limits: {
@@ -120,7 +118,7 @@ $(document).ready(function(){
 */
 
     // sphere object defaults
-    // normally you dont need to change the parameters
+    // normally you dont need to modify this
 
     sphere: {
 
@@ -135,11 +133,12 @@ $(document).ready(function(){
     */
 
       // texture options
-      // You don't need this if you are using the panorama list object below
+      // When using 'panorama.list' below to configure several panoramas,
+      // you should use 'panorama.list.defaults' instead.
 
       texture: {
 
-        // relative url of tiles directory
+        // tiles directory relative url
         dirName: 'panoramas/result_1403179805_224762-0-25-1/',
 
         // tile filename prefix
@@ -154,9 +153,29 @@ $(document).ready(function(){
     }, // sphere
 
  /*
-    // sound options
+    // sounds bound to panorama
+    // When using the 'panorama.list' object to configure several panoramas
+    // sounds must be defined instead in panorama.list.defaults and/or in the 
+    // panorama.list.images object elements.
 
     sound: {
+
+      // defaults for sounds defined in 'sound.list' below
+      defaults: {
+
+        // sound type (only Howler is supported)
+        type: 'howler',
+
+        // event handlers 
+        onloaderror: function sound_onloaderror(sound_event) {
+           console.log('sound_onloaderror: ',this,sound_event);
+        },
+        onload: null,
+        onpause: null,
+        onplay: null,
+        onend: null
+
+      },
 
       list: {
 
@@ -173,16 +192,20 @@ $(document).ready(function(){
 
 */
 
-/*
     // points of interest
 
     poi: {
 
       // default values for POIs
+      // Like sounds, POIs must be defined in the panorama.list.images object elements,
+      // or in panorama.list.defaults when you are using the 'panorama.list' object to
+      // configure several panoramas.
 
       defaults: {
 
-          // when color is set mouse event handlers are called
+          // set to false to disable mouse event handling
+          handleMousevents: true,
+
           color: {
              active: '#0000ff',
              hover: '#ffffff',
@@ -191,7 +214,7 @@ $(document).ready(function(){
 
           // event handlers below are already filtered
           // eg: mousein and mouseout are not triggered during panorama rotation
-          // if you really need, you can bind to the private methods (eg: _mousein)
+          // if you really need, you can hook to the 'private' methods (eg: _mousein)
 
           mousein: function poi_mousein(e) {
             console.log('mousein',this);
@@ -206,42 +229,56 @@ $(document).ready(function(){
 
           mousedown: function poi_mousedown(e) {
             console.log('mousedown',this);
-            this.panorama.mode.rotate=false;
-            return false;
           },
 
           mouseup: function poi_mouseup(e) {
             console.log('mouseup',this);
           },
 
-
           click: function poi_click(e) {
             console.log('click',this);
           },
-      }
+      },
 
       list: {
-
+        // POI identifier
         circle: {
 
+            // POI coords
             coords: {
               lon: -90,
               lat: 0
             },
 
-            // sound bound to a poi
+            // sounds bound to a poi
             sound: {
 
+              // see comments for sounds bound to a panorama above
+              defaults: {
+              },
+
               list: {
+
                 beep: {
+
+                  // sound type specific options (see Howler.js 2.0 documentation)
                   src: ["sound/argo.mp3"],
                   autoplay: true,
                   loop: true,
                   fadeOut: 2000,
+
+                  // If you specify optional WebAudio sound cone parameters,
+                  // the sound is always oriented in the direction opposite
+                  // to the camera, and the volume fall to coneOuterGain
+                  // outside the cone outer angle.
                   coneInnerAngle: 30,
                   coneOuterAngle: 90,
                   coneOuterGain: 0,
+
+                  // when specifying sound cone parameters above, set rolloffFactor
+                  // to 0 will disable gain change relative to z position.
                   rolloffFactor: 0
+
                 },
                 plop: {
                   src: ["plop.mp3"]
@@ -338,9 +375,8 @@ $(document).ready(function(){
                       }
                     }
                 }, // circle
-
                 square: {
-                    mesh: new THREE.Mesh(new THREE.BoxGeometry(Math.PI/18,Math.PI/18,0), new THREE.MeshBasicMaterial({
+                    mesh: new THREE.Mesh(new THREE.PlaneGeometry(Math.PI/18,Math.PI/18,1,1), new THREE.MeshBasicMaterial({
                       color: 0x000000,
                       transparent: true,
                       opacity: 0.3
@@ -355,7 +391,6 @@ $(document).ready(function(){
                       normal: '#000000'
                     },
                 }, // square
-
                 triangle: {
                     mesh: function test2_mesh() {
                       var poi=this;
@@ -425,7 +460,7 @@ $(document).ready(function(){
         active: true
     },
 
-/*
+    */
     // THREE.js renderer options
 
     renderer: {
@@ -434,11 +469,10 @@ $(document).ready(function(){
 
       antialias: false,
 
-      alpha: false
+      alpha: true
 
     },
 
-*/
 
 /* incompatible with panorama.list below yet
     pyramid: {
@@ -466,7 +500,6 @@ $(document).ready(function(){
     },
 */
 
-    /*
     postProcessing: {
       enabled: false,
       edge: {
@@ -492,8 +525,8 @@ $(document).ready(function(){
       }
     }
 
-    */
   }); // panorama
+
 
   var panorama=$('#pano').data('pano');
 
@@ -515,7 +548,8 @@ $(document).ready(function(){
       }
       break;
     }
-    panorama.postProcessing.enabled=panorama.postProcessing.edge.pass.enabled||panorama.postProcessing.edge2.pass.enabled;
+
+    if (panorama.postProcessing) panorama.postProcessing.enabled=panorama.postProcessing.edge.pass.enabled||panorama.postProcessing.edge2.pass.enabled;
   });
 
   function toggleEffect(effect){
