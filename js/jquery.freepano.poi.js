@@ -451,7 +451,7 @@ $.extend(true, POI_list.prototype, {
           // read pixel at mouse coordinates
           var pixel=new Uint8Array(4);
           var gl=panorama.renderer.getContext();
-          gl.readPixels(e.pageX,e.pageY,1,1,gl.RGBA,gl.UNSIGNED_BYTE,pixel);
+          gl.readPixels(e.pageX,poi_list.renderTarget.height-e.pageY,1,1,gl.RGBA,gl.UNSIGNED_BYTE,pixel);
 
           // put object back in main scene
           panorama.scene.add(hover_elem.object.parent);
