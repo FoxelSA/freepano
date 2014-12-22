@@ -57,7 +57,8 @@ $.extend(true, POI.prototype, {
       lon: 0,
       lat: 90
     },
-    size: Math.PI/36
+    size: Math.PI/36,
+    handleTransparency: true
   },
 
   // initialize poi and add to panorama scene
@@ -415,6 +416,60 @@ $.extend(true, POI_list.prototype, {
 
     hover: [],
 
+    // for the hover_list candidates, return those for whom the given pixel is not totally transparent
+    filterHoverList: function poiList_filterHoverList(e,hover_list) {
+      var poi_list=this;
+      var panorama=poi_list.panorama;
+      var filtered_list=[];
+      var canvas=panorama.renderer.getContext().canvas;
+
+      // for each hover candidate
+      $.each(hover_list,function(index,hover_elem){
+        var material=hover_elem.object.material;
+
+        // unless non-applicable or not requested for the related poi
+        if (material.map && material.transparent && poi_list.list[hover_elem.object.parent.name].handleTransparency) {
+
+          // create framebuffer
+          if (!poi_list.renderTarget || canvas.height!=poi_list.renderTarget.height || canvas.width!=poi_list.renderTarget.width){
+            poi_list.renderTarget=new THREE.WebGLRenderTarget(canvas.width,canvas.height,{
+              minFilter: THREE.LinearFilter,
+              stencilBuffer: false,
+              depthBuffer: false
+            });
+          }
+
+          // create scene
+          if (!poi_list.scene) poi_list.scene=new THREE.Scene();
+
+          // add hover candidate to scene
+          poi_list.scene.add(hover_elem.object.parent);
+
+          // render scene to framebuffer
+          panorama.renderer.render(poi_list.scene,panorama.camera.instance,poi_list.renderTarget,true);
+
+          // read pixel at mouse coordinates
+          var pixel=new Uint8Array(4);
+          var gl=panorama.renderer.getContext();
+          gl.readPixels(e.pageX,e.pageY,1,1,gl.RGBA,gl.UNSIGNED_BYTE,pixel);
+
+          // put object back in main scene
+          panorama.scene.add(hover_elem.object.parent);
+
+          // discard poi when pixel alpha channel is null
+          if (!pixel[3]) return;
+
+        }
+
+        // add mesh to filtered list
+        filtered_list.push(hover_elem);
+
+      });
+
+      return filtered_list;
+
+    }, // poiList_filterHoverList
+
     on_panorama_mousemove: function poiList_on_panorama_mousemove(e) {
 
       var poi_list=this;
@@ -434,7 +489,13 @@ $.extend(true, POI_list.prototype, {
         e.clientY=panorama.clientY;
       }
 
+      // get mouseover_list based on raycaster
       var hover=poi_list.get_mouseover_list(e);
+
+      if (hover.length) {
+        // filter out false positive (handle transparency)
+        hover=poi_list.filterHoverList(e,hover);
+      }
 
       // if mouse is hovering a poi now
       if (hover.length) {
@@ -535,6 +596,12 @@ $.extend(true,POI_list.prototype,{
 });
 
 $.extend(true,Panorama.prototype,{
+
+  defaults: {
+    renderer: {
+      preserveDrawingBuffer: true
+    }
+  },
 
   init: function poiList_panorama_init() {
 
