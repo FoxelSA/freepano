@@ -536,8 +536,8 @@ $.extend(true,Panorama.prototype,{
       this.mouseCoords.theta=theta;
 
       return {
-        lon: this.mouseCoords.phi/(Math.PI/180),
-        lat: this.mouseCoords.theta/(Math.PI/180)
+        lon: THREE.Math.radToDeg(this.mouseCoords.phi),
+        lat: THREE.Math.radToDeg(this.mouseCoords.theta)
       }
 
     }, // getMouseCoords
@@ -674,6 +674,7 @@ $.extend(true,Panorama.prototype,{
       }
       panorama.lat=Math.max(panorama.limits.lat.min,Math.min(panorama.limits.lat.max,panorama.lat));
 
+      // set sphere rotation
       panorama.viewRotationMatrix=new THREE.Matrix4();
       panorama.viewRotationMatrix.multiply((new THREE.Matrix4()).makeRotationAxis(new THREE.Vector3(1,0,0),THREE.Math.degToRad(panorama.lat)));
       panorama.viewRotationMatrix.multiply((new THREE.Matrix4()).makeRotationAxis(new THREE.Vector3(0,1,0),THREE.Math.degToRad(panorama.lon)));
@@ -682,10 +683,12 @@ $.extend(true,Panorama.prototype,{
 
       panorama.callback({type: 'update'});
 
-      // TODO move this in eg jquery.freepano.postprocessing.js
+      // TODO move post-Processing to jquery.freepano.postprocessing.js
       if (panorama.postProcessing && panorama.postProcessing.enabled) {
+        // render scene with postProcessing filters
         panorama.composer.render(panorama.scene,panorama.camera.instance);
       } else {
+        // render scene
         panorama.renderer.render(panorama.scene,panorama.camera.instance);
       }
     },
