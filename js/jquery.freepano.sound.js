@@ -62,9 +62,9 @@ $.extend(true,SoundList.prototype,{
       if (!soundList.panorama.sound || soundList.panorama.sound!=soundList){
         soundList.panorama.sound=soundList;
       }
-    } else if (soundList.poi) {
-      if (!soundList.poi.sound || soundList.poi.sound!=soundList){
-        soundList.poi.sound=soundList;
+    } else if (soundList.widget) {
+      if (!soundList.widget.sound || soundList.widget.sound!=soundList){
+        soundList.widget.sound=soundList;
       }
     }
 
@@ -89,7 +89,7 @@ $.extend(true,SoundList.prototype,{
   set_position_howler: function soundList_set_position_howler(panorama,object3D){
     var sound=this;
     var pos=object3D.position;
-    var poi=sound.poi;
+    var widget=sound.widget;
     $.each(sound.list,function(name){
       var soundList_elem=sound.list[name];
       if (soundList_elem.instance) {
@@ -128,8 +128,8 @@ $.extend(true,SoundList.prototype,{
 
   panorama_prototype_init: Panorama.prototype.init,
   panorama_prototype_callback: Panorama.prototype.callback,
-  poi_prototype_init: POI.prototype.init,
-  poi_prototype_callback: POI.prototype.callback
+  widget_prototype_init: Widget.prototype.init,
+  widget_prototype_callback: Widget.prototype.callback
 
 }); // extend SoundList.prototype
 
@@ -335,43 +335,43 @@ $.extend(true,Panorama.prototype,{
 
 });  // extend Panorama.prototype for SoundList
 
-// sound lists can be bound to POI instances
-$.extend(true,POI.prototype,{
+// sound lists can be bound to Widget instances
+$.extend(true,Widget.prototype,{
       
-  init: function poi_prototype_init_hook() {
+  init: function widget_prototype_init_hook() {
 
-    var poi=this;
+    var widget=this;
 
-    // skip SoundList instantiation if sound preferences undefined in poi
-    if (poi.sound!==undefined) {
+    // skip SoundList instantiation if sound preferences undefined in widget
+    if (widget.sound!==undefined) {
      
       // or if sound list is already instantiated
-      if (!(poi.sound instanceof SoundList)) {
+      if (!(widget.sound instanceof SoundList)) {
      
         // intantiate sound list
-        poi.sound=new SoundList($.extend(true,{
+        widget.sound=new SoundList($.extend(true,{
      
-          // pass poi instance pointer to sound instance
-          poi: poi
+          // pass widget instance pointer to sound instance
+          widget: widget
 
-        },poi.sound));
+        },widget.sound));
 
-        poi.sound.on_poi_update=function soundList_set_position_on_poi_update() {
-          var poi=this;
-          var sound=poi.sound;
+        widget.sound.on_widget_update=function soundList_set_position_on_widget_update() {
+          var widget=this;
+          var sound=widget.sound;
           if (!sound) {
             return;
           }
           var set_position_method='set_position_'+sound.type;
           if (sound[set_position_method]) {
-            sound[set_position_method](poi.panorama,poi.object3D);
+            sound[set_position_method](widget.panorama,widget.object3D);
           }
         },
 
-        poi.sound.on_poi_dispose=function soundList_on_poi_dispose(poi_event) {
+        widget.sound.on_widget_dispose=function soundList_on_widget_dispose(widget_event) {
 
-          var poi=this;
-          var sound=poi.sound;
+          var widget=this;
+          var sound=widget.sound;
 
           if (!sound) {
             return;
@@ -386,25 +386,25 @@ $.extend(true,POI.prototype,{
       }
     }
 
-    SoundList.prototype.poi_prototype_init.call(poi);
+    SoundList.prototype.widget_prototype_init.call(widget);
      
   },
 
-  // hook to POI.prototype.callback
-  callback: function poi_prototype_callback_hook(e) {
+  // hook to Widget.prototype.callback
+  callback: function widget_prototype_callback_hook(e) {
        
-    var poi=this;
+    var widget=this;
 
-    // forward poi event to sound list object
-    var method="on_poi_"+e.type;
-    if (poi.sound && poi.sound[method]) {
-      poi.sound[method].apply(poi,[e]);
+    // forward widget event to sound list object
+    var method="on_widget_"+e.type;
+    if (widget.sound && widget.sound[method]) {
+      widget.sound[method].apply(widget,[e]);
     }
        
-    // chain with old poi.prototype.callback
-    SoundList.prototype.poi_prototype_callback.apply(poi,[e]);
+    // chain with old widget.prototype.callback
+    SoundList.prototype.widget_prototype_callback.apply(widget,[e]);
        
-  }, // poi_prototype_callback_hook
+  }, // widget_prototype_callback_hook
 
        
 }); // extend Panorama.prototype for SoundList
