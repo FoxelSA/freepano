@@ -169,7 +169,7 @@ function WidgetFactory(options) {
         case 'ready':
           widget.object3D.name=widget.name;
           $.each(widget.object3D.children,function(index,mesh){
-            widget.camera.meshes.push(this);
+            widget.camera.meshes[widget.constructor.name.toLowerCase()].push(this);
           });
           break;
         case 'dispose':
@@ -381,8 +381,12 @@ function WidgetFactory(options) {
 
             // setup mesh list and camera_list for raycaster
             if (!options.camera.meshes) {
-              options.camera.meshes=[];
+              options.camera.meshes={};
             }
+            if (!options.camera.meshes[Widget.name.toLowerCase()]) {
+              options.camera.meshes[Widget.name.toLowerCase()]=[];
+            }
+
             if (!options.camera.id) {
 
               // register camera in widgetList._cameraList
@@ -401,7 +405,8 @@ function WidgetFactory(options) {
           });
 
           // setup widgetList mouseevent handlers
-          $(panorama.renderer.getContext().canvas).off('.widgetList').on('mousemove.widgetList mousedown.widgetList mouseup.widgetList click.widgetList',function(e) {
+          var qualifier='.'+Widget.name.toLowerCase()+'List';
+          $(panorama.renderer.getContext().canvas).off(qualifier).on('mousemove'+qualifier+' mousedown'+qualifier+' mouseup'+qualifier+' click'+qualifier,function(e) {
             if (panorama[Widget.name.toLowerCase()]) {
               return panorama[Widget.name.toLowerCase()]['on_panorama_'+e.type](e);
             }
@@ -414,13 +419,12 @@ function WidgetFactory(options) {
         mesh_list_update: function widgetList_mesh_list_update() {
           var widgetList=this;
           $.each(widgetList.list,function(name,widget) {
-            if (!widget.camera.meshes || widget.camera.meshes.length) {
-              widget.camera.meshes=[];
-            }
+            widget.camera.meshes[Widget.name.toLowerCase()]={};
+            return false; // all widgets from widgetList are of the same constructor
           });
           $.each(widgetList.list,function(name,widget) {
             $.each(widget.object3D.children,function(index,mesh){
-              widget.camera.meshes.push(this);
+              widget.camera.meshes[Widget.name.toLowerCase()].push(this);
             });
           });
         }, // widgetList_mesh_list_update
@@ -649,7 +653,7 @@ function WidgetFactory(options) {
               camera.raycaster.ray.set(camera.instance.position, wc.sub(camera.instance.position).normalize());
 
               // find meshes intersecting with this ray
-              var meshes=camera.raycaster.intersectObjects(camera.meshes);
+              var meshes=camera.raycaster.intersectObjects(camera.meshes[Widget.name.toLowerCase()]);
 
               // and append them to mouseover_list
               if (meshes.length) {
