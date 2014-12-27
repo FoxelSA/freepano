@@ -128,8 +128,6 @@ $.extend(true,SoundList.prototype,{
 
   panorama_prototype_init: Panorama.prototype.init,
   panorama_prototype_callback: Panorama.prototype.callback,
-  widget_prototype_init: Widget.prototype.init,
-  widget_prototype_callback: Widget.prototype.callback
 
 }); // extend SoundList.prototype
 
@@ -261,8 +259,8 @@ $.extend(true,Sound.prototype,{
 /*
   updateConeEffect: function sound_updateConeEffect(pos) {
     var sound=this;
-    if (sound.innerAngle) { 
-      var v=new THREE.Vector3(pos.x,pos.y,pos.z).normalize(); 
+    if (sound.innerAngle) {
+      var v=new THREE.Vector3(pos.x,pos.y,pos.z).normalize();
       var alpha=Math.abs(v.angleTo(new THREE.Vector3(0,0,-1))/(Math.PI/180));
       var gain;
       if (alpha<sound.innerAngle) {
@@ -293,16 +291,16 @@ $.extend(true,Panorama.prototype,{
 
     // skip sound list instantiation if "sound" undefined in panorama
     if (panorama.sound!==undefined) {
-     
+
       // or if sound list is already instantiated
       if (!(panorama.sound instanceof SoundList)) {
-     
+
         // instantiate sound list
         panorama.sound=new SoundList($.extend(true,{
-     
+
           // pass panorama instance pointer to sound instance
           panorama: panorama,
-     
+
         },panorama.sound));
       }
     }
@@ -310,16 +308,16 @@ $.extend(true,Panorama.prototype,{
     SoundList.prototype.panorama_prototype_init.call(panorama);
 
   }, // panorama_prototype_init_hook
-       
+
   // hook to Panorama.prototype.callback
   callback: function soundList_panorama_prototype_callback(e) {
-       
+
     var panorama=this;
 
     // forward panorama event to soundList instance bound to panorama (if any)
     var method='on_panorama_'+e.type;
-    
-    if (panorama.sound && panorama.sound[method]) { 
+
+    if (panorama.sound && panorama.sound[method]) {
       panorama.sound[method].apply(panorama,[e]);
     } else {
     	// else forward panorama event to soundList prototype method
@@ -327,124 +325,95 @@ $.extend(true,Panorama.prototype,{
     	  SoundList.prototype[method].apply(panorama,[e]);	
     	}
     }
-       
+
     // chain with old panorama.prototype.callback
     SoundList.prototype.panorama_prototype_callback.apply(panorama,[e]);
-       
+
   } // soundList_panorama_prototype_callback
 
 });  // extend Panorama.prototype for SoundList
 
+
 // sound lists can be bound to Widget instances
-$.extend(true,Widget.prototype,{
-      
-  init: function widget_prototype_init_hook() {
+$.each(window.widgetTypes,function(idx,widgetType){
 
-    var widget=this;
+  var Widget=window[widgetType];
 
-    // skip SoundList instantiation if sound preferences undefined in widget
-    if (widget.sound!==undefined) {
-     
-      // or if sound list is already instantiated
-      if (!(widget.sound instanceof SoundList)) {
-     
-        // intantiate sound list
-        widget.sound=new SoundList($.extend(true,{
-     
-          // pass widget instance pointer to sound instance
-          widget: widget
+  SoundList.prototype[widgetType.toLowerCase()+'_prototype_init']=Widget.prototype.init;
+  SoundList.prototype[widgetType.toLowerCase()+'_prototype_callback']= Widget.prototype.callback;
 
-        },widget.sound));
+  $.extend(true,Widget.prototype,{
 
-        widget.sound.on_widget_update=function soundList_set_position_on_widget_update() {
-          var widget=this;
-          var sound=widget.sound;
-          if (!sound) {
-            return;
-          }
-          var set_position_method='set_position_'+sound.type;
-          if (sound[set_position_method]) {
-            sound[set_position_method](widget.panorama,widget.object3D);
-          }
-        },
+    init: function widget_prototype_init_hook() {
 
-        widget.sound.on_widget_dispose=function soundList_on_widget_dispose(widget_event) {
+      var widget=this;
 
-          var widget=this;
-          var sound=widget.sound;
+      // skip SoundList instantiation if sound preferences undefined in widget
+      if (widget.sound!==undefined) {
 
-          if (!sound) {
-            return;
-          }
+        // or if sound list is already instantiated
+        if (!(widget.sound instanceof SoundList)) {
 
-          $.each(sound.list,function(name,soundList_elem){
-            if (soundList_elem.instance) soundList_elem.dispose();
-          });
+          // intantiate sound list
+          widget.sound=new SoundList($.extend(true,{
 
-        } // soundList_on_panorama_dispose
+            // pass widget instance pointer to sound instance
+            widget: widget
 
+          },widget.sound));
+
+          widget.sound.on_widget_update=function soundList_set_position_on_widget_update() {
+            var widget=this;
+            var sound=widget.sound;
+            if (!sound) {
+              return;
+            }
+            var set_position_method='set_position_'+sound.type;
+            if (sound[set_position_method]) {
+              sound[set_position_method](widget.panorama,widget.object3D);
+            }
+          },
+
+          widget.sound.on_widget_dispose=function soundList_on_widget_dispose(widget_event) {
+
+            var widget=this;
+            var sound=widget.sound;
+
+            if (!sound) {
+              return;
+            }
+
+            $.each(sound.list,function(name,soundList_elem){
+              if (soundList_elem.instance) soundList_elem.dispose();
+            });
+
+          } // soundList_on_panorama_dispose
+
+        }
       }
-    }
 
-    SoundList.prototype.widget_prototype_init.call(widget);
-     
-  },
+      SoundList.prototype[widgetType.toLowerCase()+'_prototype_init'].call(widget);
 
-  // hook to Widget.prototype.callback
-  callback: function widget_prototype_callback_hook(e) {
-       
-    var widget=this;
+    },
 
-    // forward widget event to sound list object
-    var method="on_widget_"+e.type;
-    if (widget.sound && widget.sound[method]) {
-      widget.sound[method].apply(widget,[e]);
-    }
-       
-    // chain with old widget.prototype.callback
-    SoundList.prototype.widget_prototype_callback.apply(widget,[e]);
-       
-  }, // widget_prototype_callback_hook
+    // hook to Widget.prototype.callback
+    callback: function widget_prototype_callback_hook(e) {
 
-       
-}); // extend Panorama.prototype for SoundList
+      var widget=this;
+
+      // forward widget event to sound list object
+      var method="on_widget_"+e.type;
+      if (widget.sound && widget.sound[method]) {
+        widget.sound[method].apply(widget,[e]);
+      }
+
+      // chain with old widget.prototype.callback
+      SoundList.prototype[widgetType.toLowerCase()+'_prototype_callback'].apply(widget,[e]);
+
+    }, // widget_prototype_callback_hook
 
 
-function setOrientation(panorama,object,soundObject) {
+  }); // extend Widget.prototype for SoundList
 
-    var m = object.matrixWorld;
-    var mx = m.n14, my = m.n24, mz = m.n34;
-    m.n14 = m.n24 = m.n34 = 0;
+});
 
-    var vec = new THREE.Vector3(0,0,1);
-    vec.applyMatrix3(m);
-    vec.normalize();
-
-//    soundObject.orientation(vec.x, vec.y, vec.z);
-
-    m.n14 = mx;
-    m.n24 = my;
-    m.n34 = mz;
-}
-
-function setListenerPosition(object, x, y, z) {
-    var m = object.matrix;
-    
-    var mx = m.elements[12], my = m.elements[13], mz = m.elements[14];
-    m.elements[12] = m.elements[13] = m.elements[14] = 0;
-    
-    var dir = new THREE.Vector3(0,0,1);
-    dir.applyProjection(m);
-    dir.normalize(0);
-    
-    var up = new THREE.Vector3(0,-1,0);
-    up.applyProjection(m);
-    up.normalize();
-
-    m.elements[12] = mx;
-    m.elements[13] = my;
-    m.elements[14] = mz;
-    
-//    Howler.orientation(dir.x, dir.y, dir.z, up.x, up.y, up.z,0);
-
-}
