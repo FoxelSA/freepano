@@ -305,6 +305,7 @@ $.extend(true,Panorama.prototype,{
       sphere: undefined,
       postProcessing: undefined,
       renderer: {
+        autoclear: false,
         precision: 'lowp',
         antialias: false,
         alpha: false
@@ -683,6 +684,7 @@ $.extend(true,Panorama.prototype,{
 
       panorama.callback({type: 'update'});
 
+      panorama.renderer.clear();
       // TODO move post-Processing to jquery.freepano.postprocessing.js
       if (panorama.postProcessing && panorama.postProcessing.enabled) {
         // render scene with postProcessing filters
@@ -691,6 +693,8 @@ $.extend(true,Panorama.prototype,{
         // render scene
         panorama.renderer.render(panorama.scene,panorama.camera.instance);
       }
+
+      panorama.callback({type: 'render'});
     },
 
     resize: function panorama_resize(e){
@@ -709,6 +713,11 @@ $.extend(true,Panorama.prototype,{
           }
         });
       }
+
+      panorama.callback({
+          type: 'resize'
+      });
+
       setTimeout(function(){
         if (!panorama.sphere.done) {
           return;
