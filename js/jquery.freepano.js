@@ -305,10 +305,16 @@ $.extend(true,Panorama.prototype,{
       sphere: undefined,
       postProcessing: undefined,
       renderer: {
-        autoclear: false,
-        precision: 'lowp',
-        antialias: false,
-        alpha: false
+        options: {
+          precision: 'lowp',
+          antialias: false,
+          alpha: false
+        },
+        properties: {
+          autoClear: false,
+          renderPluginsPre: [],
+          renderPluginsPost: []
+        }
       },
       lon: 0,
       lat: 0,
@@ -348,7 +354,7 @@ $.extend(true,Panorama.prototype,{
           panorama.sphere=new Sphere($.extend(true,{
             panorama: panorama,
             callback: function(){
-              panorama.resize();
+              panorama.callback({type: 'resize'});
               panorama.callback({type: 'ready'});
               $(panorama).trigger('panoready');
             }
@@ -363,9 +369,7 @@ $.extend(true,Panorama.prototype,{
       if (!(panorama.renderer instanceof THREE.WebGLRenderer)) {
         // try webgl renderer
         try {
-          panorama.renderer=new THREE.WebGLRenderer(panorama.renderer);
-          panorama.renderer.renderPluginsPre=[];
-          panorama.renderer.renderPluginsPost=[];
+          panorama.renderer=$.extend(new THREE.WebGLRenderer(panorama.renderer.parameters),panorama.renderer.properties);
         } catch(e) {
           // fallback to 2D canvas
           try {
@@ -445,12 +449,12 @@ $.extend(true,Panorama.prototype,{
       var canvas=$('canvas:first',this.container);
       $(this.container)
       .off('.panorama'+this.num)
-      .on('mousedown.panorama'+this.num, canvas, function(e){panorama.mousedown(e);})
-      .on('mousemove.panorama'+this.num, canvas, function(e){panorama.mousemove(e)})
-      .on('mouseup.panorama'+this.num, canvas, function(e){panorama.mouseup(e)})
-      .on('mousewheel.panorama'+this.num, canvas, function(e){panorama.mousewheel(e)})
-      .on('zoom.panorama'+this.num, canvas, function(e,zoom){panorama.zoom(e,zoom)});
-      $(window).on('resize.panorama'+this.num, function(e){panorama.resize(e)});
+      .on('mousedown.panorama'+this.num, canvas, function(e){panorama.callback(e)})
+      .on('mousemove.panorama'+this.num, canvas, function(e){panorama.callback(e)})
+      .on('mouseup.panorama'+this.num, canvas, function(e){panorama.callback(e)})
+      .on('mousewheel.panorama'+this.num, canvas, function(e){panorama.callback(e)})
+      .on('zoom.panorama'+this.num, canvas, function(e){panorama.callback(e)});
+      $(window).on('resize.panorama'+this.num, function(e){panorama.callback(e)});
 
     }, // panorama_eventsInit
 
@@ -662,12 +666,12 @@ $.extend(true,Panorama.prototype,{
       }
       var panorama=this;
       requestAnimationFrame(function(){
-        panorama.render();
+        panorama.renderFrame();
         if (callback) callback();
       });
     },
 
-    render: function render() {
+    renderFrame: function renderFrame() {
       var panorama=this;
 
       if (!panorama.sphere.done) {
@@ -713,10 +717,6 @@ $.extend(true,Panorama.prototype,{
           }
         });
       }
-
-      panorama.callback({
-          type: 'resize'
-      });
 
       setTimeout(function(){
         if (!panorama.sphere.done) {
