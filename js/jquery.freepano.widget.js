@@ -161,23 +161,19 @@ function WidgetFactory(options) {
 
       // callback other classes can hook to
       callback: function widget_callback(widget_event) {
-
         var widget=this;
-
-        switch (widget_event.type){
-
-        case 'ready':
-          widget.object3D.name=widget.name;
-          $.each(widget.object3D.children,function(index,mesh){
-            widget.camera.meshes[widget.constructor.name.toLowerCase()].push(this);
-          });
-          break;
-        case 'dispose':
-          widget.dispose();
-          break;
+        if (widget[widget_event.type]) {
+          return widget[widget_event.type](widget_event);
         }
-
       }, // widget_callback
+
+      ready: function widget_ready(widget_event) {
+        var widget=this;
+        widget.object3D.name=widget.name;
+        $.each(widget.object3D.children,function(index,mesh){
+            widget.camera.meshes[widget.constructor.name.toLowerCase()].push(this);
+        });
+      }, // widget_ready
 
       // create default mesh
       defaultMesh: function widget_defaultMesh() {
@@ -221,11 +217,6 @@ function WidgetFactory(options) {
 
         if (widget.lookAtVec3) widget.object3D.lookAt(widget.lookAtVec3);
     //    widget.object3D.rotation.setFromRotationMatrix(new THREE.Matrix4().makeRotationY(-panorama.lon*2*Math.PI/180));
-
-        widget.callback({
-            type:'update',
-            target: widget
-        });
 
       }, // widget_update
 
@@ -344,6 +335,7 @@ function WidgetFactory(options) {
         defaults: {
           // need to maintain a list of widget cameras for raycaster in get_mouseover_list
           _cameraList: [],
+          list: {}
         },
 
         // save pointer to Panorama.prototype.callback in WidgetList.prototype
@@ -357,12 +349,9 @@ function WidgetFactory(options) {
           var widgetList=this;
           var panorama=widgetList.panorama;
 
-          if (panorama[Widget.name.toLowerCase()]!=widgetList) {
-            // needed when switching panoramas for obscure reason
-            panorama[Widget.name.toLowerCase()]=widgetList;
-          }
+          panorama[Widget.name.toLowerCase()]=widgetList;
 
-          if (!panorama.scene) {
+          if (!widgetList.scene && !panorama.scene) {
             console.log('panorama.scene is undefined, cannot create widgets');
             return;
           }
@@ -372,12 +361,21 @@ function WidgetFactory(options) {
 
             var widget=this;
             widgetList.list[name].instance=null;
-            var options=$.extend(true,{},widgetList.defaults,widget,{
-              name: name,
-              panorama: panorama,
-              scene: panorama.scene,
-              camera: panorama.camera
-            });
+            var options=$.extend(
+              true,
+              {},
+              widgetList.defaults,
+              { scene: panorama.scene,
+                camera: panorama.camera
+              },
+              { scene: widgetList.scene,
+                camera: widgetList.camera
+              },
+              widget,
+              { name: name,
+                panorama: panorama,
+              }
+            );
 
             // setup mesh list and camera_list for raycaster
             if (!options.camera.meshes) {
@@ -387,10 +385,10 @@ function WidgetFactory(options) {
               options.camera.meshes[Widget.name.toLowerCase()]=[];
             }
 
-            if (!options.camera.id) {
+            if (!options.camera._id) {
 
               // register camera in widgetList._cameraList
-              options.camera.id=widgetList._cameraList.length;
+              options.camera._id=widgetList._cameraList.length;
               widgetList._cameraList.push(options.camera);
 
               // setup raycaster for camera, for get_mouseover_list()
@@ -403,16 +401,6 @@ function WidgetFactory(options) {
             widgetList.list[name].instance=new Widget(options);
 
           });
-
-          // setup widgetList mouseevent handlers
-          var qualifier='.'+Widget.name.toLowerCase()+'List';
-          $(panorama.renderer.getContext().canvas).off(qualifier).on('mousemove'+qualifier+' mousedown'+qualifier+' mouseup'+qualifier+' click'+qualifier,function(e) {
-            if (panorama[Widget.name.toLowerCase()]) {
-              return panorama[Widget.name.toLowerCase()]['on_panorama_'+e.type](e);
-            }
-          });
-
-          widgetList.callback({type: 'init'});
 
         }, // widgetList_init
 
@@ -432,13 +420,14 @@ function WidgetFactory(options) {
         on_panorama_update: function widgetList_on_panorama_update(e) {
 
           var panorama=this;
+          var widgetList=panorama[Widget.name.toLowerCase()];
 
-          if (!panorama[Widget.name.toLowerCase()]) {
+          if (!(widgetList instanceof WidgetList)) {
             return;
           }
 
           // update widget list on panorama 'update' event
-          $.each(panorama[Widget.name.toLowerCase()].list,function widget_update() {
+          $.each(widgetList.list,function widget_update() {
             var widgetList_elem=this;
             if (widgetList_elem.instance) {
               widgetList_elem.instance.update();
@@ -450,12 +439,14 @@ function WidgetFactory(options) {
         on_panorama_dispose: function widgetList_on_panorama_dispose(e) {
 
           var panorama=this;
-          if (!panorama[Widget.name.toLowerCase()]) {
+          var widgetList=panorama[Widget.name.toLowerCase()];
+
+          if (!(widgetList instanceof WidgetList)) {
             return;
           }
 
           // remove widget objects from scene
-          $.each(panorama[Widget.name.toLowerCase()].list,function widgetList_widget_dispose() {
+          $.each(widgetList.list,function widgetList_widget_dispose() {
             var widget=this;
             if (widget.instance){
               widget.instance.callback({type: 'dispose'});
@@ -467,17 +458,18 @@ function WidgetFactory(options) {
 
         }, // widgetList_on_panorama_dispose
 
-        // initialize or instantiate widget list
+        // instantiate or re-initialize widget list
         on_panorama_ready: function widgetList_on_panorama_ready(e) {
 
           var panorama=this;
-          if (panorama[Widget.name.toLowerCase()] instanceof WidgetList) {
-            panorama[Widget.name.toLowerCase()].init();
+          var widgetList=panorama[Widget.name.toLowerCase()];
 
+          if (widgetList instanceof WidgetList) {
+            widgetList.init();
           } else {
             panorama[Widget.name.toLowerCase()]=new WidgetList($.extend(true,{
               panorama: panorama
-            },panorama[Widget.name.toLowerCase()]));
+            },widgetList));
           }
 
         }, // widgetList_on_panorama_ready
@@ -541,8 +533,13 @@ function WidgetFactory(options) {
 
         on_panorama_mousemove: function widgetList_on_panorama_mousemove(e) {
 
-          var widgetList=this;
-          var panorama=this.panorama;
+          var panorama=this;
+          var widgetList=panorama[Widget.name.toLowerCase()];
+
+          if (!widgetList.init) {
+            // widgetList not instantiated
+            return;
+          }
 
           if (e.pageX!=undefined) {
             // save mouse position
@@ -610,9 +607,17 @@ function WidgetFactory(options) {
 
         on_panorama_mouseevent: function widgetList_on_panorama_mousevent(e) {
 
-          var widgetList=this;
+          var panorama=this;
+          var widgetList=panorama[Widget.name.toLowerCase()];
 
-          if (widgetList.hover.length) {
+          if (!widgetList.init) {
+            // widgetList not instantiated
+            return;
+          }
+
+          if (!widgetList.hover.length) {
+            return;
+          }
 
           // call handlers for first widget from hovering list
           var widget=widgetList.list[widgetList.hover[0].object.parent.name].instance;
@@ -624,7 +629,7 @@ function WidgetFactory(options) {
 
           // 2. public mouseevent handler
             return widget[e.type](e);
-          }
+
         }, // widgetList_on_panorama_mouseevent
 
         get_mouseover_list: function widgetList_get_mouseover_list(e) {
@@ -681,27 +686,32 @@ function WidgetFactory(options) {
 
       defaults: {
         renderer: {
-          preserveDrawingBuffer: true
+          options: {
+            preserveDrawingBuffer: true
+          }
         }
       },
 
-      // hook to Panorama.prototype.callback
+      // run the panorama event handler defined for widgetList, if any
       callback: function widgetList_panorama_prototype_callback(e) {
 
         var panorama=this;
+        var widgetList=panorama[Widget.name.toLowerCase()];
 
-        if (panorama[Widget.name.toLowerCase()]){
-          if (panorama[Widget.name.toLowerCase()]['on_panorama_'+e.type]) {
-            panorama[Widget.name.toLowerCase()]['on_panorama_'+e.type].apply(panorama,[e]);
-          } else {
-            if (WidgetList.prototype['on_panorama_'+e.type]) {
-              WidgetList.prototype['on_panorama_'+e.type].apply(panorama,[e]);
+        if (widgetList instanceof WidgetList){
+          if (widgetList['on_panorama_'+e.type]) {
+            if (widgetList['on_panorama_'+e.type].apply(panorama,[e])===false) {
+              return false;
             }
+          }
+        } else {
+          if (e.type=='ready'){
+            WidgetList.prototype.on_panorama_ready.apply(panorama,[e]);
           }
         }
 
-        // chain with old panorama.prototype.callback
-        WidgetList.prototype.panorama_prototype_callback.apply(panorama,[e]);
+        // chain with previous panorama.prototype.callback
+        return WidgetList.prototype.panorama_prototype_callback.apply(panorama,[e]);
 
       }, // widgetList_panorama_prototype_callback
 
