@@ -536,7 +536,7 @@ function WidgetFactory(options) {
           var panorama=this;
           var widgetList=panorama[Widget.name.toLowerCase()];
 
-          if (!(widgetList instanceof WidgetList) {
+          if (!(widgetList instanceof WidgetList)) {
             return;
           }
 
