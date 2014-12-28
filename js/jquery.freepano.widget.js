@@ -536,8 +536,7 @@ function WidgetFactory(options) {
           var panorama=this;
           var widgetList=panorama[Widget.name.toLowerCase()];
 
-          if (!widgetList.init) {
-            // widgetList not instantiated
+          if (!(widgetList instanceof WidgetList) {
             return;
           }
 
@@ -610,8 +609,7 @@ function WidgetFactory(options) {
           var panorama=this;
           var widgetList=panorama[Widget.name.toLowerCase()];
 
-          if (!widgetList.init) {
-            // widgetList not instantiated
+          if (!(widgetList instanceof WidgetList)) {
             return;
           }
 
