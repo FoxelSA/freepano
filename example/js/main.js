@@ -71,7 +71,7 @@ $(document).on('filesloaded', function(){
 
 /*
  * Properties and methods defined here will extend or override properties
- * and methods of the panorama object instance before its initialization.
+ * and methods of the panorama object instance before the init() method is run
  *
  * When using panorama.list below to define several panoramas,
  * properties and methods defined there will extend or override properties
@@ -149,7 +149,7 @@ $(document).on('filesloaded', function(){
       }
 
     }, // camera
-*/
+
     // panorama.sphere: sphere object defaults
     // normally you dont need to modify this
 
@@ -228,7 +228,6 @@ $(document).on('filesloaded', function(){
 
     },
 
-*/
     // panorama.poi: points of interest
     // When using panorama.list to define several panoramas,
     // poi options below are extended or overrided with the ones
@@ -252,26 +251,26 @@ $(document).on('filesloaded', function(){
           // eg: mousein and mouseout are not triggered during panorama rotation
           // if you really need, you can hook to the 'private' methods (eg: _mousein)
 
-          mousein: function poi_mousein(e) {
+          onmousein: function poi_mousein(e) {
             console.log('mousein',this);
           },
 
-          mouseout: function poi_mouseout(e) {
+          onmouseout: function poi_mouseout(e) {
             console.log('mouseout',this);
           },
 
-          mouseover: function poi_mouseover(e) {
+          onmouseover: function poi_mouseover(e) {
           },
 
-          mousedown: function poi_mousedown(e) {
+          onmousedown: function poi_mousedown(e) {
             console.log('mousedown',this);
           },
 
-          mouseup: function poi_mouseup(e) {
+          onmouseup: function poi_mouseup(e) {
             console.log('mouseup',this);
           },
 
-          click: function poi_click(e) {
+          onclick: function poi_click(e) {
             console.log('click',this);
           },
       },
@@ -355,7 +354,24 @@ $(document).on('filesloaded', function(){
       } // poi.list
     }, // poi
 
-/*
+    // work in progress
+    hud: {
+      list: {
+        testarro: {
+          color: {  
+            active: '#0000ff',
+            normal: '#ffffff',
+            hover: '#000000'
+          },     
+          coords: { 
+            lon: 0,
+            lat: 0
+          }
+        }
+      }
+    },
+
+*/
     // when using jquery.freepano.list.js,
     // you can set the preferences for several images below
     // instead of sphere.texture above
@@ -412,13 +428,15 @@ $(document).on('filesloaded', function(){
               }
             },
             poi: {
+              defaults: {
+                color: {
+                  active: '#0000ff',
+                  hover: '#ffffff',
+                  normal: '#000000'
+                }
+              },
               list: {
                 circle: {
-                    color: {
-                      active: '#0000ff',
-                      hover: '#ffffff',
-                      normal: '#000000'
-                    },
                     coords: {
                       lon: -90,
                       lat: 0
@@ -450,12 +468,7 @@ $(document).on('filesloaded', function(){
                     coords: {
                       lon: -70,
                       lat: 0
-                    },
-                    color: {
-                      active: '#0000ff',
-                      hover: '#ffffff',
-                      normal: '#000000'
-                    },
+                    }
                 }, // square
                 triangle: {
                     mesh: function test2_mesh() {
@@ -472,19 +485,52 @@ $(document).on('filesloaded', function(){
                         opacity: 0.3
                       }));
                     },
-                    color: {
-                      active: '#0000ff',
-                      hover: '#ffffff',
-                      normal: '#000000'
-                    },
                     coords: {
                       lon: -80,
                       lat: 0
                     }
-                } // triangle
+                }, // triangle
+                
+                unicorn: {
 
+                  color: {
+                    active: 'purple',
+                    normal: 'cyan',
+                    hover: 'white'
+                  },
+
+                  mesh: new THREE.Mesh(new THREE.PlaneGeometry(Math.PI/18,Math.PI/18,1,1), new THREE.MeshBasicMaterial({
+                    map: unicorn_texture,
+                    transparent: true,
+                    opacity: 0.3
+                  })),
+
+                  handleTransparency: true,
+
+                  coords: {
+                    lon: -60,
+                    lat: 0
+                  }
+
+                } // unicorn
               } // list
             }, // poi
+
+            arrow: {
+              list: {
+                0: {
+                  coords: {
+                    lon: -90
+                  }
+                },
+                1: {
+                  coords: {
+                    lon: 90 
+                  }
+                }
+              }
+            }
+
           },
 
           // second image
@@ -526,7 +572,6 @@ $(document).on('filesloaded', function(){
         active: true
     },
 
-    */
     // THREE.js renderer options
 
     renderer: {
@@ -535,7 +580,7 @@ $(document).on('filesloaded', function(){
 
       antialias: false,
 
-      alpha: true
+      alpha: false
 
     },
 
