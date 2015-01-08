@@ -141,9 +141,6 @@ $.extend(true,Controls.prototype, {
         // devicemotion
         controls._init_devicemotion();
 
-        // callback!
-        controls.callback();
-
     },
 
     // ready() method
