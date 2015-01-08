@@ -130,11 +130,11 @@ $.extend(true,Controls.prototype, {
 
         // orientation
         controls.orientation_detect();
-        $(window).on('resize', function(e) {
+        $(window).on('resize.controls', function(e) {
             controls.orientation_detect();
             controls.devicemotion.internal.gravity.aligned = false;
         });
-        $(window).on('orientationchange', function(e) {
+        $(window).on('orientationchange.controls', function(e) {
             controls.devicemotion.internal.gravity.aligned = false;
         });
 
@@ -147,9 +147,10 @@ $.extend(true,Controls.prototype, {
     },
 
     // ready() method
-    ready: function(callback) {
+    on_panorama_ready: function(panorama_event) {
 
-        var controls = this;
+        var panorama = this;
+        var controls = panorama.controls;
 
         // touch
         controls._init_touch();
@@ -160,16 +161,10 @@ $.extend(true,Controls.prototype, {
         // devicemotion switch
         controls._init_devicemotion_switch();
 
-        // callback!
-        callback();
-
     },
 
     // panorama_init() method
     panorama_init: Panorama.prototype.init,
-
-    // panorama_callback() method
-    panorama_callback: Panorama.prototype.callback,
 
     // orientation
     orientation: {
@@ -487,22 +482,22 @@ $.extend(true,Controls.prototype, {
 
     // [private] _register_keyboard_move() method
     _register_keyboard_move: function(controls) {
-        $(document).on('keydown',{controls: controls},controls._keyboard_move);
+        $(document).on('keydown.controls',{controls: controls},controls._keyboard_move);
     },
 
     // [private] _unregister_keyboard_move() method
     _unregister_keyboard_move: function(controls) {
-        $(document).off('keydown',controls._keyboard_move);
+        $(document).off('keydown.controls',controls._keyboard_move);
     },
 
     // [private] _register_keyboard_zoom() method
     _register_keyboard_zoom: function(controls) {
-        $(document).on('keydown',{controls: controls},controls._keyboard_zoom);
+        $(document).on('keydown.controls',{controls: controls},controls._keyboard_zoom);
     },
 
     // [private] _unregister_keyboard_zoom() method
     _unregister_keyboard_zoom: function(controls) {
-        $(document).off('keydown',controls._keyboard_zoom);
+        $(document).off('keydown.controls',controls._keyboard_zoom);
     },
 
     // [private] _keyboard_move() method
@@ -722,7 +717,7 @@ $.extend(true,Controls.prototype, {
         var img = $('<img>',{src:'img/gyro.png',width:45,height:45,alt:''});
 
         // button event
-        button.on('click',function(e) {
+        button.on('click.controls',function(e) {
 
             e.preventDefault();
             e.stopPropagation();
@@ -734,55 +729,23 @@ $.extend(true,Controls.prototype, {
         // append switch
         container.append(gyro.append(button.append(img)));
 
-    }
+    },
 
-});
-
-/**
- * Extends Panorama prototype
- */
-$.extend(Panorama.prototype, {
-
-    // init() method
-    init: function() {
+    on_panorama_ready: function controls_on_panorama_ready() {
 
         var panorama = this;
 
         // controls is defined in freepano options, instantiate it.
         if (typeof panorama.controls !== 'undefined') {
-            
             if (!(panorama.controls instanceof Controls)) {
-                // convert options to instantiate class
+                // convert options to class instance
                 panorama.controls = new Controls($.extend(true,{
-                    panorama: panorama,
-                    callback: function() {
-                        Controls.prototype.panorama_init.call(panorama);
-                    }
+                    panorama: panorama
                 },panorama.controls));
             }
-        } else {
-            Controls.prototype.panorama_init.call(panorama);
         }
-
-    },
-
-    // callback() method
-    callback: function(panorama_event) {
-
-        var panorama = this;
-
-        switch(panorama_event.type) {
-        case 'ready':
-            // controls is defined in freepano options, instantiate it.
-            if (typeof panorama.controls !== 'undefined' && typeof panorama.controls.ready === 'function') {
-                panorama.controls.ready(function() {
-                    Controls.prototype.panorama_callback.apply(panorama, [panorama_event]);
-                });
-                return;
-            }
-        }
-
-        Controls.prototype.panorama_callback.apply(panorama, [panorama_event]);
     }
-
 });
+
+Panorama.prototype.setupCallback(Controls.prototype);
+
