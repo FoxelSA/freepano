@@ -714,7 +714,7 @@ function WidgetFactory(options) {
       }, // widgetList_panorama_prototype_callback
 
       // hook to Panorama.prototype.mousedown
-      mousedown: function widgetList_panorama_prototype_mousedown(e) {
+      onmousedown: function widgetList_panorama_prototype_mousedown(e) {
 
         var panorama=this;
 
