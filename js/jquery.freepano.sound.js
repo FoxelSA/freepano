@@ -405,6 +405,13 @@ $.each(window.widgetTypes,function(idx,widgetType){
 
       var widget=this;
 
+      if (typeof(e)=='string') {
+        e={
+          type: e,
+          target: widget
+        }
+      }
+
       // forward widget event to sound list object
       var method="on_widget_"+e.type;
       if (widget.sound && widget.sound[method]) {
