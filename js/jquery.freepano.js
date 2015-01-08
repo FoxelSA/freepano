@@ -235,9 +235,15 @@ $.extend(true,Sphere.prototype,{
       mesh.material.needsUpdate=true;
 
     });
-  } // sphere_updateTexture
+  }, // sphere_updateTexture
 
-});
+  isTileVisible: function sphere_isTileVisible(col,row) {
+    var sphere=this;
+    var panorama=sphere.panorama;
+    return panorama.camera.frustum.intersectsSphere(mesh.geometry.boundingSphere);
+  }
+
+}); // extend Sphere prototype
 
 // Camera constructor
 function Camera(options) {
@@ -259,7 +265,9 @@ $.extend(true,Camera.prototype,{
         min: 0.5,
         step: 0.05,
         current: 1
-      }
+      },
+      frustum: new THREE.Frustum(),
+      viewProjectionMatrix: new THREE.Matrix4()
     }, // Camera defaults
 
     init: function camera_init() {
@@ -275,6 +283,22 @@ $.extend(true,Camera.prototype,{
 
       camera.target=new THREE.Vector3(0,0,0);
 
+    }, // camera_init
+
+    updateFrustum: function camera_updateFrustum() {
+      var camera=this;
+//      camera.instance.updateMatrixWorld(); // make sure the camera matrix is updated
+//      camera.instance.matrixWorldInverse.getInverse(camera.instance.matrixWorld);
+      camera.viewProjectionMatrix.multiplyMatrices(camera.instance.projectionMatrix, camera.instance.matrixWorldInverse);
+      camera.frustum.setFromMatrix(camera.viewProjectionMatrix);
+    },
+
+    on_panorama_resize: function camera_on_panorama_resize(e) {
+      this.camera.updateFrustum();
+    },
+      
+    on_panorama_zoom: function camera_on_panorama_zoom(e) {
+      this.camera.updateFrustum();
     }
 
 }); // extend Camera.prototype
@@ -354,9 +378,8 @@ $.extend(true,Panorama.prototype,{
           panorama.sphere=new Sphere($.extend(true,{
             panorama: panorama,
             callback: function(){
-              panorama.callback({type: 'resize'});
-              panorama.callback({type: 'ready'});
-              $(panorama).trigger('panoready');
+              panorama.callback('resize');
+              panorama.callback('ready');
             }
           },panorama.sphere));
         }
@@ -425,13 +448,45 @@ $.extend(true,Panorama.prototype,{
 
     }, // panorama_init
 
-    // asynchronous callback external methods can hook to
+    // asynchronous callback external methods can hook to using setupCallback below
     callback: function panorama_callback(e){
       var panorama=this;
-      if (panorama[e.type]) {
-        panorama[e.type].apply(panorama,[e]);
+      if (typeof(e)=='string') {
+        e={
+          target: panorama,
+          type: e,
+        };
+      } 
+      var method='on'+e.type;
+      if (panorama[method]) {
+        panorama[method].apply(panorama,[e]);
       }
     }, // panorama_callback
+
+    // setup panorama_callback hook for specified instance or prototype
+    setupCallback: function panorama_setupCallback(obj) {
+
+      obj.panorama_prototype_callback=Panorama.prototype.callback;
+
+      obj.panorama_callback=function(e) {
+         var panorama=this;
+         if (typeof(e)=="string") {
+           e={
+             type: e,
+             target: panorama
+           }
+         }
+         if (obj['on_panorama_'+e.type]) {
+           if (obj['on_panorama_'+e.type].apply(panorama,[e])===false) {
+              return false;
+           }
+         }
+         return obj.panorama_prototype_callback.apply(e.target,[e]);
+      }
+
+      Panorama.prototype.callback=obj.panorama_callback;
+
+    }, // panorama_setupCallback
 
     // update rotation matrix after changing panorama.rotation values
     updateRotationMatrix: function panorama_updateRotationMatrix() {
@@ -449,12 +504,12 @@ $.extend(true,Panorama.prototype,{
       var canvas=$('canvas:first',this.container);
       $(this.container)
       .off('.panorama'+this.num)
-      .on('mousedown.panorama'+this.num, canvas, function(e){panorama.callback(e)})
-      .on('mousemove.panorama'+this.num, canvas, function(e){panorama.callback(e)})
-      .on('mouseup.panorama'+this.num, canvas, function(e){panorama.callback(e)})
-      .on('mousewheel.panorama'+this.num, canvas, function(e){panorama.callback(e)})
-      .on('zoom.panorama'+this.num, canvas, function(e){panorama.callback(e)});
-      $(window).on('resize.panorama'+this.num, function(e){panorama.callback(e)});
+      .on('mousedown.panorama'+this.num, canvas, function(e){e.target=panorama;panorama.callback(e)})
+      .on('mousemove.panorama'+this.num, canvas, function(e){e.target=panorama;panorama.callback(e)})
+      .on('mouseup.panorama'+this.num, canvas, function(e){e.target=panorama;panorama.callback(e)})
+      .on('mousewheel.panorama'+this.num, canvas, function(e){e.target=panorama;panorama.callback(e)})
+      .on('zoom.panorama'+this.num, canvas, function(e){e.target=panorama;panorama.callback(e)});
+      $(window).on('resize.panorama'+this.num, function(e){e.target=panorama;panorama.callback(e)});
 
     }, // panorama_eventsInit
 
@@ -547,7 +602,7 @@ $.extend(true,Panorama.prototype,{
 
     }, // getMouseCoords
 
-    mousedown: function panorama_mousedown(e){
+    onmousedown: function panorama_mousedown(e){
       if (isLeftButtonDown(e)) {
         this.mode.rotate=true;
         e.preventDefault();
@@ -563,7 +618,7 @@ $.extend(true,Panorama.prototype,{
       }
     },
 
-    mousemove: function panorama_mousemove(e){
+    onmousemove: function panorama_mousemove(e){
       if (!this.sphere.done) {
         return;
       }
@@ -582,7 +637,7 @@ $.extend(true,Panorama.prototype,{
       }
     },
 
-    mouseup: function panorama_mouseup(e){
+    onmouseup: function panorama_mouseup(e){
       this.mode.rotate=false;
     },
 
@@ -624,18 +679,19 @@ $.extend(true,Panorama.prototype,{
       this.camera.instance.fov=this.updateFov();
       if (fov!=this.camera.instance.fov) {
         this.camera.instance.updateProjectionMatrix();
+        this.callback('zoom');
         this.drawScene(function(){
           $('canvas:first',this.container).trigger('mousemove');
         });
       }
     },
 
-    zoom: function panorama_zoom(e,scale) {
+    setZoom: function panorama_setZoom(e,scale) {
       this.camera.zoom.current=1/scale;
       this.zoomUpdate();
     },
 
-    mousewheel: function panorama_mousewheel(e){
+    onmousewheel: function panorama_mousewheel(e){
       e.preventDefault();
       if (!this.sphere.done) {
         return;
@@ -686,7 +742,7 @@ $.extend(true,Panorama.prototype,{
       panorama.sphere.object3D.matrix.copy(panorama.rotation.matrix.clone());
       panorama.sphere.object3D.applyMatrix(panorama.viewRotationMatrix);
 
-      panorama.callback({type: 'update'});
+      panorama.callback('update');
 
       panorama.renderer.clear();
       // TODO move post-Processing to jquery.freepano.postprocessing.js
@@ -698,10 +754,10 @@ $.extend(true,Panorama.prototype,{
         panorama.renderer.render(panorama.scene,panorama.camera.instance);
       }
 
-      panorama.callback({type: 'render'});
+      panorama.callback('render');
     },
 
-    resize: function panorama_resize(e){
+    onresize: function panorama_resize(e){
       var panorama=this;
       this.camera.instance.aspect=$(this.container).width()/$(this.container).height();
       this.camera.instance.updateProjectionMatrix();
@@ -726,7 +782,7 @@ $.extend(true,Panorama.prototype,{
         panorama.drawScene();
       },0);
     }
-});
+}); // extend Panorama.prototype
 
 function isLeftButtonDown(e) {
   return ((e.buttons!==undefined && e.buttons==1) || (e.buttons===undefined && e.which==1));
@@ -745,3 +801,4 @@ $.fn.panorama=function(options){
   return this;
 }
 
+Panorama.prototype.setupCallback(Camera.prototype);
