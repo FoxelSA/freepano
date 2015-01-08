@@ -237,30 +237,30 @@ function WidgetFactory(options) {
         ];
       }, // widget_getCoords3D
 
-      mousein: function widget_mousein(e) {
+      onmousein: function widget_mousein(e) {
         console.log('mousein',this);
       },
 
-      mouseout: function widget_mouseout(e) {
+      onmouseout: function widget_mouseout(e) {
         console.log('mouseout',this);
       },
 
-      mouseover: function widget_mouseover(e) {
+      onmouseover: function widget_mouseover(e) {
       },
 
-      mousedown: function widget_mousedown(e) {
+      onmousedown: function widget_mousedown(e) {
         console.log('mousedown',this);
       },
 
-      mouseup: function widget_mouseup(e) {
+      onmouseup: function widget_mouseup(e) {
         console.log('mouseup',this);
       },
 
-      click: function widget_click(e) {
+      onclick: function widget_click(e) {
         console.log('click',this);
       },
 
-      _mousedown: function _widget_mousedown(e){
+      _onmousedown: function _widget_mousedown(e){
 
         var widget=this;
         var widgetList=widget.panorama[this.constructor.name.toLowerCase()];
@@ -286,11 +286,11 @@ function WidgetFactory(options) {
 
       }, // _widget_mousedown
 
-      _mouseup: function _widget_mouseup(e){
+      _onmouseup: function _widget_mouseup(e){
         this.setColor(this.color.hover);
       }, // _widget_mouseup
 
-      _mousein: function _widget_mousein(e){
+      _onmousein: function _widget_mousein(e){
         if (!this.color || this.panorama.mode.rotate) return;
         this.panorama[this.constructor.name.toLowerCase()]._hover=this;
         if (this.panorama[this.constructor.name.toLowerCase()]._active) {
@@ -302,7 +302,7 @@ function WidgetFactory(options) {
         this.setColor(this.color.hover);
       }, // _widget_mousein
 
-      _mouseout: function _widget_mouseout(e){
+      _onmouseout: function _widget_mouseout(e){
         if (!this.color || this.panorama.mode.rotate) return;
         this.panorama[this.constructor.name.toLowerCase()]._hover=null;
         this.setColor(this.color.normal);
@@ -341,8 +341,8 @@ function WidgetFactory(options) {
         // save pointer to Panorama.prototype.callback in WidgetList.prototype
         panorama_prototype_callback: Panorama.prototype.callback,
 
-        // save pointer to Panorama.prototype.mousedown in WidgetList.prototype
-        panorama_prototype_mousedown: Panorama.prototype.mousedown,
+        // save pointer to Panorama.prototype.onmousedown in WidgetList.prototype
+        panorama_prototype_onmousedown: Panorama.prototype.onmousedown,
 
         init: function widgetList_init() {
 
@@ -572,13 +572,13 @@ function WidgetFactory(options) {
               if (widgetList.hover[0].object.parent.name==hover[0].object.parent.name) {
 
                 // then trigger mouseover for the widget and return
-                widgetList.list[hover[0].object.parent.name].instance.mouseover(e);
+                widgetList.list[hover[0].object.parent.name].instance.onmouseover(e);
                 return;
 
               } else {
                 // not the same one, trigger mouseout and continue
-                widgetList.list[widgetList.hover[0].object.parent.name].instance._mouseout(e);
-                widgetList.list[widgetList.hover[0].object.parent.name].instance.mouseout(e);
+                widgetList.list[widgetList.hover[0].object.parent.name].instance._onmouseout(e);
+                widgetList.list[widgetList.hover[0].object.parent.name].instance.onmouseout(e);
               }
             }
 
@@ -586,17 +586,17 @@ function WidgetFactory(options) {
             widgetList.hover=hover;
 
             // trigger mousein and mouseover for the widget mouse is hovering now
-            widgetList.list[hover[0].object.parent.name].instance._mousein(e);
-            widgetList.list[hover[0].object.parent.name].instance.mousein(e);
-            widgetList.list[hover[0].object.parent.name].instance.mouseover(e);
+            widgetList.list[hover[0].object.parent.name].instance._onmousein(e);
+            widgetList.list[hover[0].object.parent.name].instance.onmousein(e);
+            widgetList.list[hover[0].object.parent.name].instance.onmouseover(e);
 
           } else {
             // no hover now, but if mouse was hovering a widget before
             if (widgetList.hover.length) {
 
                 // trigger mouseout and return
-                widgetList.list[widgetList.hover[0].object.parent.name].instance._mouseout(e);
-                widgetList.list[widgetList.hover[0].object.parent.name].instance.mouseout(e);
+                widgetList.list[widgetList.hover[0].object.parent.name].instance._onmouseout(e);
+                widgetList.list[widgetList.hover[0].object.parent.name].instance.onmouseout(e);
                 widgetList.hover=[];
                 return;
             }
@@ -621,12 +621,12 @@ function WidgetFactory(options) {
           var widget=widgetList.list[widgetList.hover[0].object.parent.name].instance;
 
           // 1. private mouseevent handler (for hover / active color handling)
-          if (widget['_'+e.type] && widget.color) {
-            widget['_'+e.type](e);
+          if (widget['_on'+e.type] && widget.color) {
+            widget['_on'+e.type](e);
           }
 
           // 2. public mouseevent handler
-            return widget[e.type](e);
+            return widget['on'+e.type](e);
 
         }, // widgetList_on_panorama_mouseevent
 
@@ -713,13 +713,13 @@ function WidgetFactory(options) {
 
       }, // widgetList_panorama_prototype_callback
 
-      // hook to Panorama.prototype.mousedown
-      onmousedown: function widgetList_panorama_prototype_mousedown(e) {
+      // hook to Panorama.prototype.onmousedown
+      onmousedown: function widgetList_panorama_prototype_onmousedown(e) {
 
         var panorama=this;
 
         // call previous panorama.prototype.callback
-        var ret=WidgetList.prototype.panorama_prototype_mousedown.apply(panorama,[e]);
+        var ret=WidgetList.prototype.panorama_prototype_onmousedown.apply(panorama,[e]);
 
         // unset panorama.mode.rotate when mousedown activated a widget
         if (panorama[Widget.name.toLowerCase()] && panorama[Widget.name.toLowerCase()]._active){
