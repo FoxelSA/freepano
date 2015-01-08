@@ -83,7 +83,7 @@ $.extend(true,SoundList.prototype,{
       console.log('unhandled soundList_event: '+soundList_event.type);
       return;
     }
-    soundList['on'+soundList_event.type](soundList_event);
+    return soundList['on'+soundList_event.type](soundList_event);
   }, // soundList_callback
 
   set_position_howler: function soundList_set_position_howler(panorama,object3D){
@@ -318,16 +318,20 @@ $.extend(true,Panorama.prototype,{
     var method='on_panorama_'+e.type;
 
     if (panorama.sound && panorama.sound[method]) {
-      panorama.sound[method].apply(panorama,[e]);
+      if (panorama.sound[method].apply(panorama,[e])===false) {
+        return false;
+      } 
     } else {
     	// else forward panorama event to soundList prototype method
     	if (SoundList.prototype[method]) {
-    	  SoundList.prototype[method].apply(panorama,[e]);	
+        if (SoundList.prototype[method].apply(panorama,[e])===false) {
+          return false;
+        }  
     	}
     }
 
     // chain with old panorama.prototype.callback
-    SoundList.prototype.panorama_prototype_callback.apply(panorama,[e]);
+    return SoundList.prototype.panorama_prototype_callback.apply(panorama,[e]);
 
   } // soundList_panorama_prototype_callback
 
@@ -404,11 +408,13 @@ $.each(window.widgetTypes,function(idx,widgetType){
       // forward widget event to sound list object
       var method="on_widget_"+e.type;
       if (widget.sound && widget.sound[method]) {
-        widget.sound[method].apply(widget,[e]);
+        if (widget.sound[method].apply(widget,[e])===false){
+          return false;
+        }
       }
 
       // chain with old widget.prototype.callback
-      SoundList.prototype[widgetType.toLowerCase()+'_prototype_callback'].apply(widget,[e]);
+      return SoundList.prototype[widgetType.toLowerCase()+'_prototype_callback'].apply(widget,[e]);
 
     }, // widget_prototype_callback_hook
 
