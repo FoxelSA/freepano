@@ -37,7 +37,7 @@
  */
 
 if (typeof(PanoList)!="undefined") {
-  alert("jquery.freepano.list.js must be loaded after jquery.freepano.widget.js !")
+  alert("jquery.freepano.list.js must be loaded after jquery.freepano.widget.js !");
 }
 
 function WidgetFactory(options) {
@@ -136,14 +136,11 @@ function WidgetFactory(options) {
         widget.scene.add(widget.object3D);
 
         // trigger widget 'ready' callback
-        widget.callback({
-            type: 'ready',
-            target: widget
-        });
+        widget.callback('ready');
 
       }, // widget_init
 
-      dispose: function widget_dispose(){
+      ondispose: function widget_ondispose(){
 
         var widget=this;
         var panorama=widget.panorama;
@@ -162,12 +159,18 @@ function WidgetFactory(options) {
       // callback other classes can hook to
       callback: function widget_callback(widget_event) {
         var widget=this;
-        if (widget[widget_event.type]) {
-          return widget[widget_event.type](widget_event);
+        if (typeof(widget_event)=='string') {
+          widget_event={
+            type: widget_event,
+            target: widget
+          }
+        }
+        if (widget['on'+widget_event.type]) {
+          return widget['on'+widget_event.type](widget_event);
         }
       }, // widget_callback
 
-      ready: function widget_ready(widget_event) {
+      onready: function widget_ready(widget_event) {
         var widget=this;
         widget.object3D.name=widget.name;
         $.each(widget.object3D.children,function(index,mesh){
@@ -270,7 +273,7 @@ function WidgetFactory(options) {
         this.setColor(this.color.active);
 
         // restore widget color on mouseup
-        $(document).on('mouseup.widget_mousedown',function(){
+        $(document).on('mouseup.'+Widget.name.toLowerCase()+'_widget_mousedown',function(){
           if (widgetList._active) {
             if (widget.color && widgetList.hover.length && widgetList.hover[0].object.parent.name==widgetList._active.name) {
               widget.setColor(widget.color.hover);
@@ -281,7 +284,7 @@ function WidgetFactory(options) {
             }
             widgetList._active=null;
           }
-          $(document).off('mouseup.widget_mousedown');
+          $(document).off('mouseup.'+Widget.name.toLowerCase()+'_widget_mousedown');
         });
 
       }, // _widget_mousedown
@@ -385,10 +388,12 @@ function WidgetFactory(options) {
               options.camera.meshes[Widget.name.toLowerCase()]=[];
             }
 
-            if (!options.camera._id) {
+            if (!options.camera._id ) options.camera._id=[];
+
+            if (options.camera._id[Widget.name]==undefined) {
 
               // register camera in widgetList._cameraList
-              options.camera._id=widgetList._cameraList.length;
+              options.camera._id[Widget.name]=widgetList._cameraList.length;
               widgetList._cameraList.push(options.camera);
 
               // setup raycaster for camera, for get_mouseover_list()
@@ -449,7 +454,7 @@ function WidgetFactory(options) {
           $.each(widgetList.list,function widgetList_widget_dispose() {
             var widget=this;
             if (widget.instance){
-              widget.instance.callback({type: 'dispose'});
+              widget.instance.callback('dispose');
               widget.instance=null;
             }
           });
@@ -698,12 +703,16 @@ function WidgetFactory(options) {
 
         if (widgetList instanceof WidgetList){
           if (widgetList['on_panorama_'+e.type]) {
+            if (Widget.name=="POI" && e.type=="mousedown"){
+              console.log(0);
+            }
             if (widgetList['on_panorama_'+e.type].apply(panorama,[e])===false) {
               return false;
             }
           }
         } else {
           if (e.type=='ready'){
+            // inititalize widget list on panorama_ready
             WidgetList.prototype.on_panorama_ready.apply(panorama,[e]);
           }
         }
