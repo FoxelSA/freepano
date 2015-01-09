@@ -85,7 +85,7 @@ function WidgetFactory(options) {
     $.extend(true, Widget.prototype, {
 
       defaults: {
-        type: 'button',
+        overlay: false,
         mesh: null,
         object3D: null,
         radius: Math.PI ,
@@ -221,6 +221,8 @@ function WidgetFactory(options) {
         if (widget.lookAtVec3) widget.object3D.lookAt(widget.lookAtVec3);
     //    widget.object3D.rotation.setFromRotationMatrix(new THREE.Matrix4().makeRotationY(-panorama.lon*2*Math.PI/180));
 
+        widget.callback('update');
+
       }, // widget_update
 
       getCoords3D: function widget_getCoords3D(){
@@ -294,15 +296,35 @@ function WidgetFactory(options) {
       }, // _widget_mouseup
 
       _onmousein: function _widget_mousein(e){
-        if (!this.color || this.panorama.mode.rotate) return;
-        this.panorama[this.constructor.name.toLowerCase()]._hover=this;
-        if (this.panorama[this.constructor.name.toLowerCase()]._active) {
-          if (this.panorama[this.constructor.name.toLowerCase()]._active==this) {
+
+        var panorama=this.panorama;
+
+        if (!this.color || panorama.mode.rotate) return;
+
+        // find the active widget if any
+        var activeWidget=null;
+        $.each(window.widgetTypes,function(index,name){
+          var widgetList=panorama[name.toLowerCase()];
+          if (widgetList && widgetList._active) {
+            activeWidget=widgetList._active;
+            return false;
+          }
+        });
+
+        var widgetList=panorama[this.constructor.name.toLowerCase()];
+        widgetList._hover=this;
+
+        // restore active color on mousein when mouse button is down
+        if (activeWidget) {
+          if (activeWidget==this) {
             this.setColor(this.color.active);
           }
           return;
         }
+        
+        // or set hover color
         this.setColor(this.color.hover);
+
       }, // _widget_mousein
 
       _onmouseout: function _widget_mouseout(e){
@@ -347,15 +369,26 @@ function WidgetFactory(options) {
         // save pointer to Panorama.prototype.onmousedown in WidgetList.prototype
         panorama_prototype_onmousedown: Panorama.prototype.onmousedown,
 
+        // initialize widget list and instantiate widgets
         init: function widgetList_init() {
 
           var widgetList=this;
           var panorama=widgetList.panorama;
 
+          // setup secondary scene for overlay if requested
+          if (widgetList.overlay) {
+            if (!widgetList.camera) {
+              widgetList.camera=panorama.camera;
+            }
+            if (!widgetList.scene) {
+              widgetList.scene=new THREE.Scene();
+            }
+          }
+
           panorama[Widget.name.toLowerCase()]=widgetList;
 
           if (!widgetList.scene && !panorama.scene) {
-            console.log('panorama.scene is undefined, cannot create widgets');
+            console.log('no scene is defined, cannot create widgets');
             return;
           }
 
@@ -364,6 +397,8 @@ function WidgetFactory(options) {
 
             var widget=this;
             widgetList.list[name].instance=null;
+
+            // setup widget basic options
             var options=$.extend(
               true,
               {},
@@ -400,15 +435,16 @@ function WidgetFactory(options) {
               if (!(options.camera.raycaster instanceof THREE.Raycaster)) {
                 options.camera.raycaster=new THREE.Raycaster(options.raycaster);
               }
-
             }
 
+            // instantiate widget
             widgetList.list[name].instance=new Widget(options);
 
           });
 
         }, // widgetList_init
 
+        // update mesh list used for get_mouseover_list
         mesh_list_update: function widgetList_mesh_list_update() {
           var widgetList=this;
           $.each(widgetList.list,function(name,widget) {
@@ -441,6 +477,22 @@ function WidgetFactory(options) {
 
         }, // widgetList_on_panorama_update
 
+        // render overlay scene
+        on_panorama_render: function widgetList_on_panorama_render(e) {
+
+          var panorama=this;
+          var widgetList=panorama[Widget.name.toLowerCase()];
+
+          if (!widgetList.overlay) return;
+          if (!(widgetList instanceof WidgetList)) return;
+
+          // render widgets over panorama scene
+          panorama.renderer.clearDepth();
+          panorama.renderer.render(widgetList.scene,widgetList.camera.instance);
+
+        }, // widgetList_on_panorama_render
+
+        // dispose widgets and empty widget list on panorama dispose
         on_panorama_dispose: function widgetList_on_panorama_dispose(e) {
 
           var panorama=this;
@@ -702,17 +754,17 @@ function WidgetFactory(options) {
         var widgetList=panorama[Widget.name.toLowerCase()];
 
         if (widgetList instanceof WidgetList){
+          // widget list is yet instantiated
           if (widgetList['on_panorama_'+e.type]) {
-            if (Widget.name=="POI" && e.type=="mousedown"){
-              console.log(0);
-            }
+            // forward panorama event to widget list
             if (widgetList['on_panorama_'+e.type].apply(panorama,[e])===false) {
               return false;
             }
           }
         } else {
+          // widget list is not yet instantiated
           if (e.type=='ready'){
-            // inititalize widget list on panorama_ready
+            // instantiate widget list on panorama_ready
             WidgetList.prototype.on_panorama_ready.apply(panorama,[e]);
           }
         }
