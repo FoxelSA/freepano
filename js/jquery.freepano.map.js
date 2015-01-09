@@ -62,7 +62,7 @@ $.extend(true, Map.prototype, {
     // default values
     defaults: {
         // active
-        active: false,
+        active: true,
 
         // leaflet defaults
         leaflet: {
@@ -244,6 +244,8 @@ $.extend(true, Map.prototype, {
 
     init: function map_init() {
         var map = this;
+
+        if (map.active) map.show();
 
         // watch touch move properties
         watch(map,['active'], function() {
