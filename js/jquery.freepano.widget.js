@@ -511,6 +511,9 @@ function WidgetFactory(options) {
             }
           });
 
+          if (widgetList._cameraList) widgetList._cameraList=[];
+          if (widgetList.camera) widgetList.camera._id=[];
+
           panorama[Widget.name.toLowerCase()]=null;
 
         }, // widgetList_on_panorama_dispose
