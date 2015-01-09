@@ -30,6 +30,17 @@ The content is licensed under the terms of the
 You must read <[http://foxel.ch/license](http://foxel.ch/license)> for more
 information about our Licensing terms and our Usage and Attribution guidelines.
 
+## Included Content
+
+This program includes works distributed under the terms of a Creative Commons
+Attribution-ShareAlike license and/or a compatible license and other copyright
+notices.
+
+*   __Music__<br />
+    Copyright (c) 2013-2014 Don L. Harper - http://donharper.com<br />
+    Distributed under the terms of the
+    [Creative Commons Attribution-ShareAlike 4.0 International](http://creativecommons.org/licenses/by-sa/4.0/)
+    (CC BY-SA) license.
 
 ## Included Software and Libraries
 
@@ -42,7 +53,7 @@ Public License and/or a compatible license and other copyright notices.
     Copyright (c) 2010-2014 three.js authors<br />
     three.js is licensed under the [MIT license](http://opensource.org/licenses/MIT).
 
-*   __jQuery 2.1.1__<br />
+*   __jQuery 2.1.3__<br />
     <[http://jquery.com](http://jquery.com)><br />
     Copyright (c) 2005, 2014 jQuery Foundation, Inc. and other contributors<br />
     jQuery is licensed under the [MIT license](http://opensource.org/licenses/MIT).
