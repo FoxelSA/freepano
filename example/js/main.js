@@ -55,7 +55,7 @@ $(document).ready(function(){
 
   // load image with alpha channel to use as POI
   window.unicorn_texture=new THREE.ImageUtils.loadTexture(
-    'unicorn.png',
+    'img/unicorn.png',
     new THREE.UVMapping(),
     file_onload,
     function onloaderror() {
@@ -234,6 +234,9 @@ $(document).on('filesloaded', function(){
     // from panorama.list.images[id].poi
 
     poi: {
+
+      // use a secondary scene for rendering widgets (eg when using filters) 
+      overlay: false,
 
       // panorama.poi.defaults: default values for POIs
       defaults: {
@@ -428,6 +431,7 @@ $(document).on('filesloaded', function(){
               }
             },
             poi: {
+              overlay: true,
               defaults: {
                 color: {
                   active: '#0000ff',
