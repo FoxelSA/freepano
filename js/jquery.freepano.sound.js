@@ -55,17 +55,22 @@ $.extend(true,SoundList.prototype,{
     type: 'howler'
   }, // SoundList defaults
 
+  // initialise sound list and instantiate sounds
   init: function soundList_init() {
     var soundList=this;
 
     if (soundList.panorama) {
+      // this sound list is bound to panorama
       if (!soundList.panorama.sound || soundList.panorama.sound!=soundList){
         soundList.panorama.sound=soundList;
       }
     } else if (soundList.widget) {
+      // this sound list is bound to a widget
       if (!soundList.widget.sound || soundList.widget.sound!=soundList){
         soundList.widget.sound=soundList;
       }
+    } else {
+      console.log('SoundList.init: Cannot initialize sound list. Where are we bound ?');
     }
 
     $.each(soundList.list,function(name){
@@ -78,12 +83,23 @@ $.extend(true,SoundList.prototype,{
   }, // soundList_init
 
   callback: function soundList_callback(soundList_event) {
+
     var soundList=this;
+
+    if (typeof(soundList_event)=='string') {
+      soundList_event={
+        type: soundList_event,
+        target: soundList
+      }
+    }
+
     if (!soundList['on'+soundList_event.type]) {
       console.log('unhandled soundList_event: '+soundList_event.type);
       return;
     }
+
     return soundList['on'+soundList_event.type](soundList_event);
+
   }, // soundList_callback
 
   set_position_howler: function soundList_set_position_howler(panorama,object3D){
@@ -127,7 +143,7 @@ $.extend(true,SoundList.prototype,{
   }, // soundList_on_panorama_dispose
 
   panorama_prototype_init: Panorama.prototype.init,
-  panorama_prototype_callback: Panorama.prototype.callback,
+  panorama_prototype_callback: Panorama.prototype.callback
 
 }); // extend SoundList.prototype
 
@@ -155,19 +171,19 @@ $.extend(true,Sound.prototype,{
     // redirect sound.type specific event handlers calls to sound instance via sound.callback
     howler: {
       onload: function howler_onload() {
-        Sound.prototype.callback({type:'load'});
+        Sound.prototype.callback('load');
       },
       onloaderror: function howler_onloaderror() {
-        Sound.prototype.callback({type:'loaderror'});
+        Sound.prototype.callback('loaderror');
       },
       onpause: function howler_onpause() {
-        Sound.prototype.callback({type:'pause'});
+        Sound.prototype.callback('pause');
       },
       onplay: function howler_onplay() {
-        Sound.prototype.callback({type:'play'});
+        Sound.prototype.callback('play');
       },
       onend: function howler_onend() {
-        Sound.prototype.callback({type:'end'});
+        Sound.prototype.callback('end');
       }
     }
   }, // Sound.options
@@ -246,9 +262,18 @@ $.extend(true,Sound.prototype,{
 
   }, // sound_disposeHowler
 
-  callback: function sound_callback(_sound_event) {
+  // sound list element callback
+  callback: function sound_callback(sound_event) {
+
     var sound=this;
-    var sound_event=$.extend(true,{target: sound},_sound_event);
+
+    if (typeof(sound_event)=="string"){
+      sound_event={
+        type: sound_event,
+        target: sound
+      }
+    }
+
     if (sound['on'+sound_event.type]) {
       sound['on'+sound_event.type](sound_event);
     } else {
@@ -285,7 +310,7 @@ $.extend(true,Sound.prototype,{
 $.extend(true,Panorama.prototype,{
 
   // initialize sound list on panorama init
-  init: function panorama_prototype_init_hook() {
+  init: function soundList_panorama_prototype_init() {
 
     var panorama=this;
 
@@ -307,12 +332,23 @@ $.extend(true,Panorama.prototype,{
 
     SoundList.prototype.panorama_prototype_init.call(panorama);
 
-  }, // panorama_prototype_init_hook
+  }, // soundList_panorama_prototype_init
 
   // hook to Panorama.prototype.callback
   callback: function soundList_panorama_prototype_callback(e) {
 
     var panorama=this;
+
+    if (typeof(e)=="string") {
+      e={
+        type: e,
+        target: panorama
+      }
+    }
+
+    if (e.type=='update') {
+      console.log(0)
+    }
 
     // forward panorama event to soundList instance bound to panorama (if any)
     var method='on_panorama_'+e.type;
