@@ -712,6 +712,10 @@ function WidgetFactory(options) {
           var container=$(panorama.container);
           var mouseover_list=[];
 
+          if (e.clientX==undefined) {
+            return mouseover_list;
+          }
+
           // convert screen coordinates to normalized coordinates
           var vector=new THREE.Vector3();
           vector.set(
