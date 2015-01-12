@@ -418,6 +418,8 @@ $(document).on('filesloaded', function(){
               lon: 3.902137,
               lat: 43.600233,
             },
+
+            /*
             sound: {
               list: {
                 1: {
@@ -428,6 +430,7 @@ $(document).on('filesloaded', function(){
                 }
               }
             },
+            */
             poi: {
               defaults: {
                 color: {
@@ -454,9 +457,11 @@ $(document).on('filesloaded', function(){
                           coneOuterGain: 0,
                           rolloffFactor: 0
                         },
+                        /*
                         plop: {
                           src: ["plop.mp3"]
                         }
+                        */
                       }
                     }
                 }, // circle
