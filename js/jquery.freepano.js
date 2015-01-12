@@ -42,15 +42,22 @@
  *      Attribution" section of <http://foxel.ch/license>.
  */
 
+
+// Texture constructor
+
 function Texture(options) {
+
   if (!(this instanceof Texture)) {
     return new Texture(options);
   }
+
   $.extend(true,this,this.defaults,options);
   this.init();
-}
+
+} // Texture
 
 $.extend(true,Texture.prototype,{
+
   defaults: {
     dirName: null,
     baseName: null,
@@ -62,14 +69,20 @@ $.extend(true,Texture.prototype,{
     },
     columns: 2,
     rows: 1,
-    getTileName: function(col,row) {
-      return this.dirName+'/'+this.baseName+'_'+row+'_'+col+'.jpg';
-    }
-  },
-  init: function texture_init(){
-  }
-});
+  }, // Texture defaults
 
+  init: function texture_init(){
+  },
+
+  getTileName: function texture_getTileName(col,row) {
+    return this.dirName+'/'+this.baseName+'_'+row+'_'+col+'.jpg';
+  }
+
+}); // extend Texture.prototype
+
+
+// Sphere constructor
+ 
 function Sphere(options) {
   if (!(this instanceof Sphere)) {
     return new Sphere(options);
@@ -79,6 +92,7 @@ function Sphere(options) {
 }
 
 $.extend(true,Sphere.prototype,{
+
   defaults: {
     done: false,
     radius: 15,
@@ -87,9 +101,11 @@ $.extend(true,Sphere.prototype,{
     texture: null,
     object3D: null,
     callback: function(){}
-  },
+
+  }, // sphere defaults
 
   init: function sphere_init(callback) {
+
     var sphere=this;
     if (sphere.texture!==undefined) {
       if (!(sphere.texture instanceof Texture)) {
@@ -99,7 +115,8 @@ $.extend(true,Sphere.prototype,{
     }
     sphere.object3D=new THREE.Object3D();
     sphere.build(callback);
-  },
+
+  }, // sphere_init
 
   build: function sphere_build(callback) {
 
@@ -113,8 +130,8 @@ $.extend(true,Sphere.prototype,{
     var phiLength=2*Math.PI/columns;
     var thetaLength=Math.PI/rows;
 
-    // segments to go
-    var remaining=columns*rows;
+    // tiles to go 
+    sphere.tilesToLoad=columns*rows;
 
     var transform=new THREE.Matrix4().makeScale(-1,1,1);
 
@@ -124,43 +141,7 @@ $.extend(true,Sphere.prototype,{
         var geometry=new THREE.SphereGeometry(sphere.radius,sphere.widthSegments,sphere.heightSegments,col*phiLength,phiLength,row*thetaLength,thetaLength);
         geometry.applyMatrix(transform);
 
-        // load tile image
-        var tileTexture=THREE.ImageUtils.loadTexture(
-          sphere.texture.getTileName(col,row),
-          new THREE.UVMapping(),
-          function loadTexture_onload(){
-
-            // redraw panorama
-            setTimeout(function(){
-              sphere.panorama.drawScene.call(sphere.panorama);
-            },0);
-
-            --remaining;
-            if (!remaining) {
-              // panorama loaded
-              setTimeout(function(){
-                // set texture height
-                sphere.texture.height=rows*tileTexture.image.height;
-                // set sphere radius
-                sphere.r=sphere.texture.height/Math.PI;
-                sphere.done=true;
-                if (callback) {
-                  callback.call(sphere);
-                } else {
-                  sphere.callback()
-                }
-              },0);
-            }
-          },
-        function loadTexture_onerror(){
-          $.notify('Cannot load panorama.');
-        });
-
-        $.extend(tileTexture,sphere.texture.options,{
-          col: col,
-          row: row
-        });
-
+        var tileTexture=sphere.loadTile(col,row,callback);
         var material=new THREE.MeshBasicMaterial({
            map: tileTexture,
 //           wireframe: true,
@@ -170,16 +151,76 @@ $.extend(true,Sphere.prototype,{
         sphere.object3D.add(mesh);
       }
     }
+  }, // sphere_build
+
+  loadTile: function sphere_loadTile(col,row,callback) {
+
+    var sphere=this;
+
+    var tileTexture=THREE.ImageUtils.loadTexture(
+      sphere.texture.getTileName(col,row),
+      new THREE.UVMapping(),
+      function loadTexture_onload(texture){
+        sphere.texture_onload(texture,callback);
+      },
+      function loadTexture_onerror(){
+        $.notify('Cannot load panorama.');
+      }
+    );
+
+    $.extend(tileTexture,sphere.texture.options,{
+      col: col,
+      row: row
+    });
+
+    return tileTexture;
+    
   },
+
+  texture_onload: function sphere_loadTextureOnload(texture,callback){
+    var sphere=this;
+
+    // redraw panorama after a texture is loaded
+    setTimeout(function(){
+      sphere.panorama.drawScene.call(sphere.panorama);
+    },0);
+
+    // check for remaining textures to load
+    --sphere.tilesToLoad;
+    if (!sphere.tilesToLoad) {
+
+      // panorama loaded
+      setTimeout(function(){
+
+        // set texture height and sphere radius
+        sphere.texture.height=sphere.texture.rows*texture.image.height;
+        sphere.r=sphere.texture.height/Math.PI;
+
+        sphere.done=true;
+       
+        // run callback passed to sphere_build if specified, else default sphere callback
+        if (callback) {
+          callback.call(sphere);
+        } else {
+          sphere.callback()
+        }
+
+      },0);
+    }
+  }, // sphere_texture_onload
 
   setTexture: function sphere_setTexture(texture_options,callback) {
     var sphere=this;
-
     $.extend(true,sphere.texture,texture_options);
+    sphere.updateTexture(callback);
+  }, // sphere_setTexture
+
+  updateTexture: function sphere_updateTexture(callback) {
+    var sphere=this;
 
     var columns=sphere.texture.columns;
     var rows=sphere.texture.rows;
-    var remaining=columns*rows;
+    sphere.tilesToLoad=columns*rows;
 
     $.each(sphere.object3D.children,function(){
 
@@ -188,45 +229,23 @@ $.extend(true,Sphere.prototype,{
       var row=mesh.material.map.row;
       var col=mesh.material.map.col;
 
-      var tileTexture=THREE.ImageUtils.loadTexture(
-
-        sphere.texture.getTileName(col,row),
-        new THREE.UVMapping(),
-        function loadTexture_onload(){
-          mesh.material.needsUpdate=true;
-          setTimeout(function(){
-            sphere.panorama.drawScene.call(sphere.panorama);
-          },0);
-          --remaining;
-          if (!remaining) {
-            setTimeout(function(){
-              sphere.texture.height=rows*tileTexture.image.height;
-              sphere.r=sphere.texture.height/Math.PI;
-              sphere.done=true;
-              if (callback) {
-                callback.call(sphere);
-              } else {
-                sphere.callback()
-              }
-            },0);
-          }
-        },
-        function loadTexture_onerror(){
-          $.notify('Cannot load panorama.');
-        }
-      );
-
-      $.extend(tileTexture,sphere.texture.options,{
-        col: col,
-        row: row
-      });
+      var tileTexture=sphere.loadTile(col,row,callback);
 
       mesh.material.map=tileTexture;
+      mesh.material.needsUpdate=true;
 
     });
-  }
-});
+  }, // sphere_updateTexture
 
+  isTileVisible: function sphere_isTileVisible(col,row) {
+    var sphere=this;
+    var panorama=sphere.panorama;
+    return panorama.camera.frustum.intersectsSphere(mesh.geometry.boundingSphere);
+  }
+
+}); // extend Sphere prototype
+
+// Camera constructor
 function Camera(options) {
   if (!(this instanceof Camera)){
     return new Camera(options);
@@ -236,6 +255,7 @@ function Camera(options) {
 }
 
 $.extend(true,Camera.prototype,{
+
     defaults: {
       fov: 120,
       nearPlane: 0.1,
@@ -245,24 +265,56 @@ $.extend(true,Camera.prototype,{
         min: 0.5,
         step: 0.05,
         current: 1
-      }
-    },
-    init: function camera_init() {
-      var camera=this;
-      camera.instance=new THREE.PerspectiveCamera(camera.fov,$(camera.panorama.container).width()/$(camera.panorama.container).height(), camera.nearPlane, camera.farPlane);
-      camera.target=new THREE.Vector3(0,0,0);
-    }
-});
+      },
+      frustum: new THREE.Frustum(),
+      viewProjectionMatrix: new THREE.Matrix4()
+    }, // Camera defaults
 
+    init: function camera_init() {
+
+      var camera=this;
+
+      camera.instance=new THREE.PerspectiveCamera(
+        camera.fov,
+        $(camera.panorama.container).width()/$(camera.panorama.container).height(),
+        camera.nearPlane,
+        camera.farPlane
+      );
+
+      camera.target=new THREE.Vector3(0,0,0);
+
+    }, // camera_init
+
+    updateFrustum: function camera_updateFrustum() {
+      var camera=this;
+//      camera.instance.updateMatrixWorld(); // make sure the camera matrix is updated
+//      camera.instance.matrixWorldInverse.getInverse(camera.instance.matrixWorld);
+      camera.viewProjectionMatrix.multiplyMatrices(camera.instance.projectionMatrix, camera.instance.matrixWorldInverse);
+      camera.frustum.setFromMatrix(camera.viewProjectionMatrix);
+    },
+
+    on_panorama_resize: function camera_on_panorama_resize(e) {
+      this.camera.updateFrustum();
+    },
+      
+    on_panorama_zoom: function camera_on_panorama_zoom(e) {
+      this.camera.updateFrustum();
+    }
+
+}); // extend Camera.prototype
+
+// Panorama constructor
 function Panorama(options) {
+
   if (!(this instanceof Panorama)) {
     return new Panorama(options);
   }
+
   $.extend(true,this,this.defaults,options);
 
   this.init();
 
-}
+} // Panorama constructor
 
 $.extend(true,Panorama.prototype,{
     defaults: {
@@ -276,6 +328,18 @@ $.extend(true,Panorama.prototype,{
       camera: undefined,
       sphere: undefined,
       postProcessing: undefined,
+      renderer: {
+        options: {
+          precision: 'lowp',
+          antialias: false,
+          alpha: false
+        },
+        properties: {
+          autoClear: false,
+          renderPluginsPre: [],
+          renderPluginsPost: []
+        }
+      },
       lon: 0,
       lat: 0,
       phi: 0,
@@ -292,7 +356,7 @@ $.extend(true,Panorama.prototype,{
             max: 85
         }
       }
-    },
+    }, // panorama defaults
 
     init: function panorama_init(){
       var panorama=this;
@@ -300,6 +364,7 @@ $.extend(true,Panorama.prototype,{
 
       panorama.scene=new THREE.Scene();
 
+      // instantiate camera
       if (!(panorama.camera instanceof Camera)) {
         panorama.camera=new Camera($.extend(true,{
           panorama: panorama,
@@ -307,13 +372,14 @@ $.extend(true,Panorama.prototype,{
         },panorama.camera));
       }
 
+      // instantiate sphere
       if (panorama.sphere!==undefined) {
         if (!(panorama.sphere instanceof Sphere)) {
           panorama.sphere=new Sphere($.extend(true,{
+            panorama: panorama,
             callback: function(){
-              panorama.resize();
-              panorama.callback({type: 'ready'});
-              $(panorama).trigger('panoready');
+              panorama.callback('resize');
+              panorama.callback('ready');
             }
           },panorama.sphere));
         }
@@ -322,12 +388,13 @@ $.extend(true,Panorama.prototype,{
 
       panorama.updateRotationMatrix();
 
+      // instantiate renderer
       if (!(panorama.renderer instanceof THREE.WebGLRenderer)) {
+        // try webgl renderer
         try {
-          panorama.renderer=new THREE.WebGLRenderer(panorama.renderer);
-          panorama.renderer.renderPluginsPre=[];
-          panorama.renderer.renderPluginsPost=[];
+          panorama.renderer=$.extend(new THREE.WebGLRenderer(panorama.renderer.parameters),panorama.renderer.properties);
         } catch(e) {
+          // fallback to 2D canvas
           try {
             panorama.renderer=new THREE.CanvasRenderer();
             panorama.renderer.renderPluginsPre=[];
@@ -345,13 +412,16 @@ $.extend(true,Panorama.prototype,{
       panorama.renderer.setSize($(panorama.container).width(),$(panorama.container).height());
       $(panorama.container).append(panorama.renderer.domElement);
 
+      // TODO: move post-processing in speparate module
       if (panorama.postProcessing) {
 
-        // renderer pass
+        // instantiate composer
         panorama.composer=new THREE.EffectComposer(panorama.renderer);
+
+        // add renderer pass
         panorama.composer.addPass(new THREE.RenderPass(panorama.scene,panorama.camera.instance));
 
-        // shader passes
+        // add shader passes
         $.each(panorama.postProcessing,function() {
           if (this instanceof Boolean) {
             return true;
@@ -365,50 +435,83 @@ $.extend(true,Panorama.prototype,{
           panorama.composer.addPass(this.pass);
         });
 
+        // copy result to screen
         if (this.postProcessing.renderToScreen!==false) {
           var effect=new THREE.ShaderPass(THREE.CopyShader);
           effect.renderToScreen=true;
           this.composer.addPass(effect);
         }
-      }
+
+      } // panorama.postProcessing
 
       this.eventsInit();
-    },
 
-    callback: function(e){
+    }, // panorama_init
+
+    // asynchronous callback external methods can hook to using setupCallback below
+    callback: function panorama_callback(e){
       var panorama=this;
-      switch(e.type) {
-        case 'ready':
-          break;
+      if (typeof(e)=='string') {
+        e={
+          target: panorama,
+          type: e,
+        };
+      } 
+      var method='on'+e.type;
+      if (panorama[method]) {
+        panorama[method].apply(panorama,[e]);
       }
-    },
+    }, // panorama_callback
 
-    // to update rotation matrix after changing panorama.rotation values
+    // setup panorama_callback hook for specified instance or prototype
+    setupCallback: function panorama_setupCallback(obj) {
+
+      obj.panorama_prototype_callback=Panorama.prototype.callback;
+
+      obj.panorama_callback=function(e) {
+         var panorama=this;
+         if (typeof(e)=="string") {
+           e={
+             type: e,
+             target: panorama
+           }
+         }
+         if (obj['on_panorama_'+e.type]) {
+           if (obj['on_panorama_'+e.type].apply(panorama,[e])===false) {
+              return false;
+           }
+         }
+         return obj.panorama_prototype_callback.apply(e.target,[e]);
+      }
+
+      Panorama.prototype.callback=obj.panorama_callback;
+
+    }, // panorama_setupCallback
+
+    // update rotation matrix after changing panorama.rotation values
     updateRotationMatrix: function panorama_updateRotationMatrix() {
+
       var panorama=this;
       panorama.rotation.matrix=new THREE.Matrix4();
-      panorama.rotation.matrix.makeRotationAxis((new THREE.Vector3(0, 1, 0)).normalize(),THREE.Math.degToRad(this.rotation.heading));
-      panorama.rotation.matrix.multiply((new THREE.Matrix4()).makeRotationAxis((new THREE.Vector3(1,0,0)).normalize(),THREE.Math.degToRad(this.rotation.tilt)));
-      panorama.rotation.matrix.multiply((new THREE.Matrix4()).makeRotationAxis((new THREE.Vector3(0,0,1)).normalize(),THREE.Math.degToRad(this.rotation.roll)));
+      panorama.rotation.matrix.makeRotationAxis(new THREE.Vector3(0, 1, 0),THREE.Math.degToRad(this.rotation.heading));
+      panorama.rotation.matrix.multiply((new THREE.Matrix4()).makeRotationAxis(new THREE.Vector3(1,0,0),THREE.Math.degToRad(this.rotation.tilt)));
+      panorama.rotation.matrix.multiply((new THREE.Matrix4()).makeRotationAxis(new THREE.Vector3(0,0,1),THREE.Math.degToRad(this.rotation.roll)));
 
-    },
+    }, // panorama_updateRotationMatrix
 
     eventsInit: function panorama_eventsInit(){
       var panorama=this;
       var canvas=$('canvas:first',this.container);
       $(this.container)
       .off('.panorama'+this.num)
-      .on('mousedown.panorama'+this.num, canvas, function(e){panorama.mousedown(e);})
-      .on('mousemove.panorama'+this.num, canvas, function(e){panorama.mousemove(e)})
-      .on('mouseup.panorama'+this.num, canvas, function(e){panorama.mouseup(e)})
-      .on('mousewheel.panorama'+this.num, canvas, function(e){panorama.mousewheel(e)})
-      .on('zoom.panorama'+this.num, canvas, function(e,zoom){panorama.zoom(e,zoom)});
-      $(window).on('resize.panorama'+this.num, function(e){panorama.resize(e)});
-    },
+      .on('mousedown.panorama'+this.num, canvas, function(e){e.target=panorama;panorama.callback(e)})
+      .on('mousemove.panorama'+this.num, canvas, function(e){e.target=panorama;panorama.callback(e)})
+      .on('mouseup.panorama'+this.num, canvas, function(e){e.target=panorama;panorama.callback(e)})
+      .on('mousewheel.panorama'+this.num, canvas, function(e){e.target=panorama;panorama.callback(e)})
+      .on('zoom.panorama'+this.num, canvas, function(e){e.target=panorama;panorama.callback(e)});
+      $(window).on('resize.panorama'+this.num, function(e){e.target=panorama;panorama.callback(e)});
 
-    pinch: function panorama_pinch(e){
-      console.log(e);
-    },
+    }, // panorama_eventsInit
 
     worldToTextureCoords: function panorama_worldToTextureCoords(worldCoords){
       this.inversePanoramaRotationMatrix=new THREE.Matrix4();
@@ -429,7 +532,7 @@ $.extend(true,Panorama.prototype,{
         left: (180+longitude)/360,
         top: (180-latitude)/180
       }
-    },
+    }, // worldToTextureCoords
 
     textureToWorldCoords: function panorama_textureToWorldCoords(x,y) {
         var theta=(x*360-180)*(Math.PI/180);
@@ -449,8 +552,9 @@ $.extend(true,Panorama.prototype,{
           longitude: longitude,
           latitude: latitude
         }
-    },
+    }, // textureToWorldCoords
 
+    // set mouseCoords (xyz/phi/theta) and return lon/lat
     getMouseCoords: function panorama_getMouseCoords(e) {
 
       this.iMatrix=new THREE.Matrix4();
@@ -492,14 +596,15 @@ $.extend(true,Panorama.prototype,{
       this.mouseCoords.theta=theta;
 
       return {
-        lon: this.mouseCoords.phi/(Math.PI/180),
-        lat: this.mouseCoords.theta/(Math.PI/180)
+        lon: THREE.Math.radToDeg(this.mouseCoords.phi),
+        lat: THREE.Math.radToDeg(this.mouseCoords.theta)
       }
-    },
 
-    mousedown: function panorama_mousedown(e){
-      this.mode.mousedown=true;
+    }, // getMouseCoords
+
+    onmousedown: function panorama_mousedown(e){
       if (isLeftButtonDown(e)) {
+        this.mode.rotate=true;
         e.preventDefault();
         this.mousedownPos={
           lon: this.lon,
@@ -508,30 +613,35 @@ $.extend(true,Panorama.prototype,{
           textureCoords: this.worldToTextureCoords(this.mouseCoords)
         };
         var wc=this.textureToWorldCoords(this.mousedownPos.textureCoords.left,this.mousedownPos.textureCoords.top);
-        console.log(this.mousedownPos.textureCoords.longitude+'=='+wc.longitude,this.mousedownPos.textureCoords.latitude+'=='+wc.latitude);
+        console.log('fixme: '+this.mousedownPos.textureCoords.longitude+'=='+wc.longitude,this.mousedownPos.textureCoords.latitude+'=='+wc.latitude);
         //TODO something is wrong: this.mousedownPos.textureCoords.latitude != wc.latitude
       }
     },
 
-    mousemove: function panorama_mousemove(e){
+    onmousemove: function panorama_mousemove(e){
       if (!this.sphere.done) {
         return;
       }
-      if (this.mode.mousedown) {
-        e.preventDefault();
-        if (isLeftButtonDown(e)) {
+
+      if (isLeftButtonDown(e)) {
+        if (this.mode.rotate) {
+          e.preventDefault();
           var mouseCoords=this.getMouseCoords(e);
-          this.lon=this.mousedownPos.lon-(mouseCoords.lon-this.mousedownPos.mouseCoords.lon);
+          this.lon=(this.mousedownPos.lon-(mouseCoords.lon-this.mousedownPos.mouseCoords.lon))%360;
           this.lat=this.mousedownPos.lat-(mouseCoords.lat-this.mousedownPos.mouseCoords.lat);
+          if (this.lon<0) this.lon+=360;
           this.drawScene();
         }
+      } else {
+        this.mode.rotate=false;
       }
     },
 
-    mouseup: function panorama_mouseup(e){
-      this.mode.mousedown=false;
+    onmouseup: function panorama_mouseup(e){
+      this.mode.rotate=false;
     },
 
+    // return current zoom factor
     getZoom: function panorama_getZoom() {
       var visible;
       visible=this.sphere.texture.height*this.camera.instance.fov/180;
@@ -569,16 +679,19 @@ $.extend(true,Panorama.prototype,{
       this.camera.instance.fov=this.updateFov();
       if (fov!=this.camera.instance.fov) {
         this.camera.instance.updateProjectionMatrix();
-        this.drawScene();
+        this.callback('zoom');
+        this.drawScene(function(){
+          $('canvas:first',this.container).trigger('mousemove');
+        });
       }
     },
 
-    zoom: function panorama_zoom(e,scale) {
+    setZoom: function panorama_setZoom(e,scale) {
       this.camera.zoom.current=1/scale;
       this.zoomUpdate();
     },
 
-    mousewheel: function panorama_mousewheel(e){
+    onmousewheel: function panorama_mousewheel(e){
       e.preventDefault();
       if (!this.sphere.done) {
         return;
@@ -603,35 +716,48 @@ $.extend(true,Panorama.prototype,{
       this.zoomUpdate();
     },
 
-    drawScene: function panorama_drawScene(){
+    drawScene: function panorama_drawScene(callback){
       if (!this.sphere.done) {
         return;
       }
       var panorama=this;
-      requestAnimationFrame(function(){panorama.render()});
+      requestAnimationFrame(function(){
+        panorama.renderFrame();
+        if (callback) callback();
+      });
     },
 
-    render: function render() {
-      if (!this.sphere.done) {
+    renderFrame: function renderFrame() {
+      var panorama=this;
+
+      if (!panorama.sphere.done) {
         return;
       }
-      this.lat=Math.max(this.limits.lat.min,Math.min(this.limits.lat.max,this.lat));
+      panorama.lat=Math.max(panorama.limits.lat.min,Math.min(panorama.limits.lat.max,panorama.lat));
 
-      var rotationMatrix=new THREE.Matrix4();
-      rotationMatrix.multiply((new THREE.Matrix4()).makeRotationAxis((new THREE.Vector3(1,0,0)).normalize(),THREE.Math.degToRad(this.lat)));
-      rotationMatrix.multiply((new THREE.Matrix4()).makeRotationAxis((new THREE.Vector3(0,1,0)).normalize(),THREE.Math.degToRad(this.lon)));
-      this.sphere.object3D.matrix.copy(this.rotation.matrix.clone());
-      this.sphere.object3D.applyMatrix(rotationMatrix);
+      // set sphere rotation
+      panorama.viewRotationMatrix=new THREE.Matrix4();
+      panorama.viewRotationMatrix.multiply((new THREE.Matrix4()).makeRotationAxis(new THREE.Vector3(1,0,0),THREE.Math.degToRad(panorama.lat)));
+      panorama.viewRotationMatrix.multiply((new THREE.Matrix4()).makeRotationAxis(new THREE.Vector3(0,1,0),THREE.Math.degToRad(panorama.lon)));
+      panorama.sphere.object3D.matrix.copy(panorama.rotation.matrix.clone());
+      panorama.sphere.object3D.applyMatrix(panorama.viewRotationMatrix);
 
+      panorama.callback('update');
 
-      if (this.postProcessing && this.postProcessing.enabled) {
-        this.composer.render(this.scene,this.camera.instance);
+      panorama.renderer.clear();
+      // TODO move post-Processing to jquery.freepano.postprocessing.js
+      if (panorama.postProcessing && panorama.postProcessing.enabled) {
+        // render scene with postProcessing filters
+        panorama.composer.render(panorama.scene,panorama.camera.instance);
       } else {
-        this.renderer.render(this.scene,this.camera.instance);
+        // render scene
+        panorama.renderer.render(panorama.scene,panorama.camera.instance);
       }
+
+      panorama.callback('render');
     },
 
-    resize: function panorama_resize(e){
+    onresize: function panorama_resize(e){
       var panorama=this;
       this.camera.instance.aspect=$(this.container).width()/$(this.container).height();
       this.camera.instance.updateProjectionMatrix();
@@ -647,6 +773,7 @@ $.extend(true,Panorama.prototype,{
           }
         });
       }
+
       setTimeout(function(){
         if (!panorama.sphere.done) {
           return;
@@ -655,7 +782,7 @@ $.extend(true,Panorama.prototype,{
         panorama.drawScene();
       },0);
     }
-});
+}); // extend Panorama.prototype
 
 function isLeftButtonDown(e) {
   return ((e.buttons!==undefined && e.buttons==1) || (e.buttons===undefined && e.which==1));
@@ -674,180 +801,4 @@ $.fn.panorama=function(options){
   return this;
 }
 
-// class PanoList, to handle panorama.list
-function PanoList(options) {
-  if (!(this instanceof PanoList)) {
-    return new PanoList(options);
-  }
-  $.extend(true,this,this.defaults,options);
-  this.init();
-}
-
-$.extend(true,PanoList.prototype,{
-  defaults: {
-    texture: {
-    },
-    prefix: '',
-    suffix: '',
-    initialImage: null,
-    callback: function panorama_callback(panorama_event) {
-      switch(panorama_event.type) {
-        default:
-          console.log(panorama_event);
-          break;
-      }
-    },
-    overrided: null
-  },
-
-  init: function panoList_init(){
-    var pano_list=this;
-    var panorama=pano_list.panorama;
-
-    // get initial image id
-    if (!pano_list.initialImage) {
-      for(property in pano_list.images) {
-        if (pano_list.images.hasOwnProperty(property)) {
-          pano_list.initialImage=property;
-          break;
-        }
-      }
-    }
-
-    // initialize sphere options
-    if (!panorama.sphere) {
-      panorama.sphere={}
-    }
-    $.extend(true, panorama.sphere, {
-        panorama: panorama,
-        texture: {}
-      }
-    );
-
-    // set initial sphere texture options
-    if (pano_list.initialImage) {
-      $.extend(true,
-       panorama.sphere.texture,
-       pano_list.getTextureOptions(pano_list.initialImage)
-      );
-      pano_list.overrideSettings(pano_list.initialImage);
-    }
-
-    pano_list.currentImage=pano_list.initialImage;
-    pano_list.callback();
-
-  },
-
-  // get panorama image options
-  getTextureOptions: function panoList_getTextureOptions(imageId) {
-    var pano_list=this;
-    if (!pano_list.images || !pano_list.images[imageId]) {
-      return {}
-    }
-    return $.extend(true, {},
-      pano_list.defaults,
-      pano_list.images[imageId], {
-        baseName: pano_list.defaults.prefix+imageId+pano_list.defaults.suffix
-      }
-    );
-  },
-
-  // set panorama overrided settings
-  overrideSettings: function panoList_overrideSettings(imageId) {
-
-    var pano_list=this;
-
-    // store current state
-    if (pano_list.overrided===null) {
-        pano_list.overrided = {
-            lat: pano_list.panorama.lat,
-            lon: pano_list.panorama.lon,
-            rotation: pano_list.panorama.rotation,
-            limits: pano_list.panorama.limits
-        };
-    }
-
-    // override settings
-    var override = pano_list.images[imageId].override;
-    if (override===undefined || override===null)
-        override = new Object();
-
-    // rotation
-    var rotation = $.extend(true,{},pano_list.overrided.rotation);
-    if (override.rotation!==undefined) {
-        // heading
-        if (override.rotation.heading!==undefined) {
-            pano_list.panorama.lon = pano_list.overrided.lon;
-            rotation.heading = override.rotation.heading;
-        }
-        // tilt
-        if (override.rotation.tilt!==undefined)
-            rotation.tilt = override.rotation.tilt;
-        // roll
-        if (override.rotation.roll!==undefined)
-            rotation.roll = override.rotation.roll;
-    }
-    pano_list.panorama.rotation = $.extend(true,{},rotation);
-
-    // latitude
-    var lat = pano_list.overrided.lat;
-    if (override.lat!==undefined)
-        lat = override.lat;
-    pano_list.panorama.lat = lat;
-
-    // limits
-    var limits = pano_list.overrided.limits;
-    if (override.limits!==undefined) {
-        // latitude
-        if (override.limits.lat!==undefined) {
-            if (override.limits.lat.max!==undefined)
-                limits.lat.max = override.limits.lat.max;
-            if (override.limits.lat.min!==undefined)
-                limits.lat.min = override.limits.lat.min;
-        }
-    }
-    pano_list.panorama.limits = limits;
-
-    // update rotation matrix
-    pano_list.panorama.updateRotationMatrix();
-
-  },
-
-  // show panorama image
-  show: function panoList_show(imageId,callback) {
-    var pano_list=this;
-    if (pano_list.currentImage==imageId || !pano_list.images[imageId]) {
-      return;
-    }
-    pano_list.currentImage=imageId;
-    var texture_options=pano_list.getTextureOptions(imageId);
-    pano_list.panorama.sphere.setTexture(texture_options,callback);
-    pano_list.overrideSettings(imageId);
-  }
-
-});
-
-// patch Panorama.prototype to instantiate PanoList on init if required, then chain with panorama.init
-$.extend(PanoList.prototype,{
-    panorama_init: Panorama.prototype.init
-});
-
-$.extend(Panorama.prototype,{
-
-  init: function panorama_init() {
-    var panorama=this;
-    if (panorama.list!==undefined) {
-      if (!(panorama.list instanceof PanoList)) {
-        panorama.list=new PanoList($.extend(true,{
-          panorama: panorama,
-          callback: function() {
-            PanoList.prototype.panorama_init.call(panorama);
-          }
-        },panorama.list));
-      }
-    } else {
-      PanoList.prototype.panorama_init.call(panorama);
-    }
-  }
-
-});
+Panorama.prototype.setupCallback(Camera.prototype);

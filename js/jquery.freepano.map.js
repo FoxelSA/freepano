@@ -45,6 +45,10 @@
 // Plugin constructor
 function Map(options)
 {
+    if (!(this instanceof Map)) {
+      return new Map(options);
+    }
+
     // merge specified options with default options and extend this instance
     $.extend(true,this,Map.prototype.defaults,options);
 
@@ -58,131 +62,153 @@ $.extend(true, Map.prototype, {
     // default values
     defaults: {
         // active
-        active: false
+        active: true,
+
+        // leaflet defaults
+        leaflet: {
+
+            // see http://leafletjs.com/reference.html#tilelayer-options
+            tileLayer: {
+
+                url_template: 'http://{s}.tile.osm.org/{z}/{x}/{y}.png',
+
+                options: {
+                     attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+                }
+
+            },
+
+            origin: [51.505, -0.09], // default geographical coordinates
+
+            zoom: {
+                base: 4,
+                min: 3,
+                max: 25,
+                native: 18,
+                bounds: 18
+            },
+
+            // see http://leafletjs.com/reference.html#map-zoompanoptions
+            zoompan_options: undefined,
+
+            icon: {
+                iconUrl: 'img/marker_icon.png', // marker icon url
+                shadowUrl: 'img/marker_shadow.png', // marker shadow image url
+                iconSize: [22.5, 36.25], // marker size
+                shadowSize: [40.75, 36.25], // marker shadow size
+                iconAnchor: [22.5/2, 36.25], // point corresponding to marker's location
+                shadowAnchor: [22.5/2, 36.25],
+                popupAnchor: [0, 0] // point from which menu should popup relative to the iconAnchor
+            },
+
+            icon_highlighted: {
+                iconUrl:     'img/marker_icon_highlight.png',
+                shadowUrl:   'img/marker_shadow.png'
+            }
+        }
     },
 
-    show: function map_show(map) {
+    show: function map_show() {
 
-        // dom
-        var pano = map.panorama;
-        var container = $(pano.container);
+        var map=this;
+        var panorama = map.panorama;
+
+        // map container exists ?
+        if (map.container && map.container.length) {
+            // then show map if hidden and/or return
+            if (!$(map.container).is(':visible')) {
+                map.container.show();
+                map.callback('ready');
+            }
+            return;
+        }
 
         // Append map
-        var mapContainer = $('<div>',{'class':'map'});
-        container.append(mapContainer);
-
-        // Zoom Levels
-        var zoom = {
-            base: 4,
-            min: 3,
-            max: 25,
-            native: 18,
-            bounds: 18
-        };
+        map.container = $('<div>',{'class':'map'});
+        $(panorama.container).append(map.container);
 
         // Create leaflet map object
-        var leaflet = L.map(mapContainer[0], {
+        var leaflet = map.leaflet.instance = L.map(map.container[0], {
             keyboard: false,
             scrollWheelZoom: true,
-            minZoom: zoom.min,
-            maxZoom: zoom.max
-        }).setView([51.505, -0.09], zoom.base);
+            minZoom: map.leaflet.zoom.min,
+            maxZoom: map.leaflet.zoom.max
+        }).setView(map.leaflet.origin, map.leaflet.zoom.base, map.leaflet.zoompan_options);
 
-        // add an OpenStreetMap tile layer
-        L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
-            minZoom: zoom.min,
-            maxZoom: zoom.max,
-            maxNativeZoom: zoom.native
-        }).addTo(leaflet);
-
-        // Compute icon sizes and anchors
-        var iconSize     = [22.5, 36.25];
-        var shadowSize   = [40.75, 36.25];
-        var iconAnchor   = [iconSize[0] / 2, 36.25];
-        var shadowAnchor = [iconSize[0] / 2, 36.25];
+        // add a tile layer
+        L.tileLayer(map.leaflet.tileLayer.url_template, $.extend(true,{},map.leaflet.tileLayer.options,{
+            minZoom: map.leaflet.zoom.min,
+            maxZoom: map.leaflet.zoom.max,
+            maxNativeZoom: map.leaflet.zoom.native
+        })).addTo(leaflet);
 
         // Create marker icon
-        var markerIcon = L.icon({
-            iconUrl:     'img/marker_icon.png', // Icon image file path
-            shadowUrl:   'img/marker_shadow.png', // Shadow image file path
-
-            iconSize:     iconSize, // size of the icon
-            shadowSize:   shadowSize, // size of the shadow
-
-            iconAnchor:   iconAnchor, // point of the icon which will correspond to marker's location
-            shadowAnchor: shadowAnchor,  // the same for the shadow
-
-            popupAnchor:  [0, 0] // point from which the popup should open relative to the iconAnchor
-        });
+        map.markerIcon = L.icon(map.leaflet.icon);
 
         // Create highlighted marker icon
-        var markerIcon_Highlighted = L.icon({
-            iconUrl:     'img/marker_icon_highlight.png', // Icon image file path
-            shadowUrl:   'img/marker_shadow.png', // Shadow image file path
+        map.markerIcon_Highlighted = L.icon($.extend(true,{},map.leaflet.icon,map.leaflet.icon_highlighted));
 
-            iconSize:     iconSize, // size of the icon
-            shadowSize:   shadowSize, // size of the shadow
-
-            iconAnchor:   iconAnchor, // point of the icon which will correspond to marker's location
-            shadowAnchor: shadowAnchor,  // the same for the shadow
-
-            popupAnchor:  [0, 0] // point from which the popup should open relative to the iconAnchor
-        });
-
-        var markers = [];
+        var markers = map.markers = [];
 
         // Iterate over panoramas and create markers
-        $.each(pano.list.images, function( index, value ) {
+        $.each(panorama.list.images, function( index, image ) {
 
             // No geo coordinates
-            if (value.coords === undefined || value.coords === null)
+            if (image.coords === undefined || image.coords === null)
                 return;
 
-            // Icon
-            var icon = markerIcon;
-
             // Use initial image if set and currentImage is not defined
-            if (pano.list.currentImage === undefined && pano.list.initialImage !== undefined)
-                pano.list.currentImage = pano.list.initialImage;
+            if (panorama.list.currentImage === undefined && panorama.list.initialImage !== undefined)
+                panorama.list.currentImage = panorama.list.initialImage;
 
             // Use first image if currentImage is not defined
-            else if (pano.list.currentImage === undefined)
-                pano.list.currentImage = Object.keys(pano.list.images)[0];
+            else if (panorama.list.currentImage === undefined)
+                panorama.list.currentImage = Object.keys(panorama.list.images)[0];
 
-            // Determine if the marker is highlighted
-            if ( pano.list.currentImage == index )
-                icon = markerIcon_Highlighted;
+            // set marker icon
+            var icon = (panorama.list.currentImage==index) ?
+              map.markerIcon_Highlighted :
+              map.markerIcon;
 
             // Create marker
-            var marker = L.marker([value.coords.lat, value.coords.lon], {icon: icon})
+            var marker = L.marker([image.coords.lat, image.coords.lon], {icon: icon})
             .on('click', function(e) {
 
-                // Reset all markers to default icon
-                $.each(markers, function( index, value ) {
-                    value.setIcon(markerIcon);
-                });
-
-                // Set highlighted icon for marker
-                marker.setIcon(markerIcon_Highlighted);
+                var panorama=e.target.panorama.instance;
+                var map=panorama.map.instance;
 
                 // Check if panorama has changed, then change it
-                var changed = e.target.panorama.index != pano.list.currentImage;
-                if(changed)
-                    pano.list.show(e.target.panorama.index);
+                var changed = (e.target.panorama.index != panorama.list.currentImage);
+
+                if (changed) {
+
+                  // Reset current marker to default icon
+                  if (map.currentMarker) {
+                    map.currentMarker.setIcon(map.markerIcon);
+                  }
+
+                  // Set target marker icon
+                  e.target.setIcon(map.markerIcon_Highlighted);
+
+                  map.currentMarker=e.target;
+                  panorama.list.show(e.target.panorama.index);
+
+                }
 
                 // Spread event
                 $(map).trigger('markerclick',{changed:changed,target:e.target.panorama.index});
 
             });
 
-            // Extend marker with panorama object
-            $.extend( marker, {
-                panorama: {
-                    index: index,
-                    value: value
-                }
-            });
+            if (panorama.list.currentImage==index) {
+              map.currentMarker=marker;
+            }
+
+            // Reference panorama instance and list index
+            marker.panorama={
+              instance: panorama,
+              index: index
+            };
 
             // Add marker to array
             markers.push( marker )
@@ -194,7 +220,7 @@ $.extend(true, Map.prototype, {
 
         // No elligible markers
         if (markers.length == 0) {
-            this.hide(this);
+            this.hide();
             return;
         }
 
@@ -205,82 +231,100 @@ $.extend(true, Map.prototype, {
         leaflet.fitBounds(markersGroup.getBounds());
 
         // Unzoom from bounds
-        if (leaflet.getZoom() > zoom.bounds)
-            leaflet.setZoom(zoom.bounds);
+        if (leaflet.getZoom() > map.leaflet.zoom.bounds)
+            leaflet.setZoom(map.leaflet.zoom.bounds);
         else
             leaflet.setZoom(leaflet.getZoom()-1);
 
+        // map is ready
+        map.callback('ready');
+
+    }, // map_show
+
+    hide: function map_hide() {
+        $('.map',this.panorama.container).hide();
     },
 
-    hide: function map_hide(map) {
-        var pano = map.panorama;
-        var container = $(pano.container);
-        container.find('.map').remove();
+    remove: function map_remove() {
+        $('.map',this.panorama.container).remove();
     },
 
-    init: function map_init() {
-        var map = this;
+    on_panorama_ready: function map_on_panorama_ready() {
 
-        if (map.active)
-            map.show(map);
+        var panorama=this;
 
-        // watch touch move properties
-        watch(map,['active'], function() {
-            if (map.active)
-                map.show(map);
-            else
-                map.hide(map);
-        });
+        // skip Map instantiation if map preferences undefined in panorama
+        if (panorama.map!==undefined) {
 
-        map.callback();
-    }
+          // or if map is already instantiated
+          if (!(panorama.map.instance instanceof Map)) {
 
-});
+            // instantiate map
+            var map=panorama.map.instance=new Map($.extend(true,{
 
-// register freepano.map plugin
+              // pass panorama instance pointer to map instance
+              panorama: panorama
 
-$.extend(Map.prototype,{
-    // save pointer to Panorama.prototype.init in Map.prototype
-    panorama_init: Panorama.prototype.init
-});
-
-$.extend(Panorama.prototype,{
-
-  // hook Map.prototype.init to Panorama.prototype.init
-  init: function panorama_init() {
-
-    var panorama=this;
-
-    // skip Map instantiation if map preferences undefined in panorama
-    if (panorama.map!==undefined) {
-
-      // or if map is already instantiated
-      if (!(panorama.map instanceof Map)) {
-
-        // intantiate map
-        panorama.map=new Map($.extend(true,{
-
-          // pass panorama instance pointer to map instance
-          panorama: panorama,
-
-          // to be run when map is instantiated
-          callback: function() {
-
-            // chain with old panorama.prototype.init on callback
-            Map.prototype.panorama_init.call(panorama);
+            },panorama.map));
 
           }
 
-        },panorama.map));
+          if (map && map.active) map.show();
 
-      }
+          panorama.map.instance.updateCurrentMarker();
 
-    } else {
+        }
 
-      // chain with old panorama.prototype.init
-      Map.prototype.panorama_init.call(panorama);
+    }, // map_on_panorama_ready
 
-    }
-  }
+    init: function map_init() {
+
+        var map=this;
+
+        // set watcher for active flag
+        watch(map,['active'], function() {
+            if (map.active)
+                map.show();
+            else
+                map.hide();
+        });
+
+    }, // map_init
+
+    updateCurrentMarker: function(){
+      var map=this;
+      var currentImage=map.panorama.list.currentImage;
+      map.currentMarker.setIcon(map.markerIcon);
+      $.each(map.markers,function(){
+        var marker=this;
+        if (marker.panorama.index==currentImage) {
+          map.currentMarker=marker;
+          marker.setIcon(map.markerIcon_Highlighted);
+          return false;
+        }
+      });
+    },
+
+    callback: function map_callback(e) {
+
+        var map=this;
+        if (typeof(e)=='string') {
+          e={
+            type: e,
+            target: map
+          }
+        }
+
+        var method='on'+e.type;
+        if (map[method]) {
+          if (map[method].apply(map,[e])===false) {
+            return false;
+          }
+        }
+
+    } // map_callback
+
 });
 
+// subscribe to panorama events
+Panorama.prototype.setupCallback(Map.prototype);
