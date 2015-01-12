@@ -346,10 +346,6 @@ $.extend(true,Panorama.prototype,{
       }
     }
 
-    if (e.type=='update') {
-      console.log(0)
-    }
-
     // forward panorama event to soundList instance bound to panorama (if any)
     var method='on_panorama_'+e.type;
 

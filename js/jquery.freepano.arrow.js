@@ -43,7 +43,7 @@ $.extend(true,Arrow.prototype,{
       arrow.widget_prototype_update();
     },
 
-    click: function arrow_click(e){
+    onclick: function arrow_onclick(e){
       var arrow=this;
       arrow.panorama.list.show(arrow.target);
       return false;

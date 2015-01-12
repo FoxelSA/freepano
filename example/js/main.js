@@ -97,7 +97,6 @@ $(document).on('filesloaded', function(){
     }, // fov
 
 */
-/*
     // panorama.rotation: initial panorama sphere rotation
 
     rotation: {
@@ -118,7 +117,6 @@ $(document).on('filesloaded', function(){
 
     }, // rotation
 
-*/
 /*
     // panorama.limits: limits
     
@@ -431,7 +429,6 @@ $(document).on('filesloaded', function(){
               }
             },
             poi: {
-              overlay: true,
               defaults: {
                 color: {
                   active: '#0000ff',
@@ -525,12 +522,8 @@ $(document).on('filesloaded', function(){
                 0: {
                   coords: {
                     lon: -90
-                  }
-                },
-                1: {
-                  coords: {
-                    lon: 90 
-                  }
+                  },
+                  target: '1403179809_224762'
                 }
               }
             }
@@ -543,6 +536,16 @@ $(document).on('filesloaded', function(){
             coords: {
               lon: 3.901933,
               lat: 43.600545,
+            },
+            arrow: {
+              list: {
+                0: {
+                  coords: {
+                    lon: 87
+                  },
+                  target: '1403179805_224762'
+                }
+              }
             }
           }
         }

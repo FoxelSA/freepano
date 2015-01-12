@@ -193,7 +193,7 @@ $.extend(true,PanoList.prototype,{
     var panorama=pano_list.panorama;
 
     // dont change panorama if callback return false
-    if (panorama.callback({type: "dispose", target: panorama})===false) {
+    if (panorama.callback('dispose')===false) {
       return false;
     }
 
