@@ -111,27 +111,24 @@ $.extend(true, Map.prototype, {
     show: function map_show() {
 
         var map=this;
-
-        // dom
-        var pano = map.panorama;
-        var container = $(pano.container);
+        var panorama = map.panorama;
 
         // map container exists ?
-        var div=$('.map',container);
-        if (div.length) {
+        if (map.container && map.container.length) {
             // then show map if hidden and/or return
-            if (!$(div).is(':visible')) {
-                div.show();
+            if (!$(map.container).is(':visible')) {
+                map.container.show();
+                map.callback('ready');
             }
             return;
         }
 
         // Append map
-        var mapContainer = $('<div>',{'class':'map'});
-        container.append(mapContainer);
+        map.container = $('<div>',{'class':'map'});
+        $(panorama.container).append(map.container);
 
         // Create leaflet map object
-        var leaflet = map.leaflet.instance = L.map(mapContainer[0], {
+        var leaflet = map.leaflet.instance = L.map(map.container[0], {
             keyboard: false,
             scrollWheelZoom: true,
             minZoom: map.leaflet.zoom.min,
@@ -146,65 +143,72 @@ $.extend(true, Map.prototype, {
         })).addTo(leaflet);
 
         // Create marker icon
-        var markerIcon = L.icon(map.leaflet.icon);
+        map.markerIcon = L.icon(map.leaflet.icon);
 
         // Create highlighted marker icon
-        var markerIcon_Highlighted = L.icon($.extend(true,{},map.leaflet.icon,map.leaflet.icon_highlighted));
+        map.markerIcon_Highlighted = L.icon($.extend(true,{},map.leaflet.icon,map.leaflet.icon_highlighted));
 
-        var markers = [];
+        var markers = map.markers = [];
 
         // Iterate over panoramas and create markers
-        $.each(pano.list.images, function( index, image ) {
+        $.each(panorama.list.images, function( index, image ) {
 
             // No geo coordinates
             if (image.coords === undefined || image.coords === null)
                 return;
 
-            // Icon
-            var icon = markerIcon;
-
             // Use initial image if set and currentImage is not defined
-            if (pano.list.currentImage === undefined && pano.list.initialImage !== undefined)
-                pano.list.currentImage = pano.list.initialImage;
+            if (panorama.list.currentImage === undefined && panorama.list.initialImage !== undefined)
+                panorama.list.currentImage = panorama.list.initialImage;
 
             // Use first image if currentImage is not defined
-            else if (pano.list.currentImage === undefined)
-                pano.list.currentImage = Object.keys(pano.list.images)[0];
+            else if (panorama.list.currentImage === undefined)
+                panorama.list.currentImage = Object.keys(panorama.list.images)[0];
 
-            // Determine if the marker is highlighted
-            if ( pano.list.currentImage == index )
-                icon = markerIcon_Highlighted;
+            // set marker icon
+            var icon = (panorama.list.currentImage==index) ?
+              map.markerIcon_Highlighted :
+              map.markerIcon;
 
             // Create marker
             var marker = L.marker([image.coords.lat, image.coords.lon], {icon: icon})
             .on('click', function(e) {
 
-                // Reset all markers to default icon
-                $.each(markers, function( index, marker ) {
-                    if (marker!==e.target)
-                      marker.setIcon(markerIcon);
-                });
-
-                // Set highlighted icon for marker
-                e.target.setIcon(markerIcon_Highlighted);
+                var panorama=e.target.panorama.instance;
+                var map=panorama.map.instance;
 
                 // Check if panorama has changed, then change it
-                var changed = e.target.panorama.index != pano.list.currentImage;
-                if(changed)
-                    pano.list.show(e.target.panorama.index);
+                var changed = (e.target.panorama.index != panorama.list.currentImage);
+
+                if (changed) {
+
+                  // Reset current marker to default icon
+                  if (map.currentMarker) {
+                    map.currentMarker.setIcon(map.markerIcon);
+                  }
+
+                  // Set target marker icon
+                  e.target.setIcon(map.markerIcon_Highlighted);
+
+                  map.currentMarker=e.target;
+                  panorama.list.show(e.target.panorama.index);
+
+                }
 
                 // Spread event
                 $(map).trigger('markerclick',{changed:changed,target:e.target.panorama.index});
 
             });
 
-            // Extend marker with panorama object
-            $.extend( marker, {
-                panorama: {
-                    index: index,
-                    image: image
-                }
-            });
+            if (panorama.list.currentImage==index) {
+              map.currentMarker=marker;
+            }
+
+            // Reference panorama instance and list index
+            marker.panorama={
+              instance: panorama,
+              index: index
+            };
 
             // Add marker to array
             markers.push( marker )
@@ -232,6 +236,9 @@ $.extend(true, Map.prototype, {
         else
             leaflet.setZoom(leaflet.getZoom()-1);
 
+        // map is ready
+        map.callback('ready');
+
     }, // map_show
 
     hide: function map_hide() {
@@ -242,12 +249,39 @@ $.extend(true, Map.prototype, {
         $('.map',this.panorama.container).remove();
     },
 
+    on_panorama_ready: function map_on_panorama_ready() {
+
+        var panorama=this;
+
+        // skip Map instantiation if map preferences undefined in panorama
+        if (panorama.map!==undefined) {
+
+          // or if map is already instantiated
+          if (!(panorama.map.instance instanceof Map)) {
+
+            // instantiate map
+            var map=panorama.map.instance=new Map($.extend(true,{
+
+              // pass panorama instance pointer to map instance
+              panorama: panorama
+
+            },panorama.map));
+
+          }
+
+          if (map && map.active) map.show();
+
+          panorama.map.instance.updateCurrentMarker();
+
+        }
+
+    }, // map_on_panorama_ready
+
     init: function map_init() {
-        var map = this;
 
-        if (map.active) map.show();
+        var map=this;
 
-        // watch touch move properties
+        // set watcher for active flag
         watch(map,['active'], function() {
             if (map.active)
                 map.show();
@@ -255,85 +289,42 @@ $.extend(true, Map.prototype, {
                 map.hide();
         });
 
-        map.callback({target: map, type: 'ready'});
-
     }, // map_init
 
-    callback: function map_callback(e) {
-        var map=e.target;
-        switch(e.type){
-            case 'ready':
-                // chain with old panorama.prototype.init on callback
-                map.panorama_init.call(map.panorama);
-                break;
+    updateCurrentMarker: function(){
+      var map=this;
+      var currentImage=map.panorama.list.currentImage;
+      map.currentMarker.setIcon(map.markerIcon);
+      $.each(map.markers,function(){
+        var marker=this;
+        if (marker.panorama.index==currentImage) {
+          map.currentMarker=marker;
+          marker.setIcon(map.markerIcon_Highlighted);
+          return false;
         }
+      });
+    },
+
+    callback: function map_callback(e) {
+
+        var map=this;
+        if (typeof(e)=='string') {
+          e={
+            type: e,
+            target: map
+          }
+        }
+
+        var method='on'+e.type;
+        if (map[method]) {
+          if (map[method].apply(map,[e])===false) {
+            return false;
+          }
+        }
+
     } // map_callback
 
 });
 
-// register freepano.map plugin
-
-$.extend(Map.prototype,{
-    // save pointers to overrided Panorama.prototype methods 
-    panorama_init: Panorama.prototype.init,
-    panorama_callback: Panorama.prototype.callback
-});
-
-$.extend(Panorama.prototype,{
-
-  // hook Map.prototype.init to Panorama.prototype.init
-  init: function map_panorama_init() {
-
-    var panorama=this;
-
-    // skip Map instantiation if map preferences undefined in panorama
-    if (panorama.map!==undefined) {
-
-      // or if map is already instantiated
-      if (!(panorama.map instanceof Map)) {
-
-        // instantiate map
-        panorama.map=new Map($.extend(true,{
-
-          // pass panorama instance pointer to map instance
-          panorama: panorama,
-
-        },panorama.map));
-
-      }
-
-    } else {
-
-      // chain with old panorama.prototype.init
-      Map.prototype.panorama_init.call(panorama);
-
-    }
-  }, // map_panorama_init
-
-  // hook to Panorama.prototype.callback
-  callback: function map_panorama_callback(panorama_event) {
-    var panorama=this;
-    var map=panorama.map;
-
-    if (map!=undefined) {
-      switch(panorama_event.type){
-
-        // show map on pano ready
-        case 'ready':
-          if (map.active) {
-            map.show();
-          } else {
-            map.hide();
-          }
-          break;
-
-      } // switch panorama_event.type
-    }
-
-    // chain with previous panorama callback
-    Map.prototype.panorama_callback.apply(panorama,[panorama_event]);
-
-  } // map_panorama_callback
-
-});
-
+// subscribe to panorama events
+Panorama.prototype.setupCallback(Map.prototype);
