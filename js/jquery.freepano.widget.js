@@ -147,7 +147,7 @@ function WidgetFactory(options) {
 
         if (widget.object3D) {
           widget.scene.remove(widget.object3D);
-          widget.object3D=null
+          widget.object3D=null;
 
         }
         if (typeof(widget.mesh)=="object") {
@@ -292,7 +292,14 @@ function WidgetFactory(options) {
       }, // _widget_mousedown
 
       _onmouseup: function _widget_mouseup(e){
-        this.setColor(this.color.hover);
+        var widget=this;
+        var widgetList=widget.panorama[this.constructor.name.toLowerCase()];
+        widget.setColor(this.color.hover);
+        if (widgetList._active==widget){
+          setTimeout(function(){
+            widget.callback('click');
+          },0);
+        }
       }, // _widget_mouseup
 
       _onmousein: function _widget_mousein(e){
@@ -358,8 +365,6 @@ function WidgetFactory(options) {
     $.extend(true, WidgetList.prototype, {
 
         defaults: {
-          // need to maintain a list of widget cameras for raycaster in get_mouseover_list
-          _cameraList: [],
           list: {}
         },
 
@@ -424,6 +429,7 @@ function WidgetFactory(options) {
             }
 
             if (!options.camera._id ) options.camera._id=[];
+            if (!widgetList._cameraList) widgetList._cameraList=[];
 
             if (options.camera._id[Widget.name]==undefined) {
 
@@ -511,8 +517,17 @@ function WidgetFactory(options) {
             }
           });
 
-          if (widgetList._cameraList) widgetList._cameraList=[];
-          if (widgetList.camera) widgetList.camera._id=[];
+          if (widgetList._cameraList) {
+            $.each(widgetList._cameraList,function(){
+              var camera=this;
+              camera._id=null;
+              camera.meshes=null;
+              camera.raycaster=null;
+            });
+          }
+          widgetList._cameraList=null;
+          widgetList.camera=null;
+          widgetList.scene=null;
 
           panorama[Widget.name.toLowerCase()]=null;
 
@@ -706,7 +721,8 @@ function WidgetFactory(options) {
           );
 
           // for each camera referenced by widgets in widgetList
-          $.each(widgetList._cameraList,function(idx,camera){
+          if (widgetList._cameraList) {
+            $.each(widgetList._cameraList,function(idx,camera){
 
               // convert normalized coordinates to world coordinates
               var wc=vector.clone();
@@ -723,9 +739,10 @@ function WidgetFactory(options) {
                 mouseover_list=mouseover_list.concat(meshes);
               }
 
-           });
+            });
+          }
 
-           return mouseover_list;
+          return mouseover_list;
 
         }, // widgetList_get_mouseover_list
 
@@ -737,7 +754,6 @@ function WidgetFactory(options) {
     $.extend(true,WidgetList.prototype,{
         on_panorama_mousedown: WidgetList.prototype.on_panorama_mouseevent,
         on_panorama_mouseup: WidgetList.prototype.on_panorama_mouseevent,
-        on_panorama_click: WidgetList.prototype.on_panorama_mouseevent
     });
 
     $.extend(true,Panorama.prototype,{
