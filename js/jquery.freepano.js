@@ -360,7 +360,7 @@ $.extend(true,Panorama.prototype,{
 
     init: function panorama_init(){
       var panorama=this;
-      $(panorama.container).data('pano',this);
+      $(panorama.container).data('pano',panorama);
 
       panorama.scene=new THREE.Scene();
 
@@ -436,15 +436,17 @@ $.extend(true,Panorama.prototype,{
         });
 
         // copy result to screen
-        if (this.postProcessing.renderToScreen!==false) {
+        if (panorama.postProcessing.renderToScreen!==false) {
           var effect=new THREE.ShaderPass(THREE.CopyShader);
           effect.renderToScreen=true;
-          this.composer.addPass(effect);
+          panorama.composer.addPass(effect);
         }
 
       } // panorama.postProcessing
 
-      this.eventsInit();
+      panorama.eventsInit();
+
+      panorama.callback('init');
 
     }, // panorama_init
 

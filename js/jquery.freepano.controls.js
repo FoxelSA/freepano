@@ -728,7 +728,7 @@ $.extend(true,Controls.prototype, {
 
     },
 
-    on_panorama_ready: function controls_on_panorama_ready() {
+    on_panorama_init: function controls_on_panorama_init() {
 
         var panorama = this;
 
