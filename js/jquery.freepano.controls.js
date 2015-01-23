@@ -191,7 +191,8 @@ $.extend(true,Controls.prototype, {
                 || !$.isNumeric(e.accelerationIncludingGravity.y)
                 || !$.isNumeric(e.accelerationIncludingGravity.z)
                 || !$.isNumeric(e.rotationRate.alpha)
-                || !$.isNumeric(e.rotationRate.beta))
+                || !$.isNumeric(e.rotationRate.beta)
+                || !$.isNumeric(e.rotationRate.gamma))
             compatible = false;
 
         // incompatible
@@ -201,7 +202,7 @@ $.extend(true,Controls.prototype, {
             this.devicemotion.move.active = false;
 
             // visual notification
-            $.notify('Unable to track device motion.',{type:'warning',sticky:false,stayTime:5000});
+            $.notify('Unable to track motion on device/browser.',{type:'warning',sticky:false,stayTime:5000});
             $(this.panorama.container).children('.gyro').remove();
 
         }
