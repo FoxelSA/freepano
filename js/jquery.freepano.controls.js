@@ -415,7 +415,7 @@ $.extend(true,Controls.prototype, {
         e.clientX = e.center.x;
         e.clientY = e.center.y;
 
-        return controls.panorama.mousemove(e);
+        return controls.panorama.onmousemove(e);
 
     },
 
