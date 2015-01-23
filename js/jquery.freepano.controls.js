@@ -13,6 +13,7 @@
  * Contributor(s):
  *
  *      Nils Hamel <n.hamel@foxel.ch>
+ *      Luc Deschenaux <l.deschenaux@foxel.ch>
  *
  *
  * This file is part of the FOXEL project <http://foxel.ch>.
