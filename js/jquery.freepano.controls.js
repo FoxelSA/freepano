@@ -405,18 +405,21 @@ $.extend(true,Controls.prototype, {
         if (!controls.touch.move.active)
             return;
 
-        if (controls.panorama.mode.rotate)
-            return; // do not interfere with mouse events
-
-        if (!controls.panorama.sphere.done)
-            return; // not ready
-
         // impersonate mouse properties
         e.clientX = e.center.x;
         e.clientY = e.center.y;
+        e.buttons = 1;
 
-        return controls.panorama.onmousemove(e);
+        // override panorama.mode.rotate
+        var rotate=controls.panorama.mode.rotate;
+        controls.panorama.mode.rotate=true;
 
+        var ret=controls.panorama.onmousemove(e);
+
+        // restore panorama.mode.rotate
+        controls.panorama.mode.rotate=rotate;
+
+        return ret;
     },
 
     // [private] _touch_zoom_pinch() method
