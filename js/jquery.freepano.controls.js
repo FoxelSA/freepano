@@ -100,7 +100,8 @@ $.extend(true,Controls.prototype, {
         // device motion
         devicemotion: {
             move: {
-                active: false
+                active: false,
+                remote: false
             },
             internal: {
                 ticks: {
@@ -703,6 +704,7 @@ $.extend(true,Controls.prototype, {
 
         // unregister
         this.devicemotion.move.active = false;
+        this.devicemotion.move.remote = false;
 
         // display
         calibration.empty();
@@ -1035,7 +1037,7 @@ $.extend(true,Controls.prototype, {
     _device_move_by_device_motion: function(e) {
 
         var controls = window._controls_devicemotion;
-        if (!controls.devicemotion.move.active)
+        if (!controls.devicemotion.move.active && !controls.devicemotion.move.remote)
             return;
 
         // check if calibration has been made
