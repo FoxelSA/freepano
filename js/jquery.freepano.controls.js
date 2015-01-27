@@ -1,7 +1,7 @@
 /*
  * freepano - WebGL panorama viewer
  *
- * Copyright (c) 2014 FOXEL SA - http://foxel.ch
+ * Copyright (c) 2014-2015 FOXEL SA - http://foxel.ch
  * Please read <http://foxel.ch/license> for more information.
  *
  *
@@ -64,6 +64,12 @@ $.extend(true,Controls.prototype, {
     // default values
     defaults: {
 
+        // orientation
+        orientation: {
+            portrait: false,
+            landscape: true,
+        },
+
         // touch
         touch: {
             move: {
@@ -98,7 +104,9 @@ $.extend(true,Controls.prototype, {
             },
             internal: {
                 ticks: {
-                    nth: 5,             // every nth event ticks
+                    nth: 3,             // every nth event ticks (redraw)
+                    cth: 32,            // every nth event ticks (compatibility)
+                    gth: 32,            // every nth event ticks (gravity)
                     threshold: 100,     // maximum elapsed time (ms.) between ticks
                     count: 0,           // [internal]
                     time: 0             // [internal]
@@ -108,15 +116,26 @@ $.extend(true,Controls.prototype, {
                     lon: 0,             // [internal]
                     lat: 0              // [internal]
                 },
-                gravity: {
-                    nth: 32,            // gravity alignment during nth ticks
-                    count: 0,           // [internal]
-                    aligned: false,     // [internal]
-                    sign: 1,            // [internal] -1/+1 following device orientation
+                calibration: {
+                    done: false,        // [internal]
+                    step: null,         // [internal]
                     acceleration: {
                         x: 0,           // [internal]
                         y: 0,           // [internal]
                         z: 0            // [internal]
+                    },
+                    motion: {
+                        alpha: 0,       // [internal]
+                        beta: 0,        // [internal]
+                        gamma: 0        // [internal]
+                    },
+                    tilt: {
+                        axis: null,     // [internal]
+                        sign: null      // [internal]
+                    },
+                    rotation: {
+                        axis: null,     // [internal]
+                        sign: null      // [internal]
                     }
                 }
             }
@@ -124,159 +143,70 @@ $.extend(true,Controls.prototype, {
 
     },
 
+    // panorama_init() method
+    panorama_init: Panorama.prototype.init,
+
     // init() method
     init: function() {
 
         var controls = this;
 
         // orientation
-        controls.orientation_detect();
+        this.orientation_detect();
+
+        // window resize event
         $(window).on('resize.controls', function(e) {
+
+            // keep orientation
+            var pos = controls.orientation.portrait;
+
+            // detect orientation
             controls.orientation_detect();
-            controls.devicemotion.internal.gravity.aligned = false;
-        });
-        $(window).on('orientationchange.controls', function(e) {
-            controls.devicemotion.internal.gravity.aligned = false;
+
+            // orientation has changed, ask for recalibration
+            if (controls.orientation.portrait != pos) {
+                controls.devicemotion.internal.calibration.done = false;
+                controls.devicemotion.internal.calibration.step = null;
+            }
+
         });
 
         // devicemotion
-        controls._init_devicemotion();
+        this._init_devicemotion();
 
     },
 
-    // ready() method
-    on_panorama_ready: function(panorama_event) {
+    // on_panorama_init() method
+    on_panorama_init: function controls_on_panorama_init() {
 
-        var panorama = this;
-        var controls = panorama.controls;
+        // controls is not defined in freepano options
+        if (typeof this.controls === 'undefined')
+            return;
+
+        // class instantiation and extension
+        if (!(this.controls instanceof Controls))
+            this.controls = new Controls($.extend(true,{panorama:this},this.controls)); // options
+
+    },
+
+    // on_panorama_ready() method
+    on_panorama_ready: function controls_on_panorama_ready(panorama_event) {
 
         // touch
-        controls._init_touch();
+        this.controls._init_touch();
 
         // keyboard
-        controls._init_keyboard();
+        this.controls._init_keyboard();
 
         // devicemotion switch
-        controls._init_devicemotion_switch();
+        this.controls._init_devicemotion_switch();
 
-    },
-
-    // panorama_init() method
-    panorama_init: Panorama.prototype.init,
-
-    // orientation
-    orientation: {
-        portrait: false,
-        landscape: true,
     },
 
     // orientation_detect() method
     orientation_detect: function() {
         this.orientation.portrait = ($(window).width() < $(window).height());
         this.orientation.landscape = !this.orientation.portrait;
-    },
-
-    // device_compatibility() method
-    device_compatibility: function(e) {
-
-        var compatible = true;
-
-        if (typeof e.accelerationIncludingGravity !== 'object'
-                || typeof e.rotationRate !== 'object'
-                || $.isEmptyObject(e.accelerationIncludingGravity)
-                || $.isEmptyObject(e.rotationRate))
-            compatible = false;
-
-        else if (!$.isNumeric(e.accelerationIncludingGravity.x)
-                || !$.isNumeric(e.accelerationIncludingGravity.y)
-                || !$.isNumeric(e.accelerationIncludingGravity.z)
-                || !$.isNumeric(e.rotationRate.alpha)
-                || !$.isNumeric(e.rotationRate.beta)
-                || !$.isNumeric(e.rotationRate.gamma))
-            compatible = false;
-
-        // incompatible
-        if (!compatible) {
-
-            // unregister
-            this.devicemotion.move.active = false;
-
-            // visual notification
-            $.notify('Unable to track motion on device/browser.',{type:'warning',sticky:false,stayTime:5000});
-            $(this.panorama.container).children('.gyro').remove();
-
-        }
-
-        return compatible;
-
-    },
-
-    // gravity_alignment() method
-    gravity_alignment: function(e) {
-
-        var _sign_polyfill = function(x) {
-            x = +x;
-            if (x === 0 || isNaN(x))
-                return x;
-            return x > 0 ? 1 : -1;
-        };
-
-        // accumulation
-        this.devicemotion.internal.gravity.acceleration.x += e.accelerationIncludingGravity.x;
-        this.devicemotion.internal.gravity.acceleration.y += e.accelerationIncludingGravity.y;
-        this.devicemotion.internal.gravity.acceleration.z += e.accelerationIncludingGravity.z;
-
-        // limit
-        this.devicemotion.internal.gravity.count++;
-        if (this.devicemotion.internal.gravity.count <= this.devicemotion.internal.gravity.nth)
-            return;
-
-        // device compatibility
-        // this is done after accumulation as rotation rate needs a few ticks to initialize
-        if (!this.device_compatibility(e))
-            return;
-
-        // average acceleration
-        this.devicemotion.internal.gravity.acceleration.x /= this.devicemotion.internal.gravity.nth;
-        this.devicemotion.internal.gravity.acceleration.y /= this.devicemotion.internal.gravity.nth;
-        this.devicemotion.internal.gravity.acceleration.z /= this.devicemotion.internal.gravity.nth;
-
-        // norm
-        var norm = Math.sqrt(this.devicemotion.internal.gravity.acceleration.x * this.devicemotion.internal.gravity.acceleration.x
-                           + this.devicemotion.internal.gravity.acceleration.y * this.devicemotion.internal.gravity.acceleration.y
-                           + this.devicemotion.internal.gravity.acceleration.z * this.devicemotion.internal.gravity.acceleration.z);
-
-        // sign
-        var sp = 1;
-        var sm = -1;
-
-        // sign specific per device
-        if ($.browser.iphone || $.browser.ipad) { // apple i* mobile
-            sp = -1;
-            sm = 1;
-        }
-
-        // sign per orientation
-        if (this.orientation.portrait) {
-            this.devicemotion.internal.gravity.sign
-                = _sign_polyfill(this.devicemotion.internal.gravity.acceleration.y) >= 0 ? sp : sm;
-        } else {
-            this.devicemotion.internal.gravity.sign
-                = _sign_polyfill(this.devicemotion.internal.gravity.acceleration.x) >= 0 ? sm : sp;
-        }
-
-        // longitude
-        this.devicemotion.internal.orientation.lon = this.panorama.lon;
-        this.devicemotion.internal.orientation.lat = Math.asin(this.devicemotion.internal.gravity.acceleration.z / norm) * (180 / Math.PI);
-
-        // reset internals
-        this.devicemotion.internal.gravity.count = 0;
-        this.devicemotion.internal.gravity.acceleration = {x:0,y:0,z:0};
-
-        // gravity set
-        this.devicemotion.internal.ticks.time = 0;
-        this.devicemotion.internal.gravity.aligned = true;
-
     },
 
     // [private] _init_touch() method
@@ -584,6 +514,32 @@ $.extend(true,Controls.prototype, {
 
     },
 
+    // [private] _init_devicemotion_switch() method
+    _init_devicemotion_switch: function() {
+
+        var controls = this;
+
+        // html5 device motion not available or not a mobile
+        if (!window.DeviceMotionEvent || !$.browser.mobile)
+            return;
+
+        // dom
+        var container = $(controls.panorama.container);
+        var gyro = $('<div>',{'class':'gyro'});
+        var button = $('<div>',{'class':'button'});
+        var img = $('<img>',{src:'img/gyro.png',width:45,height:45,alt:''});
+
+        // button event
+        button.on('click.controls',function(e) {
+            e.preventDefault();
+            controls.devicemotion.move.active = !controls.devicemotion.move.active;
+        });
+
+        // append switch
+        container.append(gyro.append(button.append(img)));
+
+    },
+
     // [private] _register_devicemotion_move() method
     _register_devicemotion_move: function(controls) {
 
@@ -628,11 +584,451 @@ $.extend(true,Controls.prototype, {
 
         // reset internals
         controls.devicemotion.internal.ticks.time = 0;
-        controls.devicemotion.internal.gravity.aligned = false;
+        controls.devicemotion.internal.calibration.done = false;
+        controls.devicemotion.internal.calibration.step = null;
 
         // clear controls
         window._controls_devicemotion = null;
 
+    },
+
+    // [private] _device_calibration() method
+    _device_calibration: function(e) {
+
+        // step
+        if (this.devicemotion.internal.calibration.step == null)
+            this._device_calibration_init(e);
+        else if (this.devicemotion.internal.calibration.step == 'compatibility')
+            this._device_calibration_compatibility(e);
+        else if (this.devicemotion.internal.calibration.step == 'rotation.run')
+            this._device_calibration_rotation_run(e);
+        else if (this.devicemotion.internal.calibration.step == 'tilt.run')
+            this._device_calibration_tilt_run(e);
+        else if (this.devicemotion.internal.calibration.step == 'gravity.run')
+            this._device_calibration_gravity_run(e);
+
+    },
+
+    // [private] _device_calibration_init() method
+    _device_calibration_init: function(e) {
+
+        var controls = this;
+
+        // step
+        this.devicemotion.internal.calibration.step = 'init';
+
+        // remove previous calibration screen if already opened
+        if ($('#calibration').length > 0)
+            $('#calibration').remove();
+
+        // define calibration screen
+        var calibration = $('<div>',{'id':'calibration'});
+        calibration.width($(window).width());
+        calibration.height($(window).height());
+
+        // display
+        calibration.append('Calibration is needed to use accelerometer and gyroscope feature.');
+
+        // action
+        var action = $('<a>',{'class':'action','href':'#'})
+            .append('[[[ CALIBRATE ]]]')
+            .on('click.controls',function(event) {
+                event.preventDefault();
+                action.remove();
+                controls._device_calibration_reset_ticks();
+                controls.devicemotion.internal.calibration.step = 'compatibility';
+        });
+
+        // display
+        $('body').append(calibration.append(action));
+
+    },
+
+    // [private] _device_calibration_compatibility() method
+    _device_calibration_compatibility: function(e) {
+
+        var compatible = true;
+        var now = (new Date()).getTime();
+
+        // first tick, keep time
+        if (this.devicemotion.internal.ticks.time == 0) {
+            this.devicemotion.internal.ticks.time = now;
+            return;
+        }
+
+        // elapsed time between two ticks
+        var elapsed = (now - this.devicemotion.internal.ticks.time) / 1000;
+
+        // elapsed time is beyond threshold
+        if (elapsed > this.devicemotion.internal.ticks.threshold) {
+            this._device_calibration_reset_ticks();
+            return;
+        }
+
+        // keep time
+        this.devicemotion.internal.ticks.time = now;
+
+        // skip nth ticks as devicemotion may need a few ticks to initialize
+        this.devicemotion.internal.ticks.count++;
+        if (this.devicemotion.internal.ticks.count <= this.devicemotion.internal.ticks.cth)
+            return;
+
+        // step
+        this.devicemotion.internal.calibration.step = 'compatibility.done';
+
+        // incomplete or not well-formatted event data
+        if (typeof e.accelerationIncludingGravity !== 'object' || typeof e.rotationRate !== 'object'
+                || $.isEmptyObject(e.accelerationIncludingGravity) || $.isEmptyObject(e.rotationRate))
+            compatible = false;
+        else if (!$.isNumeric(e.accelerationIncludingGravity.x) || !$.isNumeric(e.accelerationIncludingGravity.y) || !$.isNumeric(e.accelerationIncludingGravity.z)
+                || !$.isNumeric(e.rotationRate.alpha) || !$.isNumeric(e.rotationRate.beta) || !$.isNumeric(e.rotationRate.gamma))
+            compatible = false;
+
+        // compatibility
+        if (compatible)
+            this._device_calibration_rotation();
+        else
+            this._device_calibration_incompatibility();
+
+    },
+
+    // [private] _device_calibration_incompatibility() method
+    _device_calibration_incompatibility: function() {
+
+        var controls = this;
+        var calibration = $('#calibration');
+
+        // step
+        this.devicemotion.internal.calibration.step = 'compatibility.none';
+
+        // unregister
+        this.devicemotion.move.active = false;
+
+        // display
+        calibration.empty();
+        calibration.append('Unable to track motion on this device and browser.');
+
+        // action
+        var action = $('<a>',{'class':'action','href':'#'})
+            .append('[[[ CLOSE ]]]')
+            .on('click.controls',function(event) {
+                event.preventDefault();
+                action.remove();
+                calibration.remove();
+                controls.devicemotion.internal.calibration.step = null;
+        });
+
+        // display
+        calibration.append(action);
+
+    },
+
+    // [private] _device_calibration_rotation() method
+    _device_calibration_rotation: function() {
+
+        var controls = this;
+        var calibration = $('#calibration');
+
+        // step
+        this.devicemotion.internal.calibration.step = 'rotation';
+
+        // display
+        calibration.empty();
+        calibration.append('Step 1/3<br />Rotate your device to the right (~25°) along the Z-axis to calibrate the rotation angle.<br /><br />Press the button when you are ready to rotate the device...');
+
+        // action
+        var action = $('<a>',{'class':'action','href':'#'})
+            .append('[[[ Calibrate the rotation angle ]]]')
+            .on('click.controls',function(event) {
+                event.preventDefault();
+                action.remove();
+                controls._device_calibration_reset_ticks();
+                controls._device_calibration_reset_axis('rotation');
+                controls.devicemotion.internal.calibration.step = 'rotation.run';
+        });
+
+        // display
+        calibration.append(action);
+
+    },
+
+    // [private] _device_calibration_rotation_run() method
+    _device_calibration_rotation_run: function(e) {
+
+        var controls = this;
+        var determined = false;
+        var now = (new Date()).getTime();
+
+        // first tick, keep time
+        if (this.devicemotion.internal.ticks.time == 0) {
+            this.devicemotion.internal.ticks.time = now;
+            return;
+        }
+
+        // elapsed time between two ticks
+        var elapsed = (now - this.devicemotion.internal.ticks.time) / 1000;
+
+        // elapsed time is beyond threshold
+        if (elapsed > this.devicemotion.internal.ticks.threshold) {
+            this._device_calibration_reset_ticks();
+            this._device_calibration_reset_axis('rotation');
+            return;
+        }
+
+        // keep time
+        this.devicemotion.internal.ticks.time = now;
+
+        // listen each axis
+        $.each(['alpha','beta','gamma'],function(index,axe) {
+
+            // another axis determined
+            if (determined || controls.devicemotion.internal.calibration.rotation.axis != null)
+                return;
+
+            // accumulation
+            controls.devicemotion.internal.calibration.motion[axe] += (e.rotationRate[axe] * elapsed);
+            if (Math.abs(controls.devicemotion.internal.calibration.motion[axe]) < 25)
+                return;
+
+            // step
+            controls.devicemotion.internal.calibration.step = 'rotation.run.done';
+
+            // axis determined
+            determined = true;
+            controls.devicemotion.internal.calibration.rotation.axis = axe;
+            controls.devicemotion.internal.calibration.rotation.sign = controls.devicemotion.internal.calibration.motion[axe] > 0 ? 1 : -1;
+
+            // continue
+            controls._device_calibration_tilt();
+
+        });
+
+    },
+
+    // [private] _device_calibration_tilt() method
+    _device_calibration_tilt: function() {
+
+        var controls = this;
+        var calibration = $('#calibration');
+
+        // step
+        this.devicemotion.internal.calibration.step = 'tilt';
+
+        // display
+        calibration.empty();
+        calibration.append('Step 2/3<br />Tilt the top of your device to the ground (~25°) along the X-axis to calibrate the tilting angle.<br /><br />Press the button when you are ready to tilt the device...');
+
+        // action
+        var action = $('<a>',{'class':'action','href':'#'})
+            .append('[[[ Calibrate the tilting angle ]]]')
+            .on('click.controls',function(event) {
+                event.preventDefault();
+                action.remove();
+                controls._device_calibration_reset_ticks();
+                controls._device_calibration_reset_axis('tilt');
+                controls.devicemotion.internal.calibration.step = 'tilt.run';
+        });
+
+        // display
+        calibration.append(action);
+
+    },
+
+    // [private] _device_calibration_tilt_run() method
+    _device_calibration_tilt_run: function(e) {
+
+        var controls = this;
+        var determined = false;
+        var now = (new Date()).getTime();
+
+        // first tick, keep time
+        if (this.devicemotion.internal.ticks.time == 0) {
+            this.devicemotion.internal.ticks.time = now;
+            return;
+        }
+
+        // elapsed time between two ticks
+        var elapsed = (now - this.devicemotion.internal.ticks.time) / 1000;
+
+        // elapsed time is beyond threshold
+        if (elapsed > this.devicemotion.internal.ticks.threshold) {
+            this._device_calibration_reset_ticks();
+            this._device_calibration_reset_axis('tilt');
+            return;
+        }
+
+        // keep time
+        this.devicemotion.internal.ticks.time = now;
+
+        // remove know rotation axis to minimize interferences
+        var axes = ['alpha','beta','gamma'];
+        axes.splice(axes.indexOf(this.devicemotion.internal.calibration.rotation.axis),1);
+
+        // listen each axis
+        $.each(axes,function(index,axe) {
+
+            // another axis determined
+            if (determined || controls.devicemotion.internal.calibration.tilt.axis != null)
+                return;
+
+            // accumulation
+            controls.devicemotion.internal.calibration.motion[axe] += (e.rotationRate[axe] * elapsed);
+            if (Math.abs(controls.devicemotion.internal.calibration.motion[axe]) < 25)
+                return;
+
+            // step
+            controls.devicemotion.internal.calibration.step = 'tilt.run.done';
+
+            // axis determined
+            determined = true;
+            controls.devicemotion.internal.calibration.tilt.axis = axe;
+            controls.devicemotion.internal.calibration.tilt.sign = controls.devicemotion.internal.calibration.motion[axe] > 0 ? 1 : -1;
+
+            // continue
+            controls._device_calibration_gravity();
+
+        });
+
+    },
+
+    // [private] _device_calibration_gravity() method
+    _device_calibration_gravity: function() {
+
+        var controls = this;
+        var calibration = $('#calibration');
+
+        // step
+        this.devicemotion.internal.calibration.step = 'gravity';
+
+        // display
+        calibration.empty();
+        calibration.append('Step 3/3<br />Stand still to align the device gravity..<br /><br />Press the button when you are ready to stand the device still...');
+
+        // action
+        var action = $('<a>',{'class':'action','href':'#'})
+            .append('[[[ Calibrate the gravity ]]]')
+            .on('click.controls',function(event) {
+                event.preventDefault();
+                action.remove();
+                controls._device_calibration_reset_ticks();
+                controls._device_calibration_reset_acceleration();
+                controls.devicemotion.internal.calibration.step = 'gravity.run';
+        });
+
+        // display
+        calibration.append(action);
+
+    },
+
+    // [private] _device_calibration_gravity_run() method
+    _device_calibration_gravity_run: function(e) {
+
+        var compatible = true;
+        var now = (new Date()).getTime();
+
+        // first tick, keep time
+        if (this.devicemotion.internal.ticks.time == 0) {
+            this.devicemotion.internal.ticks.time = now;
+            return;
+        }
+
+        // elapsed time between two ticks
+        var elapsed = (now - this.devicemotion.internal.ticks.time) / 1000;
+
+        // elapsed time is beyond threshold
+        if (elapsed > this.devicemotion.internal.ticks.threshold) {
+            this._device_calibration_reset_ticks();
+            this._device_calibration_reset_acceleration();
+            return;
+        }
+
+        // keep time
+        this.devicemotion.internal.ticks.time = now;
+
+        // accumulation
+        this.devicemotion.internal.calibration.acceleration.x += e.accelerationIncludingGravity.x;
+        this.devicemotion.internal.calibration.acceleration.y += e.accelerationIncludingGravity.y;
+        this.devicemotion.internal.calibration.acceleration.z += e.accelerationIncludingGravity.z;
+
+        // limit accumulation to nth ticks
+        this.devicemotion.internal.ticks.count++;
+        if (this.devicemotion.internal.ticks.count <= this.devicemotion.internal.ticks.gth)
+            return;
+
+        // step
+        this.devicemotion.internal.calibration.step = 'gravity.run.done';
+
+        // average acceleration
+        this.devicemotion.internal.calibration.acceleration.x /= this.devicemotion.internal.ticks.gth;
+        this.devicemotion.internal.calibration.acceleration.y /= this.devicemotion.internal.ticks.gth;
+        this.devicemotion.internal.calibration.acceleration.z /= this.devicemotion.internal.ticks.gth;
+
+        // norm
+        var norm = Math.sqrt(this.devicemotion.internal.calibration.acceleration.x * this.devicemotion.internal.calibration.acceleration.x
+                           + this.devicemotion.internal.calibration.acceleration.y * this.devicemotion.internal.calibration.acceleration.y
+                           + this.devicemotion.internal.calibration.acceleration.z * this.devicemotion.internal.calibration.acceleration.z);
+
+        // initial panorama orientation
+        this.devicemotion.internal.orientation.lon = this.panorama.lon;
+        this.devicemotion.internal.orientation.lat = Math.asin(this.devicemotion.internal.calibration.acceleration.z / norm) * (180 / Math.PI);
+
+        // continue
+        this._device_calibration_done();
+
+    },
+
+    // [private] _device_calibration_done() method
+    _device_calibration_done: function() {
+
+        var controls = this;
+        var calibration = $('#calibration');
+
+        // step
+        this.devicemotion.internal.calibration.step = 'done';
+
+        // activate
+        this._device_calibration_reset_ticks();
+        this.devicemotion.internal.calibration.done = true;
+        this.devicemotion.internal.calibration.step = null;
+
+        // display
+        calibration.empty();
+        calibration.append('Congratulation, your device is now fully calibrated!');
+
+        // action
+        var action = $('<a>',{'class':'action','href':'#'})
+            .append('[[[ CLOSE ]]]')
+            .on('click.controls',function(event) {
+                event.preventDefault();
+                action.remove();
+                calibration.remove();
+        });
+
+        // display
+        calibration.append(action);
+
+    },
+
+    // [private] _device_calibration_reset_ticks() method
+    _device_calibration_reset_ticks: function() {
+        this.devicemotion.internal.ticks.count = 0;
+        this.devicemotion.internal.ticks.time = 0;
+    },
+
+    // [private] _device_calibration_reset_axis() method
+    _device_calibration_reset_axis: function(axis) {
+        this.devicemotion.internal.calibration[axis].axis = null;
+        this.devicemotion.internal.calibration[axis].sign = null;
+        this.devicemotion.internal.calibration.motion.alpha = 0;
+        this.devicemotion.internal.calibration.motion.beta = 0;
+        this.devicemotion.internal.calibration.motion.gamma = 0;
+    },
+
+    // [private] _device_calibration_reset_acceleration() method
+    _device_calibration_reset_acceleration: function() {
+        this.devicemotion.internal.calibration.acceleration.x = 0;
+        this.devicemotion.internal.calibration.acceleration.y = 0;
+        this.devicemotion.internal.calibration.acceleration.z = 0;
     },
 
     // [private] _device_move_by_device_motion() method
@@ -642,40 +1038,40 @@ $.extend(true,Controls.prototype, {
         if (!controls.devicemotion.move.active)
             return;
 
-        // check for gravity alignment
-        if (!controls.devicemotion.internal.gravity.aligned) {
-            controls.gravity_alignment(e);
-            return;
-        }
-
-        // first tick after gravity is aligned
-        if (controls.devicemotion.internal.ticks.time == 0) {
-            controls.devicemotion.internal.ticks.time = (new Date()).getTime();
+        // check if calibration has been made
+        if (!controls.devicemotion.internal.calibration.done) {
+            controls._device_calibration(e);
             return;
         }
 
         // time
         var now = (new Date()).getTime();
+
+        // first tick, keep time
+        if (controls.devicemotion.internal.ticks.time == 0) {
+            controls.devicemotion.internal.ticks.time = now;
+            return;
+        }
+
+        // elapsed time between two ticks
         var elapsed = (now - controls.devicemotion.internal.ticks.time) / 1000;
 
         // elapsed time is beyond threshold
         if (elapsed > controls.devicemotion.internal.ticks.threshold) {
-            controls.devicemotion.internal.gravity.aligned = false;
+            controls._device_calibration_reset_ticks();
             return;
         }
+
+        // keep time
+        controls.devicemotion.internal.ticks.time = now;
 
         // original orientation
         var lon = controls.devicemotion.internal.orientation.lon;
         var lat = controls.devicemotion.internal.orientation.lat;
 
         // panorama orientation per device orientation
-        if (controls.orientation.portrait) {
-            lon -= controls.devicemotion.internal.gravity.sign * e.rotationRate.beta * elapsed;
-            lat -= controls.devicemotion.internal.gravity.sign * e.rotationRate.alpha * elapsed;
-        } else {
-            lon += controls.devicemotion.internal.gravity.sign * e.rotationRate.alpha * elapsed;
-            lat -= controls.devicemotion.internal.gravity.sign * e.rotationRate.beta * elapsed;
-        }
+        lon -= controls.devicemotion.internal.calibration.rotation.sign * e.rotationRate[controls.devicemotion.internal.calibration.rotation.axis] * elapsed;
+        lat += controls.devicemotion.internal.calibration.tilt.sign * e.rotationRate[controls.devicemotion.internal.calibration.tilt.axis] * elapsed;
 
         // assign orientation
         controls.panorama.lon = lon;
@@ -683,71 +1079,20 @@ $.extend(true,Controls.prototype, {
         controls.devicemotion.internal.orientation.lon = lon;
         controls.devicemotion.internal.orientation.lat = lat;
 
-        // store time
-        controls.devicemotion.internal.ticks.time = now;
-
-        // limit ticks rate
+        // limit webgl redraw to nth ticks
         controls.devicemotion.internal.ticks.count++;
         if (controls.devicemotion.internal.ticks.count <= controls.devicemotion.internal.ticks.nth)
             return;
         else
             controls.devicemotion.internal.ticks.count = 0;
 
-        // moved beyond rotation threshold
-        var needDrawScene = (e.rotationRate.alpha > controls.devicemotion.internal.orientation.threshold
-                          || e.rotationRate.beta > controls.devicemotion.internal.orientation.threshold);
-
-        // draw scene
-        if (needDrawScene)
+        // webgl redraw as moved beyond rotation threshold
+        if (e.rotationRate[controls.devicemotion.internal.calibration.tilt.axis] > controls.devicemotion.internal.orientation.threshold
+         || e.rotationRate[controls.devicemotion.internal.calibration.rotation.axis] > controls.devicemotion.internal.orientation.threshold)
             controls.panorama.drawScene();
 
-    },
-
-    // [private] _init_devicemotion_switch() method
-    _init_devicemotion_switch: function() {
-
-        var controls = this;
-
-        // html5 device motion not available or not a mobile
-        if (!window.DeviceMotionEvent || !$.browser.mobile)
-            return;
-
-        // dom
-        var container = $(controls.panorama.container);
-        var gyro = $('<div>',{'class':'gyro'});
-        var button = $('<div>',{'class':'button'});
-        var img = $('<img>',{src:'img/gyro.png',width:45,height:45,alt:''});
-
-        // button event
-        button.on('click.controls',function(e) {
-
-            e.preventDefault();
-            e.stopPropagation();
-
-            controls.devicemotion.move.active = !controls.devicemotion.move.active;
-
-        });
-
-        // append switch
-        container.append(gyro.append(button.append(img)));
-
-    },
-
-    on_panorama_init: function controls_on_panorama_init() {
-
-        var panorama = this;
-
-        // controls is defined in freepano options, instantiate it.
-        if (typeof panorama.controls !== 'undefined') {
-            if (!(panorama.controls instanceof Controls)) {
-                // convert options to class instance
-                panorama.controls = new Controls($.extend(true,{
-                    panorama: panorama
-                },panorama.controls));
-            }
-        }
     }
+
 });
 
 Panorama.prototype.setupCallback(Controls.prototype);
-

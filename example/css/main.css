@@ -1,7 +1,7 @@
 /*
  * freepano - WebGL panorama viewer
  *
- * Copyright (c) 2014 FOXEL SA - http://foxel.ch
+ * Copyright (c) 2014-2015 FOXEL SA - http://foxel.ch
  * Please read <http://foxel.ch/license> for more information.
  *
  *
@@ -135,6 +135,25 @@ footer .logo {
     top:18px;
     right:10px;
 }
+
+#calibration {
+    position:absolute;
+    top:0;
+    left:0;
+    width:auto;
+    height:auto;
+    background-color:#000;
+    z-index:1001;
+}
+
+    #calibration .action {
+        display:block;
+        margin:20px;
+        padding:20px;
+        border:solid 1px #777;
+        background-color:#444;
+        text-align:center;
+    }
 
 
 @media only screen and (max-width: 640px) {
