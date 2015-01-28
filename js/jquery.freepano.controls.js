@@ -382,20 +382,12 @@ $.extend(true,Controls.prototype, {
         if (!controls.touch.move.active)
             return;
 
-        if (controls.panorama.mode.rotate)
-            return; // do not interfere with mouse events
-
         // impersonate mouse properties
         e.clientX = e.center.x;
         e.clientY = e.center.y;
+        e.buttons=1;
 
-        // keep position
-        controls.panorama.mousedownPos = {
-            lon: controls.panorama.lon,
-            lat: controls.panorama.lat,
-            mouseCoords: controls.panorama.getMouseCoords(e),
-            textureCoords: controls.panorama.worldToTextureCoords(controls.panorama.mouseCoords)
-        };
+        return controls.panorama.onmousedown(e);
 
     },
 
@@ -411,16 +403,8 @@ $.extend(true,Controls.prototype, {
         e.clientY = e.center.y;
         e.buttons = 1;
 
-        // override panorama.mode.rotate
-        var rotate=controls.panorama.mode.rotate;
-        controls.panorama.mode.rotate=true;
+        return controls.panorama.onmousemove(e);
 
-        var ret=controls.panorama.onmousemove(e);
-
-        // restore panorama.mode.rotate
-        controls.panorama.mode.rotate=rotate;
-
-        return ret;
     },
 
     // [private] _touch_zoom_pinch() method
