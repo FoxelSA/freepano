@@ -627,21 +627,48 @@ $.extend(true,Controls.prototype, {
         calibration.width($(window).width());
         calibration.height($(window).height());
 
-        // display
-        calibration.append('Calibration is needed to use accelerometer and gyroscope feature.');
+        // define wizard
+        var wizard = $('<div>',{'class':'wizard','style':'visibility:hidden;'});
+
+        // define image
+        wizard.append(
+            $('<div>',{'class':'image'}).append(
+                $('<img>',{'src':'img/calibration-init.gif','width':150})
+        ));
+
+        // define display
+        wizard.append(
+            $('<div>',{'class':'step'}).append(
+                $('<div>',{'class':'title'}).append('Calibration Wizard')
+            ).append(
+                $('<div>',{'class':'desc'}).append('The next steps will calibrate your device to use gyroscopic motion. Please have the device vertically in front of you.')
+        ));
+
+        // clear
+        wizard.append($('<div>',{'style':'clear:both;'}));
 
         // action
-        var action = $('<a>',{'class':'action','href':'#'})
-            .append('[[[ CALIBRATE ]]]')
+        var action = $('<a>',{'class':'action'})
+            .append('Next step')
             .on('click.controls',function(event) {
-                event.preventDefault();
                 action.remove();
-                controls._device_calibration_reset_ticks();
-                controls.devicemotion.internal.calibration.step = 'compatibility';
+                $('#calibration .step .title').html('Please wait...');
+                $('#calibration .step .desc').slideUp(400, function() {
+                    controls._device_calibration_reset_ticks();
+                    controls.devicemotion.internal.calibration.step = 'compatibility';
+                });
         });
 
+        // dom
+        $('body').append(calibration.append(wizard));
+        $('#calibration .step').append(action);
+
+        // positionate wizard
+        $('#calibration .wizard').css('margin-top',($(window).height()-$('#calibration .wizard').height())/2);
+        $('#calibration .step').width($('#calibration .step').width());
+
         // display
-        $('body').append(calibration.append(action));
+        wizard.css('visibility','visible');
 
     },
 
@@ -697,31 +724,38 @@ $.extend(true,Controls.prototype, {
     _device_calibration_incompatibility: function() {
 
         var controls = this;
-        var calibration = $('#calibration');
 
         // step
         this.devicemotion.internal.calibration.step = 'compatibility.none';
 
-        // unregister
-        this.devicemotion.move.active = false;
-        this.devicemotion.move.remote = false;
+        // image
+        $('#calibration .image img').attr('src','img/calibration-incompatible.gif');
 
         // display
-        calibration.empty();
-        calibration.append('Unable to track motion on this device and browser.');
+        $('#calibration .step .title').html('Device motion not available');
+        $('#calibration .step .desc').html('Unable to track motion on this device and browser combination.');
 
         // action
-        var action = $('<a>',{'class':'action','href':'#'})
-            .append('[[[ CLOSE ]]]')
+        var action = $('<a>',{'class':'action',})
+            .append('Exit')
             .on('click.controls',function(event) {
-                event.preventDefault();
+
+                // unregister
+                controls.devicemotion.move.active = false;
+                controls.devicemotion.move.remote = false;
+
+                // display
                 action.remove();
-                calibration.remove();
-                controls.devicemotion.internal.calibration.step = null;
+                $('#calibration .step .desc').slideUp(400, function() {
+                    $('#calibration').remove();
+                    controls.devicemotion.internal.calibration.step = null;
+                });
+
         });
 
-        // display
-        calibration.append(action);
+        // dom
+        $('#calibration .step').append(action);
+        $('#calibration .step .desc').slideDown(400);
 
     },
 
@@ -729,28 +763,33 @@ $.extend(true,Controls.prototype, {
     _device_calibration_rotation: function() {
 
         var controls = this;
-        var calibration = $('#calibration');
 
         // step
         this.devicemotion.internal.calibration.step = 'rotation';
 
+        // image
+        $('#calibration .image img').attr('src','img/calibration-rotation.gif');
+
         // display
-        calibration.empty();
-        calibration.append('Step 1/3<br />Rotate your device to the right (~25°) along the Z-axis to calibrate the rotation angle.<br /><br />Press the button when you are ready to rotate the device...');
+        $('#calibration .step .title').html('Rotation Angle');
+        $('#calibration .step .desc').html('Press the button then <strong>rotate your device to the right</strong> as shown in the picture.');
 
         // action
-        var action = $('<a>',{'class':'action','href':'#'})
-            .append('[[[ Calibrate the rotation angle ]]]')
+        var action = $('<a>',{'class':'action'})
+            .append('Next step')
             .on('click.controls',function(event) {
-                event.preventDefault();
                 action.remove();
-                controls._device_calibration_reset_ticks();
-                controls._device_calibration_reset_axis('rotation');
-                controls.devicemotion.internal.calibration.step = 'rotation.run';
+                $('#calibration .step .title').html('Rotate to the right...');
+                $('#calibration .step .desc').slideUp(400, function() {
+                    controls._device_calibration_reset_ticks();
+                    controls._device_calibration_reset_axis('rotation');
+                    controls.devicemotion.internal.calibration.step = 'rotation.run';
+                });
         });
 
-        // display
-        calibration.append(action);
+        // dom
+        $('#calibration .step').append(action);
+        $('#calibration .step .desc').slideDown(400);
 
     },
 
@@ -811,28 +850,33 @@ $.extend(true,Controls.prototype, {
     _device_calibration_tilt: function() {
 
         var controls = this;
-        var calibration = $('#calibration');
 
         // step
         this.devicemotion.internal.calibration.step = 'tilt';
 
+        // image
+        $('#calibration .image img').attr('src','img/calibration-tilt.gif');
+
         // display
-        calibration.empty();
-        calibration.append('Step 2/3<br />Tilt the top of your device to the ground (~25°) along the X-axis to calibrate the tilting angle.<br /><br />Press the button when you are ready to tilt the device...');
+        $('#calibration .step .title').html('Tilting Angle');
+        $('#calibration .step .desc').html('Press the button then <strong>tilt the device to the ground</strong> as shown in the picture.');
 
         // action
-        var action = $('<a>',{'class':'action','href':'#'})
-            .append('[[[ Calibrate the tilting angle ]]]')
+        var action = $('<a>',{'class':'action'})
+            .append('Next step')
             .on('click.controls',function(event) {
-                event.preventDefault();
                 action.remove();
-                controls._device_calibration_reset_ticks();
-                controls._device_calibration_reset_axis('tilt');
-                controls.devicemotion.internal.calibration.step = 'tilt.run';
+                $('#calibration .step .title').html('Tilt to the ground...');
+                $('#calibration .step .desc').slideUp(400, function() {
+                    controls._device_calibration_reset_ticks();
+                    controls._device_calibration_reset_axis('tilt');
+                    controls.devicemotion.internal.calibration.step = 'tilt.run';
+                });
         });
 
-        // display
-        calibration.append(action);
+        // dom
+        $('#calibration .step').append(action);
+        $('#calibration .step .desc').slideDown(400);
 
     },
 
@@ -897,28 +941,33 @@ $.extend(true,Controls.prototype, {
     _device_calibration_gravity: function() {
 
         var controls = this;
-        var calibration = $('#calibration');
 
         // step
         this.devicemotion.internal.calibration.step = 'gravity';
 
+        // image
+        $('#calibration .image img').attr('src','img/calibration-gravity.gif');
+
         // display
-        calibration.empty();
-        calibration.append('Step 3/3<br />Stand still to align the device gravity..<br /><br />Press the button when you are ready to stand the device still...');
+        $('#calibration .step .title').html('Gravity Alignment');
+        $('#calibration .step .desc').html('Press the button then <strong>stand still</strong> while having the device vertically in front of you to align the device gravity.');
 
         // action
-        var action = $('<a>',{'class':'action','href':'#'})
-            .append('[[[ Calibrate the gravity ]]]')
+        var action = $('<a>',{'class':'action'})
+            .append('Next step')
             .on('click.controls',function(event) {
-                event.preventDefault();
                 action.remove();
-                controls._device_calibration_reset_ticks();
-                controls._device_calibration_reset_acceleration();
-                controls.devicemotion.internal.calibration.step = 'gravity.run';
+                $('#calibration .step .title').html('Stand still...');
+                $('#calibration .step .desc').slideUp(400, function() {
+                    controls._device_calibration_reset_ticks();
+                    controls._device_calibration_reset_acceleration();
+                    controls.devicemotion.internal.calibration.step = 'gravity.run';
+                });
         });
 
-        // display
-        calibration.append(action);
+        // dom
+        $('#calibration .step').append(action);
+        $('#calibration .step .desc').slideDown(400);
 
     },
 
@@ -983,7 +1032,6 @@ $.extend(true,Controls.prototype, {
     _device_calibration_done: function() {
 
         var controls = this;
-        var calibration = $('#calibration');
 
         // step
         this.devicemotion.internal.calibration.step = 'done';
@@ -993,21 +1041,26 @@ $.extend(true,Controls.prototype, {
         this.devicemotion.internal.calibration.done = true;
         this.devicemotion.internal.calibration.step = null;
 
+        // image
+        $('#calibration .image img').attr('src','img/calibration-done.gif');
+
         // display
-        calibration.empty();
-        calibration.append('Congratulation, your device is now fully calibrated!');
+        $('#calibration .step .title').html('Calibration Done');
+        $('#calibration .step .desc').html('Congratulations, your device is now <strong>calibrated</strong>.');
 
         // action
-        var action = $('<a>',{'class':'action','href':'#'})
-            .append('[[[ CLOSE ]]]')
+        var action = $('<a>',{'class':'action'})
+            .append('Exit')
             .on('click.controls',function(event) {
-                event.preventDefault();
                 action.remove();
-                calibration.remove();
+                $('#calibration .step').slideUp(400, function() {
+                    $('#calibration').remove();
+                });
         });
 
-        // display
-        calibration.append(action);
+        // dom
+        $('#calibration .step').append(action);
+        $('#calibration .step .desc').slideDown(400);
 
     },
 

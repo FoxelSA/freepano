@@ -144,16 +144,64 @@ footer .logo {
     height:auto;
     background-color:#000;
     z-index:1001;
+    text-align:center;
 }
 
-    #calibration .action {
-        display:block;
-        margin:20px;
-        padding:20px;
-        border:solid 1px #777;
-        background-color:#444;
-        text-align:center;
+    #calibration .image {
+        height:206px;
     }
+
+    #calibration .step {
+        margin:40px;
+        margin-top:30px;
+    }
+
+        #calibration .step .title {
+            font-size:16px;
+            font-weight:700;
+            margin-bottom:15px;
+        }
+
+        #calibration .step .desc {
+            font-size:13px;
+            margin-bottom:40px;
+        }
+
+    #calibration .action {
+        padding:15px 40px;
+        font-size:13px;
+        font-weight:700;
+        background-color:#222;
+    }
+
+    #calibration a {
+        color:#ecb100;
+        text-decoration:none;
+    }
+
+        #calibration a:hover,
+        #calibration a:active {
+            color:#fff;
+            text-decoration:none;
+        }
+
+
+@media only screen and (orientation: landscape) {
+
+    #calibration .image {
+        float:left;
+    }
+
+    #calibration .step {
+        float:left;
+        max-width:60%;
+    }
+
+        #calibration .step .title {
+            margin-top:15px;
+        }
+
+}
 
 
 @media only screen and (max-width: 640px) {
