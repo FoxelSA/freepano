@@ -456,6 +456,14 @@ function WidgetFactory(options) {
 
         }, // widgetList_instantiateWidget
 
+        add: function widgetList_add(list) {
+          var widgetList=this;
+          $.extend(true,widgetList.list,list);
+          $.each(list,function(name){
+            widgetList.instantiateWidget(name);
+          });
+        }, // widgetList_add
+
         // update mesh list used for get_mouseover_list
         mesh_list_update: function widgetList_mesh_list_update() {
           var widgetList=this;
