@@ -184,7 +184,9 @@ function WidgetFactory(options) {
          var circle=new THREE.Mesh(new THREE.CircleGeometry(widget.size,100), new THREE.MeshBasicMaterial({
                color: 0x000000,
                transparent: true,
-               opacity: 0.3
+               opacity: 0.3,
+               depthWrite: false,
+               depthTest: false
          }));
          return circle;
       }, // widget_defaultMesh
