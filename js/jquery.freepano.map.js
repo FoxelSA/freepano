@@ -260,7 +260,7 @@ $.extend(true, Map.prototype, {
           if (!(panorama.map.instance instanceof Map)) {
 
             // instantiate map
-            var map=panorama.map.instance=new Map($.extend(true,{
+            panorama.map.instance=new Map($.extend(true,{
 
               // pass panorama instance pointer to map instance
               panorama: panorama
@@ -269,9 +269,10 @@ $.extend(true, Map.prototype, {
 
           }
 
-          if (map && map.active) map.show();
-
-          panorama.map.instance.updateCurrentMarker();
+          if (panorama.map.instance && panorama.map.instance.active) {
+            panorama.map.instance.show();
+            pnaorama.map.instance.updateCurrentMarker();
+          }
 
         }
 
