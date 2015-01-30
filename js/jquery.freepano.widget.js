@@ -399,9 +399,17 @@ function WidgetFactory(options) {
 
           // instantiate widgets
           $.each(widgetList.list,function(name) {
+            widgetList.instantiateWidget(name);
+          });
 
-            var widget=this;
-            widgetList.list[name].instance=null;
+        }, // widgetList_init
+
+        instantiateWidget: function widgetList_instantiateWidget(name) {
+            var widgetList=this;
+            var panorama=widgetList.panorama;
+
+            var widget=widgetList.list[name];
+            widget.instance=null;
 
             // setup widget basic options
             var options=$.extend(
@@ -446,9 +454,7 @@ function WidgetFactory(options) {
             // instantiate widget
             widgetList.list[name].instance=new Widget(options);
 
-          });
-
-        }, // widgetList_init
+        }, // widgetList_instantiateWidget
 
         // update mesh list used for get_mouseover_list
         mesh_list_update: function widgetList_mesh_list_update() {
