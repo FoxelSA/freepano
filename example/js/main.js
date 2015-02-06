@@ -56,7 +56,7 @@ $(document).ready(function(){
   // load image with alpha channel to use as POI
   window.unicorn_texture=new THREE.ImageUtils.loadTexture(
     'img/unicorn.png',
-    new THREE.UVMapping(),
+    THREE.UVMapping,
     file_onload,
     function onloaderror() {
       $.notify('Cannot load unicorn.png !');

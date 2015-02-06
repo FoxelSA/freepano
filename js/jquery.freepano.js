@@ -159,7 +159,7 @@ $.extend(true,Sphere.prototype,{
 
     var tileTexture=THREE.ImageUtils.loadTexture(
       sphere.texture.getTileName(col,row),
-      new THREE.UVMapping(),
+      THREE.UVMapping,
       function loadTexture_onload(texture){
         sphere.texture_onload(texture,callback);
       },
@@ -393,6 +393,7 @@ $.extend(true,Panorama.prototype,{
         // try webgl renderer
         try {
           panorama.renderer=$.extend(new THREE.WebGLRenderer(panorama.renderer.parameters),panorama.renderer.properties);
+          panorama.renderer.setPixelRatio(window.devicePixelRatio);
         } catch(e) {
           // fallback to 2D canvas
           try {
