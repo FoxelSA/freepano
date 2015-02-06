@@ -48,9 +48,9 @@ This program includes works distributed under the terms of the GNU General
 Public License and/or a compatible license and other copyright notices.
 
 
-*   __three.js r68__<br />
+*   __three.js r70__<br />
     <[http://threejs.org](http://threejs.org)><br />
-    Copyright (c) 2010-2014 three.js authors<br />
+    Copyright (c) 2010-2015 three.js authors<br />
     three.js is licensed under the [MIT license](http://opensource.org/licenses/MIT).
 
 *   __jQuery 2.1.3__<br />

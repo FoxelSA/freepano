@@ -56,7 +56,7 @@ $(document).ready(function(){
   // load image with alpha channel to use as POI
   window.unicorn_texture=new THREE.ImageUtils.loadTexture(
     'img/unicorn.png',
-    new THREE.UVMapping(),
+    THREE.UVMapping,
     file_onload,
     function onloaderror() {
       $.notify('Cannot load unicorn.png !');
@@ -469,7 +469,9 @@ $(document).on('filesloaded', function(){
                     mesh: new THREE.Mesh(new THREE.PlaneGeometry(Math.PI/18,Math.PI/18,1,1), new THREE.MeshBasicMaterial({
                       color: 0x000000,
                       transparent: true,
-                      opacity: 0.3
+                      opacity: 0.3,
+                      depthWrite: false,
+                      depthTest: false
                     })),
                     coords: {
                       lon: -70,
@@ -488,7 +490,9 @@ $(document).on('filesloaded', function(){
                       return new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({
                         color: 0x000000,
                         transparent: true,
-                        opacity: 0.3
+                        opacity: 0.3,
+                        depthWrite: false,
+                        depthTest: false
                       }));
                     },
                     coords: {
@@ -508,7 +512,9 @@ $(document).on('filesloaded', function(){
                   mesh: new THREE.Mesh(new THREE.PlaneGeometry(Math.PI/18,Math.PI/18,1,1), new THREE.MeshBasicMaterial({
                     map: unicorn_texture,
                     transparent: true,
-                    opacity: 0.3
+                    opacity: 0.3,
+                    depthWrite: false,
+                    depthTest: false
                   })),
 
                   handleTransparency: true,
