@@ -560,16 +560,20 @@ $.extend(true,Panorama.prototype,{
     getMouseCoords: function panorama_getMouseCoords(e) {
 
       this.iMatrix=new THREE.Matrix4();
-      this.iMatrix.getInverse(this.camera.instance.projectionMatrix.clone());
+      var matrix=new THREE.Matrix4();
+      matrix.multiply(this.camera.instance.projectionMatrix);
+//      matrix.multiply(this.viewRotationMatrix);
+      this.iMatrix.getInverse(matrix);
 
       var mouseNear=new THREE.Vector4(0,0,0,1);
       var offset=$(this.renderer.domElement).offset();
-      mouseNear.x=-1+2*((e.clientX-offset.left)/this.renderer.domElement.width);
-      mouseNear.y=1-2*((e.clientY-offset.top)/this.renderer.domElement.height)
-      mouseNear.z=1;
+      var PX=mouseNear.x=-1+2*((e.clientX-offset.left)/this.renderer.domElement.width);
+      var PY=mouseNear.y=1-2*((e.clientY-offset.top)/this.renderer.domElement.height)
+      //var factor=Math.cos( Math.atan( Math.sqrt( PX * PX + PY * PY ) ) );
+      mouseNear.z=0.5;
 
       var mouseFar=mouseNear.clone();
-      mouseFar.z=-1;
+      mouseFar.z=-0.5;
 
       mouseNear.applyMatrix4(this.iMatrix);
       mouseFar.applyMatrix4(this.iMatrix);
@@ -584,8 +588,7 @@ $.extend(true,Panorama.prototype,{
       mouseFar.z/=mouseFar.w;
       mouseFar.w=1;
 
-      this.mouseCoords=new THREE.Vector4().subVectors(mouseFar,mouseNear);
-      this.mouseCoords.w=1;
+      this.mouseCoords=new THREE.Vector4().subVectors(mouseFar,mouseNear).normalize();
 
       var r=this.mouseCoords.length();
       var phi=Math.acos(this.mouseCoords.x/r);
@@ -596,6 +599,7 @@ $.extend(true,Panorama.prototype,{
       this.mouseCoords.z=-this.sphere.radius*Math.cos(phi);
       this.mouseCoords.phi=phi;
       this.mouseCoords.theta=theta;
+
 
       return {
         lon: THREE.Math.radToDeg(this.mouseCoords.phi),
@@ -614,6 +618,7 @@ $.extend(true,Panorama.prototype,{
           mouseCoords: this.getMouseCoords(e),
           textureCoords: this.worldToTextureCoords(this.mouseCoords)
         };
+        console.log(this.mousedownPos.mouseCoords,this.lon,this.lat);
         var wc=this.textureToWorldCoords(this.mousedownPos.textureCoords.left,this.mousedownPos.textureCoords.top);
         console.log('fixme: '+this.mousedownPos.textureCoords.longitude+'=='+wc.longitude,this.mousedownPos.textureCoords.latitude+'=='+wc.latitude);
         //TODO something is wrong: this.mousedownPos.textureCoords.latitude != wc.latitude
@@ -738,11 +743,12 @@ $.extend(true,Panorama.prototype,{
       panorama.lat=Math.max(panorama.limits.lat.min,Math.min(panorama.limits.lat.max,panorama.lat));
 
       // set sphere rotation
-      panorama.viewRotationMatrix=new THREE.Matrix4();
-      panorama.viewRotationMatrix.multiply((new THREE.Matrix4()).makeRotationAxis(new THREE.Vector3(1,0,0),THREE.Math.degToRad(panorama.lat)));
+      panorama.viewRotationMatrix=(new THREE.Matrix4()).makeRotationAxis(new THREE.Vector3(0,0,1),-THREE.Math.degToRad(panorama.lat));
       panorama.viewRotationMatrix.multiply((new THREE.Matrix4()).makeRotationAxis(new THREE.Vector3(0,1,0),THREE.Math.degToRad(panorama.lon)));
+
+      panorama.sphere.object3D.matrixAutoUpdate=false;
       panorama.sphere.object3D.matrix.copy(panorama.rotation.matrix.clone());
-      panorama.sphere.object3D.applyMatrix(panorama.viewRotationMatrix);
+      panorama.sphere.object3D.matrix.multiply(panorama.viewRotationMatrix);
 
       panorama.callback('update');
 
