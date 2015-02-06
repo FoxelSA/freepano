@@ -271,7 +271,7 @@ $.extend(true, Map.prototype, {
 
           if (panorama.map.instance && panorama.map.instance.active) {
             panorama.map.instance.show();
-            pnaorama.map.instance.updateCurrentMarker();
+            panorama.map.instance.updateCurrentMarker();
           }
 
         }
