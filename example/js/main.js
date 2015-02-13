@@ -97,19 +97,22 @@ $(document).on('filesloaded', function(){
     }, // fov
 
 */
-    // panorama.rotation: initial panorama sphere rotation
+    // panorama.rotation: panorama sphere rotation
 
     rotation: {
 
-      // vertical axis rotation
+      // intial rotation matrix 
+      matrix: new THREE.Matrix4(),
+
+      // vertical axis rotation (added to initial rotation matrix)
       heading: -90,
 
-      // horizontal axis rotation
-      // adjust in the viewer using <shift>-mousewheel
+      // horizontal axis rotation (added to initial rotation matrix)
+      // adjust in this example using <shift>-mousewheel
       tilt: 0,
 
-      // depth axis rotation
-      // adjust in the viewer using <alt>-mousewheel
+      // depth axis rotation (added to initial rotation matrix)
+      // adjust in this example using <alt>-mousewheel
       roll: 0,
 
       // rotation step for tilt and roll adjustment

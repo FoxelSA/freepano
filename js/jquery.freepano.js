@@ -350,6 +350,7 @@ $.extend(true,Panorama.prototype,{
         roll: 0,
         step: 0.1
       },
+      initialRotation: new THREE.Matrix4(),
       limits: {
         lat: {
             min: -85,
@@ -495,10 +496,16 @@ $.extend(true,Panorama.prototype,{
     updateRotationMatrix: function panorama_updateRotationMatrix() {
 
       var panorama=this;
-      panorama.rotation.matrix=new THREE.Matrix4();
-      panorama.rotation.matrix.makeRotationAxis(new THREE.Vector3(0, 1, 0),THREE.Math.degToRad(this.rotation.heading));
-      panorama.rotation.matrix.multiply((new THREE.Matrix4()).makeRotationAxis(new THREE.Vector3(1,0,0),THREE.Math.degToRad(this.rotation.tilt)));
-      panorama.rotation.matrix.multiply((new THREE.Matrix4()).makeRotationAxis(new THREE.Vector3(0,0,1),THREE.Math.degToRad(this.rotation.roll)));
+
+      // set panorama initial rotation
+      var R=panorama.rotation.matrix.clone();
+
+      // combine with rotation angles
+      R.multiply((new THREE.Matrix4()).makeRotationAxis(new THREE.Vector3(0,1,0),THREE.Math.degToRad(panorama.rotation.heading)));
+      R.multiply((new THREE.Matrix4()).makeRotationAxis(new THREE.Vector3(1,0,0),THREE.Math.degToRad(panorama.rotation.tilt)));
+      R.multiply((new THREE.Matrix4()).makeRotationAxis(new THREE.Vector3(0,0,1),THREE.Math.degToRad(panorama.rotation.roll)));
+
+      panorama.rotation._matrix=R;
 
     }, // panorama_updateRotationMatrix
 
@@ -742,7 +749,7 @@ $.extend(true,Panorama.prototype,{
       panorama.viewRotationMatrix=new THREE.Matrix4();
       panorama.viewRotationMatrix.multiply((new THREE.Matrix4()).makeRotationAxis(new THREE.Vector3(1,0,0),THREE.Math.degToRad(panorama.lat)));
       panorama.viewRotationMatrix.multiply((new THREE.Matrix4()).makeRotationAxis(new THREE.Vector3(0,1,0),THREE.Math.degToRad(panorama.lon)));
-      panorama.sphere.object3D.matrix.copy(panorama.rotation.matrix.clone());
+      panorama.sphere.object3D.matrix.copy(panorama.rotation._matrix);
       panorama.sphere.object3D.applyMatrix(panorama.viewRotationMatrix);
 
       panorama.callback('update');
