@@ -144,6 +144,8 @@ $.extend(true,Sphere.prototype,{
         var tileTexture=sphere.loadTile(col,row,callback);
         var material=new THREE.MeshBasicMaterial({
            map: tileTexture,
+           depthTest: false,
+           depthWrite: false
 //           wireframe: true,
 //           color: 'white'
         });
@@ -516,6 +518,7 @@ $.extend(true,Panorama.prototype,{
 
     }, // panorama_eventsInit
 
+ /* 
     worldToTextureCoords: function panorama_worldToTextureCoords(worldCoords){
       this.inversePanoramaRotationMatrix=new THREE.Matrix4();
       this.inversePanoramaRotationMatrix.getInverse(this.sphere.object3D.matrix);
@@ -556,6 +559,7 @@ $.extend(true,Panorama.prototype,{
           latitude: latitude
         }
     }, // textureToWorldCoords
+    */
 
     // set mouseCoords (xyz/phi/theta) and return lon/lat
     getMouseCoords: function panorama_getMouseCoords(e) {
@@ -568,13 +572,12 @@ $.extend(true,Panorama.prototype,{
 
       var mouseNear=new THREE.Vector4(0,0,0,1);
       var offset=$(this.renderer.domElement).offset();
-      var PX=mouseNear.x=-1+2*((e.clientX-offset.left)/this.renderer.domElement.width);
-      var PY=mouseNear.y=1-2*((e.clientY-offset.top)/this.renderer.domElement.height)
-      //var factor=Math.cos( Math.atan( Math.sqrt( PX * PX + PY * PY ) ) );
-      mouseNear.z=0.5;
+      mouseNear.x=-1+2*((e.clientX-offset.left)/this.renderer.domElement.width);
+      mouseNear.y=1-2*((e.clientY-offset.top)/this.renderer.domElement.height)
+      mouseNear.z=0;
 
       var mouseFar=mouseNear.clone();
-      mouseFar.z=-0.5;
+      mouseFar.z=-0.9;
 
       mouseNear.applyMatrix4(this.iMatrix);
       mouseFar.applyMatrix4(this.iMatrix);
@@ -589,9 +592,10 @@ $.extend(true,Panorama.prototype,{
       mouseFar.z/=mouseFar.w;
       mouseFar.w=1;
 
-      this.mouseCoords=new THREE.Vector4().subVectors(mouseFar,mouseNear).normalize();
+      this.mouseCoords=new THREE.Vector4().subVectors(mouseFar,mouseNear);
+      var m=this.mouseCoords;
 
-      var r=this.mouseCoords.length();
+      var r=Math.sqrt(m.x*m.x+m.y*m.y+m.z*m.z);
       var phi=Math.acos(this.mouseCoords.x/r);
       var theta=Math.atan2(this.mouseCoords.y,this.mouseCoords.z);
 
@@ -601,6 +605,36 @@ $.extend(true,Panorama.prototype,{
       this.mouseCoords.phi=phi;
       this.mouseCoords.theta=theta;
 
+      this.getMouseCoords2(e);
+
+      if (true) {
+        var lon=THREE.Math.radToDeg(phi);
+        var lat=THREE.Math.radToDeg(theta);
+
+        var div=$('#mousecoords');
+        if (!div.length) {
+          div=$('<div id="mousecoords">').appendTo('body').css({
+              position: 'absolute',
+              bottom: 0,
+              right: 0,
+              width: 240,
+              backgroundColor: "rgba(0,0,0,.6)",
+              color: 'white'
+          });
+        }
+
+        var html='<div style="width: 100%; position: relative; margin-left: 10px;">';
+        html+='lon: '+lon.toPrecision(6)+'<br />';
+        html+='lat: '+lat.toPrecision(6)+'<br />';
+        lon=(lon-90)%360;
+        if (lon<0) lon+=360;
+        if (lat>90) lat-=180;
+        if (lat<-90) lat+=180;
+        html+='tx: '+(this.sphere.texture.height/180*lon).toPrecision(6)+'<br />';
+        html+='ty: '+(this.sphere.texture.height/180*lat+this.sphere.texture.height/2).toPrecision(6)+'<br />';
+        html+='</div>';
+        div.html(html);
+      }
 
       return {
         lon: THREE.Math.radToDeg(this.mouseCoords.phi),
@@ -608,6 +642,38 @@ $.extend(true,Panorama.prototype,{
       }
 
     }, // getMouseCoords
+
+    getMouseCoords2: function panorama_getMouseCoords2(e) {
+
+      var panorama=this;
+      var camera=panorama.camera.instance;
+      var canvas=panorama.renderer.domElement;
+
+      // field of view 
+      var fov={
+        v: camera.fov,
+        h: camera.fov*camera.aspect
+      }
+
+      // relative mouse coordinates
+      var offset=$(canvas).offset();
+      var mouseRel={
+        x: e.clientX-offset.left,
+        y: e.clientY-offset.top
+      }
+
+      // normalized mouse coordinates
+      var u=panorama.mouseCoords.u=-1+2*(mouseRel.x/canvas.width);
+      var v=panorama.mouseCoords.v=1-2*(mouseRel.y/canvas.height)
+
+      // compute lon/lat here
+      // ....
+
+      // return lon/lat
+      panorama.mouseCoords.lon=panorama.mouseCoords.lon;
+      panorama.mouseCoords.lat=panorama.mouseCoords.lat;
+
+    }, // getMouseCoords2
 
     onmousedown: function panorama_mousedown(e){
       if (isLeftButtonDown(e)) {
@@ -617,11 +683,11 @@ $.extend(true,Panorama.prototype,{
           lon: this.lon,
           lat: this.lat,
           mouseCoords: this.getMouseCoords(e),
-          textureCoords: this.worldToTextureCoords(this.mouseCoords)
+//          textureCoords: this.worldToTextureCoords(this.mouseCoords)
         };
-        console.log(this.mousedownPos.mouseCoords,this.lon,this.lat);
-        var wc=this.textureToWorldCoords(this.mousedownPos.textureCoords.left,this.mousedownPos.textureCoords.top);
-        console.log('fixme: '+this.mousedownPos.textureCoords.longitude+'=='+wc.longitude,this.mousedownPos.textureCoords.latitude+'=='+wc.latitude);
+//        console.log(this.mousedownPos.mouseCoords,this.lon,this.lat);
+//        var wc=this.textureToWorldCoords(this.mousedownPos.textureCoords.left,this.mousedownPos.textureCoords.top);
+//        console.log('fixme: '+this.mousedownPos.textureCoords.longitude+'=='+wc.longitude,this.mousedownPos.textureCoords.latitude+'=='+wc.latitude);
         //TODO something is wrong: this.mousedownPos.textureCoords.latitude != wc.latitude
       }
     },
