@@ -88,12 +88,11 @@ function WidgetFactory(options) {
         overlay: false,
         mesh: null,
         object3D: null,
-        radius: Math.PI ,
         coords: {
           lon: 0,
           lat: 90
         },
-        size: Math.PI/36,
+        size: Math.PI/9,
         handleTransparency: true,
         lookAtVec3: new THREE.Vector3(0,0,0)
       },
@@ -103,6 +102,8 @@ function WidgetFactory(options) {
 
         var widget=this;
         var panorama=widget.panorama;
+
+        widget.radius=widget.radius||panorama.sphere.radius;
 
         // if no custom scene or camera specified for raycasting (eg orthographic HUD)
         if (!widget.scene) {
@@ -197,28 +198,16 @@ function WidgetFactory(options) {
         var widget=this;
         var panorama=widget.panorama;
 
-        // set widget model view matrix to identity
-        widget.mv=new THREE.Matrix4();
-
-        // rotation around vertical axis
-        widget.mv.multiply(new THREE.Matrix4().makeRotationY(-widget.coords.lon*Math.PI/180));
-
-        // rotation around horizontal axis
-        widget.mv.multiply(new THREE.Matrix4().makeRotationX(-widget.coords.lat*Math.PI/180));
-
-        // compute widget coords
-        widget.coords.vec4=new THREE.Vector4(0,0,-widget.radius,1);
-        widget.coords.vec4.applyMatrix4(widget.mv);
-        widget.coords.vec4.applyMatrix4(widget.panorama.rotation.matrix);
-        widget.coords.vec4.applyMatrix4(panorama.viewRotationMatrix);
-
-    //    widget.coords.vec4.applyMatrix4(new THREE.Matrix4().makeRotationY(panorama.lon*Math.PI/180));
-    //    widget.coords.vec4.applyMatrix4(new THREE.Matrix4().makeRotationX(panorama.lat*Math.PI/180));
-
+        var phi=widget.coords.lon*Math.PI/180;
+        var theta=widget.coords.lat*Math.PI/180;
         // set widget position
-        widget.object3D.position.x=widget.coords.vec4.x/widget.coords.vec4.w;
-        widget.object3D.position.y=widget.coords.vec4.y/widget.coords.vec4.w;
-        widget.object3D.position.z=widget.coords.vec4.z/widget.coords.vec4.w;
+        widget.object3D.position.set(
+            widget.radius*Math.sin(phi)*Math.cos(theta),
+            widget.radius*Math.sin(phi)*Math.sin(theta),
+            -widget.radius*Math.cos(phi)
+        );
+
+        console.log(widget.object3D.position);
 
         if (widget.lookAtVec3) widget.object3D.lookAt(widget.lookAtVec3);
     //    widget.object3D.rotation.setFromRotationMatrix(new THREE.Matrix4().makeRotationY(-panorama.lon*2*Math.PI/180));
@@ -226,23 +215,6 @@ function WidgetFactory(options) {
         widget.callback('update');
 
       }, // widget_update
-
-      getCoords3D: function widget_getCoords3D(){
-        var widget=this;
-        var x=widget.object3D.position.x;
-        var y=widget.object3D.position.y;
-        var z=widget.object3D.position.z;
-        // rectangular to polar coordinates
-        var r=Math.sqrt(x*x+y*y+z*z);
-        var phi=Math.acos(z/r);
-        var theta=Math.atan2(y,x);
-        // back to rectangular coordinates (to set distance from camera)
-        return [
-          -widget.radius*Math.sin(phi)*Math.cos(theta),
-          -widget.radius*Math.sin(phi)*Math.sin(theta),
-          -widget.radius*Math.cos(phi)
-        ];
-      }, // widget_getCoords3D
 
       onmousein: function widget_mousein(e) {
         console.log('mousein',this);
