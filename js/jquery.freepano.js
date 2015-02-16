@@ -612,6 +612,72 @@ $.extend(true,Panorama.prototype,{
 
     }, // getMouseCoords
 
+    getMouseCoords: function panorama_getMouseCoords(event) {
+
+      var panorama=this;
+      var canvas = panorama.renderer.domElement;
+
+      // get normalized mouse coordinates
+      var vector = new THREE.Vector3((event.clientX / canvas.width) * 2 - 1, -(event.clientY / canvas.height) * 2 + 1, 0.5);
+
+      // get mouse world coordinates 
+      vector.applyMatrix4(new THREE.Matrix4().getInverse(panorama.camera.instance.projectionMatrix));
+      vector.normalize();
+
+      // store webgl cursor coordinates
+      panorama.cursorPos=vector.clone().multiplyScalar(panorama.sphere.radius);
+
+      // get position in the sphere coordinates system
+      vector.applyMatrix4(new THREE.Matrix4().getInverse(panorama.sphere.object3D.matrix));
+
+      // convert to polar coordinates
+      var m = vector;
+      var phi = Math.acos(m.y);
+      var theta = Math.atan2(m.z, m.x);
+
+      // get cartesian coords in the sphere coordinates system
+      m.multiplyScalar(panorama.sphere.radius);
+
+      // adjust lon/lat    
+      m.lon = -(90 - THREE.Math.radToDeg(theta)) + 180;
+      m.lat = 90 - THREE.Math.radToDeg(phi);
+      if (m.lon < 0) m.lon += 360;
+
+      panorama.showMouseDebugInfo(m);
+
+      this.mouseCoords=m;
+
+      return {
+        lon: m.lon,
+        lat: m.lat
+      };
+
+    }, // panorama_getMouseCoords
+
+    showMouseDebugInfo: function panorama_showMouseDebugInfo(vector){
+
+      var div = $('#mouseDebugInfo');
+      if (!div.length) {
+          div = $('<div id="mouseDebugInfo">').appendTo(this.container).css({
+              position: 'absolute',
+              top: 0,
+              right: 0,
+              width: 128,
+              backgroundColor: "rgba(0,0,0,.4)",
+              color: 'white'
+          });
+      }
+
+      var html = '<div style="width: 100%; position: relative; margin-left: 10px;">';
+      html += 'x: ' + vector.x.toPrecision(6) + '<br />';
+      html += 'y: ' + vector.y.toPrecision(6) + '<br />';
+      html += 'z: ' + vector.z.toPrecision(6) + '<br />';
+      html += 'lon: ' + vector.lon.toPrecision(6) + '<br />';
+      html += 'lat: ' + vector.lat.toPrecision(6) + '<br />';
+      div.html(html);
+
+    }, // panorama_showMouseDebugInfo
+
     onmousedown: function panorama_mousedown(e){
       if (isLeftButtonDown(e)) {
         this.mode.rotate=true;
@@ -622,8 +688,8 @@ $.extend(true,Panorama.prototype,{
           mouseCoords: this.getMouseCoords(e),
           textureCoords: this.worldToTextureCoords(this.mouseCoords)
         };
-        var wc=this.textureToWorldCoords(this.mousedownPos.textureCoords.left,this.mousedownPos.textureCoords.top);
-        console.log('fixme: '+this.mousedownPos.textureCoords.longitude+'=='+wc.longitude,this.mousedownPos.textureCoords.latitude+'=='+wc.latitude);
+   //     var wc=this.textureToWorldCoords(this.mousedownPos.textureCoords.left,this.mousedownPos.textureCoords.top);
+   //     console.log('fixme: '+this.mousedownPos.textureCoords.longitude+'=='+wc.longitude,this.mousedownPos.textureCoords.latitude+'=='+wc.latitude);
         //TODO something is wrong: this.mousedownPos.textureCoords.latitude != wc.latitude
       }
     },
@@ -812,3 +878,4 @@ $.fn.panorama=function(options){
 }
 
 Panorama.prototype.setupCallback(Camera.prototype);
+
