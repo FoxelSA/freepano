@@ -556,8 +556,8 @@ $(document).on('filesloaded', function(){
               list: {
                 0: {
                   coords: {
-                    lon: -180,
-                    lat: -5
+                    lon: -182,
+                    lat: -7
                   },
                   target: '1403179805_224762'
                 }

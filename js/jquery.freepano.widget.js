@@ -133,6 +133,14 @@ function WidgetFactory(options) {
           }
         }
 
+        // set widget position
+        var phi=-widget.coords.lon*Math.PI/180;
+        var theta=widget.coords.lat*Math.PI/180;
+        var pos=new THREE.Vector3(0,0,-widget.radius);
+        pos.applyAxisAngle(new THREE.Vector3(1,0,0),theta);
+        pos.applyAxisAngle(new THREE.Vector3(0,1,0),phi);
+        widget.object3D.position.copy(pos);
+
         // add widget to scene
         widget.scene.add(widget.object3D);
 
@@ -196,18 +204,6 @@ function WidgetFactory(options) {
 
       update: function widget_update() {
         var widget=this;
-        var panorama=widget.panorama;
-
-        var phi=widget.coords.lon*Math.PI/180;
-        var theta=widget.coords.lat*Math.PI/180;
-        // set widget position
-        widget.object3D.position.set(
-            widget.radius*Math.sin(phi)*Math.cos(theta),
-            widget.radius*Math.sin(phi)*Math.sin(theta),
-            -widget.radius*Math.cos(phi)
-        );
-
-        console.log(widget.object3D.position);
 
         if (widget.lookAtVec3) widget.object3D.lookAt(widget.lookAtVec3);
     //    widget.object3D.rotation.setFromRotationMatrix(new THREE.Matrix4().makeRotationY(-panorama.lon*2*Math.PI/180));
