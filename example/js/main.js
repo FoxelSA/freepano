@@ -56,7 +56,7 @@ $(document).ready(function(){
   // load image with alpha channel to use as POI
   window.unicorn_texture=new THREE.ImageUtils.loadTexture(
     'img/unicorn.png',
-    new THREE.UVMapping(),
+    THREE.UVMapping,
     file_onload,
     function onloaderror() {
       $.notify('Cannot load unicorn.png !');
@@ -97,19 +97,22 @@ $(document).on('filesloaded', function(){
     }, // fov
 
 */
-    // panorama.rotation: initial panorama sphere rotation
+    // panorama.rotation: panorama sphere rotation
 
     rotation: {
 
-      // vertical axis rotation
+      // intial rotation matrix 
+      matrix: new THREE.Matrix4(),
+
+      // vertical axis rotation (added to initial rotation matrix)
       heading: -90,
 
-      // horizontal axis rotation
-      // adjust in the viewer using <shift>-mousewheel
+      // horizontal axis rotation (added to initial rotation matrix)
+      // adjust in this example using <shift>-mousewheel
       tilt: 0,
 
-      // depth axis rotation
-      // adjust in the viewer using <alt>-mousewheel
+      // depth axis rotation (added to initial rotation matrix)
+      // adjust in this example using <alt>-mousewheel
       roll: 0,
 
       // rotation step for tilt and roll adjustment
@@ -287,7 +290,7 @@ $(document).on('filesloaded', function(){
           object: null,
 
           // ... or 'mesh' as THREE.mesh, (default mesh is a circle) 
-          mesh: new THREE.Mesh(new THREE.PlaneGeometry(Math.PI/18,Math.PI/18,1,1), new THREE.MeshBasicMaterial({
+          mesh: new THREE.Mesh(new THREE.PlaneGeometry(Math.PI/4.5,Math.PI/4.5,1,1), new THREE.MeshBasicMaterial({
             map: unicorn_texture,
             transparent: true,
           })),
@@ -442,7 +445,7 @@ $(document).on('filesloaded', function(){
               list: {
                 circle: {
                     coords: {
-                      lon: -90,
+                      lon: 0,
                       lat: 0
                     },
                     sound: {
@@ -466,13 +469,15 @@ $(document).on('filesloaded', function(){
                     }
                 }, // circle
                 square: {
-                    mesh: new THREE.Mesh(new THREE.PlaneGeometry(Math.PI/18,Math.PI/18,1,1), new THREE.MeshBasicMaterial({
+                    mesh: new THREE.Mesh(new THREE.PlaneGeometry(Math.PI/4.5,Math.PI/4.5,1,1), new THREE.MeshBasicMaterial({
                       color: 0x000000,
                       transparent: true,
-                      opacity: 0.3
+                      opacity: 0.3,
+                      depthWrite: false,
+                      depthTest: false
                     })),
                     coords: {
-                      lon: -70,
+                      lon: 10,
                       lat: 0
                     }
                 }, // square
@@ -488,11 +493,13 @@ $(document).on('filesloaded', function(){
                       return new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({
                         color: 0x000000,
                         transparent: true,
-                        opacity: 0.3
+                        opacity: 0.3,
+                        depthWrite: false,
+                        depthTest: false
                       }));
                     },
                     coords: {
-                      lon: -80,
+                      lon: 20,
                       lat: 0
                     }
                 }, // triangle
@@ -505,16 +512,18 @@ $(document).on('filesloaded', function(){
                     hover: 'white'
                   },
 
-                  mesh: new THREE.Mesh(new THREE.PlaneGeometry(Math.PI/18,Math.PI/18,1,1), new THREE.MeshBasicMaterial({
+                  mesh: new THREE.Mesh(new THREE.PlaneGeometry(Math.PI/4.5,Math.PI/4.5,1,1), new THREE.MeshBasicMaterial({
                     map: unicorn_texture,
                     transparent: true,
-                    opacity: 0.3
+                    opacity: 0.3,
+                    depthWrite: false,
+                    depthTest: false
                   })),
 
                   handleTransparency: true,
 
                   coords: {
-                    lon: -60,
+                    lon: 30,
                     lat: 0
                   }
 
@@ -526,7 +535,8 @@ $(document).on('filesloaded', function(){
               list: {
                 0: {
                   coords: {
-                    lon: -90
+                    lon: 0,
+                    lat: -5
                   },
                   target: '1403179809_224762'
                 }
@@ -546,7 +556,8 @@ $(document).on('filesloaded', function(){
               list: {
                 0: {
                   coords: {
-                    lon: 87
+                    lon: -182,
+                    lat: -7
                   },
                   target: '1403179805_224762'
                 }

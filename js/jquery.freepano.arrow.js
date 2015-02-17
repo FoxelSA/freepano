@@ -39,8 +39,7 @@ $.extend(true,Arrow.prototype,{
     update: function arrow_update() {
       var arrow=this;
       //arrow.coords.lat=Math.max(5,arrow.panorama.lat+5);
-      arrow.coords.lat=5;
-      arrow.widget_prototype_update();
+      arrow.widget_prototype_update.call(this);
     },
 
     onclick: function arrow_onclick(e){

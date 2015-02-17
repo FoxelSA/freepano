@@ -178,7 +178,7 @@ $.extend(true,PanoList.prototype,{
     pano_list.panorama.limits = limits;
 
     // update rotation matrix
-    pano_list.panorama.updateRotationMatrix();
+    console.log('pano_list.panorama.updateRotationMatrix();');
 
   },
 
