@@ -610,7 +610,7 @@ $.extend(true,Panorama.prototype,{
 
     var mat_proj = panorama.camera.instance.projectionMatrix.elements;
     //var mat_view = panorama.sphere.object3D._modelViewMatrix.elements;
-    var mat_view = panorama.sphere.object3D.matrixWorld.elements;
+    var mat_view = panorama.sphere.object3D.matrix.elements;
 
     /* Retrieve frustum parameters from projection matrix */
     var near = mat_proj[14] / ( 2.0 * ( mat_proj[10] - 1.0 ) );
@@ -639,7 +639,6 @@ $.extend(true,Panorama.prototype,{
     }
     cursor.lon=THREE.Math.radToDeg(cursor.theta);
     cursor.lat=THREE.Math.radToDeg(cursor.phi);
-    console.log(cursor.lon,cursor.lat);
 
     /* Remove linear transformation */
     var posf = Array(3);

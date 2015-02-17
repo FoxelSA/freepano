@@ -85,7 +85,7 @@ function WidgetFactory(options) {
     $.extend(true, Widget.prototype, {
 
       defaults: {
-        overlay: false,
+        overlay: true,
         mesh: null,
         object3D: null,
         coords: {
@@ -149,21 +149,48 @@ function WidgetFactory(options) {
 
       }, // widget_init
 
-      ondispose: function widget_ondispose(){
+      remove: function widget_remove(){
 
         var widget=this;
         var panorama=widget.panorama;
+        var widgetList=panorama[widget.constructor.name.toLowerCase()];
+
+        if (widgetList._active==widget) {
+          widgetList._active=null;
+        }
+
+        if (widgetList._hover==widget) {
+          widgetList._hover=null;
+        }
+
+        $.each(widgetList.hover,function(index){
+          if (this.object && this.object.parent.name==widget.name) {
+            widgetList.hover.splice(index,1);
+          }
+        });
+
+        if (widgetList.list[widget.name]) {
+          widgetList.list[widget.name].instance=null;
+          delete(widgetList.list[widget.name]);
+        }
+
+        widgetList.mesh_list_update();
 
         if (widget.object3D) {
           widget.scene.remove(widget.object3D);
           widget.object3D=null;
-
         }
+
         if (typeof(widget.mesh)=="object") {
           widget.mesh=null;
         }
 
-      }, // widget_dispose
+        $(document).off('.'+Widget.name.toLowerCase()+'_widget_mousedown');
+
+        widget.callback('dispose');
+
+      }, // widget_remove
+
 
       // callback other classes can hook to
       callback: function widget_callback(widget_event) {
@@ -178,6 +205,32 @@ function WidgetFactory(options) {
           return widget['on'+widget_event.type](widget_event);
         }
       }, // widget_callback
+
+      // setup widget_callback hook for specified instance or prototype
+      setupCallback: function widget_setupCallback(obj) {
+
+          obj.widget_prototype_callback=Widget.prototype.callback;
+
+          obj.widget_callback=function(e) {
+             var widget=this;
+             if (typeof(e)=="string") {
+               e={
+                 type: e,
+                 target: widget
+               }
+             }
+             var method='on_'+widget.constructor.name.toLowerCase()+'_'+e.type;
+             if (obj[method]) {
+               if (obj[method].apply(widget,[e])===false) {
+                  return false;
+               }
+             }
+             return obj.widget_prototype_callback.apply(e.target,[e]);
+          }
+
+          Widget.prototype.callback=obj.widget_callback;
+
+      }, // widget_setupCallback
 
       onready: function widget_ready(widget_event) {
         var widget=this;
@@ -232,6 +285,24 @@ function WidgetFactory(options) {
       },
 
       onclick: function widget_click(e) {
+        var widget=this;
+        var widgetList=widget.panorama[this.constructor.name.toLowerCase()];
+        // todo: handle multiple selection, with shift and ctrl modifiers
+        if (widget.color && widget.color.selected) {
+          if (!widget.selected){
+            widget.selected=true;
+            widget.setColor(widget.color.selected);
+            $.each(widgetList.list,function(name){
+              var _widget=this.instance;
+              if (_widget.selected && _widget!=widget){
+                _widget.selected=false;
+                _widget.setColor(_widget.color.normal)
+                _widget.callback('unselect');
+              }
+            });
+            widget.callback('select');
+          }
+        }
         console.log('click',this);
       },
 
@@ -251,7 +322,7 @@ function WidgetFactory(options) {
               widget.setColor(widget.color.hover);
               widget.panorama.drawScene();
             } else {
-              widget.setColor(widget.color.normal);
+              widget.setColor(widget.selected?widget.color.selected:widget.color.normal);
               widget.panorama.drawScene();
             }
             widgetList._active=null;
@@ -298,23 +369,26 @@ function WidgetFactory(options) {
           }
           return;
         }
-        
+
         // or set hover color
         this.setColor(this.color.hover);
 
       }, // _widget_mousein
 
       _onmouseout: function _widget_mouseout(e){
-        if (!this.color || this.panorama.mode.rotate) return;
-        this.panorama[this.constructor.name.toLowerCase()]._hover=null;
-        this.setColor(this.color.normal);
+        var widget=this;
+        if (!widget.color || widget.panorama.mode.rotate) return;
+        widget.panorama[widget.constructor.name.toLowerCase()]._hover=null;
+        widget.setColor(widget.selected?widget.color.selected:widget.color.normal);
       }, // _widget_mouseout
 
       setColor: function widget_setColor(color) {
-        $.each(this.object3D.children,function(){
+        var widget=this;
+        console.log('setColor',this,color);
+        $.each(widget.object3D.children,function(){
           this.material.color.set(color);
         });
-        this.panorama.drawScene();
+        widget.panorama.drawScene();
       }, // widget_setColor
 
       scale: function widget_scale(scaleFactor) {
@@ -385,7 +459,7 @@ function WidgetFactory(options) {
             var options=$.extend(
               true,
               {},
-              widgetList.defaults,
+              widgetList.defaults[widgetList.constructor.name.split('_')[0].toLowerCase()], // ugly
               { scene: panorama.scene,
                 camera: panorama.camera
               },
@@ -437,13 +511,13 @@ function WidgetFactory(options) {
         // update mesh list used for get_mouseover_list
         mesh_list_update: function widgetList_mesh_list_update() {
           var widgetList=this;
-          $.each(widgetList.list,function(name,widget) {
-            widget.camera.meshes[Widget.name.toLowerCase()]={};
+          $.each(widgetList.list,function(name,widgetList_elem) {
+            widgetList_elem.instance.camera.meshes[Widget.name.toLowerCase()]=[];
             return false; // all widgets from widgetList are of the same constructor
           });
-          $.each(widgetList.list,function(name,widget) {
-            $.each(widget.object3D.children,function(index,mesh){
-              widget.camera.meshes[Widget.name.toLowerCase()].push(this);
+          $.each(widgetList.list,function(name,widgetList_elem) {
+            $.each(widgetList_elem.instance.object3D.children,function(index,mesh){
+              widgetList_elem.instance.camera.meshes[Widget.name.toLowerCase()].push(this);
             });
           });
         }, // widgetList_mesh_list_update
@@ -496,7 +570,7 @@ function WidgetFactory(options) {
           $.each(widgetList.list,function widgetList_widget_dispose() {
             var widget=this;
             if (widget.instance){
-              widget.instance.callback('dispose');
+              widget.instance.remove()
               widget.instance=null;
             }
           });
@@ -515,234 +589,343 @@ function WidgetFactory(options) {
 
           panorama[Widget.name.toLowerCase()]=null;
 
-        }, // widgetList_on_panorama_dispose
+      }, // widgetList_on_panorama_dispose
 
-        // instantiate or re-initialize widget list
-        on_panorama_ready: function widgetList_on_panorama_ready(e) {
+      // instantiate or re-initialize widget list
+      on_panorama_ready: function widgetList_on_panorama_ready(e) {
 
-          var panorama=this;
-          var widgetList=panorama[Widget.name.toLowerCase()];
+        var panorama=this;
+        var widgetList=panorama[Widget.name.toLowerCase()];
 
-          if (widgetList instanceof WidgetList) {
-            widgetList.init();
-          } else {
-            panorama[Widget.name.toLowerCase()]=new WidgetList($.extend(true,{
-              panorama: panorama
-            },widgetList));
-          }
-
-        }, // widgetList_on_panorama_ready
-
-        hover: [],
-
-        // for the hover_list candidates, return those for whom the given pixel is not totally transparent
-        filterHoverList: function widgetList_filterHoverList(e,hover_list) {
-          var widgetList=this;
-          var panorama=widgetList.panorama;
-          var filtered_list=[];
-          var canvas=panorama.renderer.getContext().canvas;
-
-          // for each hover candidate
-          $.each(hover_list,function(index,hover_elem){
-            var material=hover_elem.object.material;
-            var widget=widgetList.list[hover_elem.object.parent.name].instance;
-
-            // unless non-applicable or not requested for the related widget
-            if (material.map && material.transparent && widget.handleTransparency) {
-
-              // create framebuffer
-              if (!widgetList.renderTarget || canvas.height!=widgetList.renderTarget.height || canvas.width!=widgetList.renderTarget.width){
-                widgetList.renderTarget=new THREE.WebGLRenderTarget(canvas.width,canvas.height,{
-                  minFilter: THREE.LinearFilter,
-                  stencilBuffer: false,
-                  depthBuffer: false
-                });
-              }
-
-              // create scene
-              if (!widgetList.scene) widgetList.scene=new THREE.Scene();
-
-              // add hover candidate to scene
-              widgetList.scene.add(hover_elem.object.parent);
-
-              // render scene to framebuffer
-              panorama.renderer.render(widgetList.scene,widget.camera.instance,widgetList.renderTarget,true);
-
-              // read pixel at mouse coordinates
-              var pixel=new Uint8Array(4);
-              var gl=panorama.renderer.getContext();
-              gl.readPixels(e.pageX,widgetList.renderTarget.height-e.pageY,1,1,gl.RGBA,gl.UNSIGNED_BYTE,pixel);
-
-              // put object back in main scene
-              widget.scene.add(hover_elem.object.parent);
-
-              // discard widget when pixel alpha channel is null
-              if (!pixel[3]) return;
-
-            }
-
-            // add mesh to filtered list
-            filtered_list.push(hover_elem);
-
-          });
-
-          return filtered_list;
-
-        }, // widgetList_filterHoverList
-
-        on_panorama_mousemove: function widgetList_on_panorama_mousemove(e) {
-
-          var panorama=this;
-          var widgetList=panorama[Widget.name.toLowerCase()];
-
-          if (!(widgetList instanceof WidgetList)) {
-            return;
-          }
-
-          if (e.pageX!=undefined) {
-            // save mouse position
-            panorama.pageX=e.pageX;
-            panorama.pageY=e.pageY;
-            panorama.clientX=e.clientX;
-            panorama.clientY=e.clientY;
-          } else {
-            // use saved mouse position
-            e.pageX=panorama.pageX;
-            e.pageY=panorama.pageY;
-            e.clientX=panorama.clientX;
-            e.clientY=panorama.clientY;
-          }
-
-          // get mouseover_list based on raycaster
-          var hover=widgetList.get_mouseover_list(e);
-
-          if (hover.length) {
-            // filter out false positive (handle transparency)
-            hover=widgetList.filterHoverList(e,hover);
-          }
-
-          // if mouse is hovering a widget now
-          if (hover.length) {
-
-            // if mouse was hovering a widget before
-            if (widgetList.hover.length) {
-
-              // and it is the same one
-              if (widgetList.hover[0].object.parent.name==hover[0].object.parent.name) {
-
-                // then trigger mouseover for the widget and return
-                widgetList.list[hover[0].object.parent.name].instance.onmouseover(e);
-                return;
-
-              } else {
-                // not the same one, trigger mouseout and continue
-                widgetList.list[widgetList.hover[0].object.parent.name].instance._onmouseout(e);
-                widgetList.list[widgetList.hover[0].object.parent.name].instance.onmouseout(e);
-              }
-            }
-
-            // store current hover list
-            widgetList.hover=hover;
-
-            // trigger mousein and mouseover for the widget mouse is hovering now
-            widgetList.list[hover[0].object.parent.name].instance._onmousein(e);
-            widgetList.list[hover[0].object.parent.name].instance.onmousein(e);
-            widgetList.list[hover[0].object.parent.name].instance.onmouseover(e);
-
-          } else {
-            // no hover now, but if mouse was hovering a widget before
-            if (widgetList.hover.length) {
-
-                // trigger mouseout and return
-                widgetList.list[widgetList.hover[0].object.parent.name].instance._onmouseout(e);
-                widgetList.list[widgetList.hover[0].object.parent.name].instance.onmouseout(e);
-                widgetList.hover=[];
-                return;
-            }
-          }
-
-        }, // widgetList_on_panorama_mousemove
-
-        on_panorama_mouseevent: function widgetList_on_panorama_mousevent(e) {
-
-          var panorama=this;
-          var widgetList=panorama[Widget.name.toLowerCase()];
-
-          if (!(widgetList instanceof WidgetList)) {
-            return;
-          }
-
-          if (!widgetList.hover.length) {
-            return;
-          }
-
-          // call handlers for first widget from hovering list
-          var widget=widgetList.list[widgetList.hover[0].object.parent.name].instance;
-
-          // 1. private mouseevent handler (for hover / active color handling)
-          if (widget['_on'+e.type] && widget.color) {
-            widget['_on'+e.type](e);
-          }
-
-          // 2. public mouseevent handler
-            return widget['on'+e.type](e);
-
-        }, // widgetList_on_panorama_mouseevent
-
-        get_mouseover_list: function widgetList_get_mouseover_list(e) {
-
-          var widgetList=this;
-          var panorama=widgetList.panorama;
-          var container=$(panorama.container);
-          var mouseover_list=[];
-
-          if (e.clientX==undefined) {
-            return mouseover_list;
-          }
-
-          // convert screen coordinates to normalized coordinates
-          var vector=new THREE.Vector3();
-          vector.set(
-            (e.clientX-container.offset().left)/container.width()*2-1,
-           -(e.clientY-container.offset().top)/container.height()*2+1,
-           0.5
-          );
-
-          // for each camera referenced by widgets in widgetList
-          if (widgetList._cameraList) {
-            $.each(widgetList._cameraList,function(idx,camera){
-
-              // convert normalized coordinates to world coordinates
-              var wc=vector.clone();
-              wc.unproject(camera.instance);
-
-              // create a ray from camera.position to world coordinates
-              camera.raycaster.ray.set(camera.instance.position, wc.sub(camera.instance.position).normalize());
-
-              // find meshes intersecting with this ray
-              var meshes=camera.raycaster.intersectObjects(camera.meshes[Widget.name.toLowerCase()]);
-
-              // and append them to mouseover_list
-              if (meshes.length) {
-                mouseover_list=mouseover_list.concat(meshes);
-              }
-
-            });
-          }
-
-          return mouseover_list;
-
-        }, // widgetList_get_mouseover_list
-
-        callback: function widgetList_callback(widgetList_event) {
+        if (widgetList instanceof WidgetList) {
+          widgetList.init();
+        } else {
+          widgetList=panorama[Widget.name.toLowerCase()]=new WidgetList($.extend(true,{
+            panorama: panorama
+          },widgetList));
         }
 
-    });
+        widgetList.callback('ready');
+
+      }, // widgetList_on_panorama_ready
+
+      hover: [],
+
+      // for the hover_list candidates, return those for whom the given pixel is not totally transparent
+      filterHoverList: function widgetList_filterHoverList(e,hover_list) {
+        var widgetList=this;
+        var panorama=widgetList.panorama;
+        var filtered_list=[];
+        var canvas=panorama.renderer.getContext().canvas;
+        panorama.renderer.autoClear=true;
+
+        // for each hover candidate
+        $.each(hover_list,function(index,hover_elem){
+          var material=hover_elem.object.material;
+          var widget=widgetList.list[hover_elem.object.parent.name].instance;
+
+          // unless non-applicable or not requested for the related widget
+          if (material.map && material.transparent && widget.handleTransparency) {
+
+            // create framebuffer
+            if (!widgetList.renderTarget || canvas.height!=widgetList.renderTarget.height || canvas.width!=widgetList.renderTarget.width){
+              widgetList.renderTarget=new THREE.WebGLRenderTarget(canvas.width,canvas.height,{
+                minFilter: THREE.LinearFilter,
+                stencilBuffer: false,
+                depthBuffer: false
+              });
+            }
+
+            // create scene
+            if (!widgetList.scene) widgetList.scene=new THREE.Scene();
+
+            // add hover candidate to scene
+            widgetList.scene.add(hover_elem.object.parent);
+
+            // render scene to framebuffer
+            panorama.renderer.render(widgetList.scene,widget.camera.instance,widgetList.renderTarget,true);
+
+            // read pixel at mouse coordinates
+            var pixel=new Uint8Array(4);
+            var gl=panorama.renderer.getContext();
+            gl.readPixels(e.pageX,widgetList.renderTarget.height-e.pageY,1,1,gl.RGBA,gl.UNSIGNED_BYTE,pixel);
+
+            // put object back in main scene
+            widget.scene.add(hover_elem.object.parent);
+
+            // discard widget when pixel alpha channel is null
+            if (!pixel[3]) return;
+
+          }
+
+          // add mesh to filtered list
+          filtered_list.push(hover_elem);
+
+        });
+        panorama.renderer.autoClear=false;
+
+        return filtered_list;
+
+      }, // widgetList_filterHoverList
+
+      on_panorama_mousemove: function widgetList_on_panorama_mousemove(e) {
+
+        var panorama=this;
+        var widgetList=panorama[Widget.name.toLowerCase()];
+
+        if (!(widgetList instanceof WidgetList)) {
+          return;
+        }
+
+        if (e.pageX!=undefined) {
+          // save mouse position
+          panorama.pageX=e.pageX;
+          panorama.pageY=e.pageY;
+          panorama.clientX=e.clientX;
+          panorama.clientY=e.clientY;
+        } else {
+          // use saved mouse position
+          e.pageX=panorama.pageX;
+          e.pageY=panorama.pageY;
+          e.clientX=panorama.clientX;
+          e.clientY=panorama.clientY;
+        }
+
+        // get mouseover_list based on raycaster
+        var hover=widgetList.get_mouseover_list(e);
+
+        if (hover.length) {
+          // filter out false positive (handle transparency)
+          hover=widgetList.filterHoverList(e,hover);
+        }
+
+        // if mouse is hovering a widget now
+        if (hover.length) {
+
+          // if mouse was hovering a widget before
+          if (widgetList.hover.length) {
+
+            // and it is the same one
+            if (widgetList.hover[0].object.parent.name==hover[0].object.parent.name) {
+
+              // then trigger mouseover for the widget and return
+              widgetList.list[hover[0].object.parent.name].instance.onmouseover(e);
+              return;
+
+            } else {
+              // not the same one, trigger mouseout and continue
+              widgetList.list[widgetList.hover[0].object.parent.name].instance._onmouseout(e);
+              widgetList.list[widgetList.hover[0].object.parent.name].instance.onmouseout(e);
+            }
+          }
+
+          // store current hover list
+          widgetList.hover=hover;
+
+          // trigger mousein and mouseover for the widget mouse is hovering now
+          widgetList.list[hover[0].object.parent.name].instance._onmousein(e);
+          widgetList.list[hover[0].object.parent.name].instance.onmousein(e);
+          widgetList.list[hover[0].object.parent.name].instance.onmouseover(e);
+
+        } else {
+          // no hover now, but if mouse was hovering a widget before
+          if (widgetList.hover.length) {
+
+              // trigger mouseout and return
+              try {
+
+                if (widgetList.list[widgetList.hover[0].object.parent.name] &&
+                    widgetList.list[widgetList.hover[0].object.parent.name].instance) {
+                      widgetList.list[widgetList.hover[0].object.parent.name].instance._onmouseout(e);
+                      widgetList.list[widgetList.hover[0].object.parent.name].instance.onmouseout(e);
+                }
+
+              } catch(e) {
+                console.log(e);
+              }
+
+              widgetList.hover=[];
+
+              return;
+          }
+        }
+
+      }, // widgetList_on_panorama_mousemove
+
+      on_panorama_mouseevent: function widgetList_on_panorama_mousevent(e) {
+
+        var panorama=this;
+        var widgetList=panorama[Widget.name.toLowerCase()];
+
+        if (!(widgetList instanceof WidgetList)) {
+          return;
+        }
+
+        if (!widgetList.hover.length) {
+          return;
+        }
+
+        // call handlers for first widget from hovering list
+        var widget=widgetList.list[widgetList.hover[0].object.parent.name].instance;
+
+        // 1. private mouseevent handler (for hover / active color handling)
+        if (widget['_on'+e.type] && widget.color) {
+          widget['_on'+e.type](e);
+        }
+
+        // 2. public mouseevent handler
+          return widget['on'+e.type](e);
+
+      }, // widgetList_on_panorama_mouseevent
+
+      get_mouseover_list: function widgetList_get_mouseover_list(e) {
+
+        var widgetList=this;
+        var panorama=widgetList.panorama;
+        var container=$(panorama.container);
+        var mouseover_list=[];
+
+        if (e.clientX==undefined) {
+          return mouseover_list;
+        }
+
+        // convert screen coordinates to normalized coordinates
+        var vector=new THREE.Vector3();
+        vector.set(
+          (e.clientX-container.offset().left)/container.width()*2-1,
+         -(e.clientY-container.offset().top)/container.height()*2+1,
+         0.5
+        );
+
+        // for each camera referenced by widgets in widgetList
+        if (widgetList._cameraList) {
+          $.each(widgetList._cameraList,function(idx,camera){
+
+            // convert normalized coordinates to world coordinates
+            var wc=vector.clone();
+            wc.unproject(camera.instance);
+
+            // create a ray from camera.position to world coordinates
+            camera.raycaster.ray.set(camera.instance.position, wc.sub(camera.instance.position).normalize());
+
+            // find meshes intersecting with this ray
+            var meshes=camera.raycaster.intersectObjects(camera.meshes[Widget.name.toLowerCase()]);
+
+            // and append them to mouseover_list
+            if (meshes.length) {
+              mouseover_list=mouseover_list.concat(meshes);
+            }
+
+          });
+        }
+
+        return mouseover_list;
+
+      }, // widgetList_get_mouseover_list
+
+      show: function widgetList_show(options,callback) {
+
+        var widgetList=this;
+        var panorama=widgetList.panorama;
+
+        if (panorama.mode.show) {
+          return;
+        }
+
+        if (typeof(options)=='string') {
+          options={
+            name: options,
+            callback: callback
+          };
+        }
+
+        var widget=widgetList.list[options.name];
+        var dlon=(widget.coords.lon-panorama.lon+90)%360;
+        var dlat=(widget.coords.lat-panorama.lat)%180;
+        var dzoom=(widget.zoom)?widget.zoom-panorama.camera.zoom.current:0;
+        if (Math.abs(dlon)>180) {
+            dlon+=(dlon<0)?360:-360;
+        }
+
+        if (dlon==0 && dlat==0) {
+          if (typeof(options.callback=="function")){
+            callback(widget);
+          }
+          return;
+        }
+
+        panorama.mode.show=true;
+        var it=0;
+
+        var _drawScene=function(){
+          ++it;
+          panorama.lon+=dlon/30;
+          panorama.lat+=dlat/30;
+          panorama.camera.zoom.current+=dzoom/30;
+          panorama.zoomUpdate();
+          panorama.drawScene();
+          if (it<30) requestAnimationFrame(_drawScene,null,30-it>>1);
+          else {
+            panorama.mode.show=false;
+            widget.instance.callback('show');
+            if (typeof(options.callback=="function")){
+              setTimeout(function(){
+                callback(widget);
+              },150);
+            }
+          }
+        };
+        requestAnimationFrame(_drawScene);
+
+      }, // widgetList_show
+
+      callback: function widgetList_callback(widgetList_event) {
+        var widgetList=this;
+        if (typeof(widgetList_event)=='string') {
+          widgetList_event={
+            type: widgetList_event,
+            target: widgetList
+          }
+        }
+        if (widgetList['on'+widgetList_event.type]) {
+          return widgetList['on'+widgetList_event.type](widgetList_event);
+        }
+
+      }, // widgetList_callback
+
+      // setup widgetList_callback hook for specified instance or prototype
+      setupCallback: function widgetList_setupCallback(obj) {
+
+          obj.widgetList_prototype_callback=WidgetList.prototype.callback;
+
+          obj.widgetList_callback=function(e) {
+             var widgetList=this;
+             if (typeof(e)=="string") {
+               e={
+                 type: e,
+                 target: widgetList
+               }
+             }
+             var method='on_'+widgetList.constructor.name.toLowerCase()+'_'+e.type;
+             if (obj[method]) {
+               if (obj[method].apply(widgetList,[e])===false) {
+                  return false;
+               }
+             }
+             return obj.widgetList_prototype_callback.apply(e.target,[e]);
+          }
+
+          WidgetList.prototype.callback=obj.widgetList_callback;
+
+        } // widgetList_setupCallback
+
+    }); // extend WidgetList.prototype
 
     $.extend(true,WidgetList.prototype,{
         on_panorama_mousedown: WidgetList.prototype.on_panorama_mouseevent,
         on_panorama_mouseup: WidgetList.prototype.on_panorama_mouseevent,
-    });
+
+    }); // extend WidgetList.prototype
 
     $.extend(true,Panorama.prototype,{
 
