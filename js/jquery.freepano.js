@@ -700,8 +700,9 @@ $.extend(true,Panorama.prototype,{
       var panorama=this;
       var canvas = panorama.renderer.domElement;
 
+      var offset=$(canvas).offset();
       // get normalized mouse coordinates
-      var vector = new THREE.Vector3((event.clientX / canvas.width) * 2 - 1, -(event.clientY / canvas.height) * 2 + 1, 0.5);
+      var vector = new THREE.Vector3(((event.clientX-offset.left) / canvas.width) * 2 - 1, -((event.clientY-offset.top) / canvas.height) * 2 + 1, 0.5);
 
       // get mouse coordinates in the camera referential
       vector.applyMatrix4(new THREE.Matrix4().getInverse(panorama.camera.instance.projectionMatrix));
