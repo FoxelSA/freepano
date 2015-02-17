@@ -611,9 +611,6 @@ $.extend(true,Panorama.prototype,{
     var mat_view = modelViewMatrix.elements;
     var mat_proj = panorama.camera.instance.projectionMatrix.elements;
 
-    //var mat_view = panorama.sphere.object3D._modelViewMatrix.elements;
-    var mat_view = panorama.sphere.object3D.matrix.elements;
-
     /* Retrieve frustum parameters from projection matrix */
     var near = mat_proj[14] / ( 2.0 * ( mat_proj[10] - 1.0 ) );
     var righ = near / mat_proj[0];
@@ -695,7 +692,7 @@ $.extend(true,Panorama.prototype,{
 
     }, // panorama_getMouseCoords
 
-    getMouseCoords: function panorama_getMouseCoords(event) {
+    getMouseCoords2: function panorama_getMouseCoords(event) {
 
       var panorama=this;
       var canvas = panorama.renderer.domElement;
