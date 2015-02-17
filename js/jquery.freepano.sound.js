@@ -104,7 +104,12 @@ $.extend(true,SoundList.prototype,{
 
   set_position_howler: function soundList_set_position_howler(panorama,object3D){
     var sound=this;
-    var pos=object3D.position;
+
+    var pos=object3D.position.clone();
+    pos.applyMatrix4(panorama.camera.instance.matrixWorldInverse);
+    pos.normalize();
+    pos.multiplyScalar(object3D.position.length());
+
     var widget=sound.widget;
     $.each(sound.list,function(name){
       var soundList_elem=sound.list[name];
@@ -398,7 +403,7 @@ $.each(window.widgetTypes,function(idx,widgetType){
 
           },widget.sound));
 
-          widget.sound.on_widget_update=function soundList_set_position_on_widget_update() {
+          widget.sound.on_panorama_render=function soundList_set_position_on_panorama_render() {
             var widget=this;
             var sound=widget.sound;
             if (!sound) {
@@ -408,7 +413,7 @@ $.each(window.widgetTypes,function(idx,widgetType){
             if (sound[set_position_method]) {
               sound[set_position_method](widget.panorama,widget.object3D);
             }
-          },
+          } // soundList_set_position_on_panorama_render
 
           widget.sound.on_widget_dispose=function soundList_on_widget_dispose(widget_event) {
 
