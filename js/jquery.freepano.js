@@ -607,8 +607,10 @@ $.extend(true,Panorama.prototype,{
         y: e.clientY-offset.top
       }
 
-
+    var modelViewMatrix=new THREE.Matrix4().multiplyMatrices(panorama.camera.instance.matrixWorldInverse,panorama.sphere.object3D.matrixWorld);
+    var mat_view = modelViewMatrix.elements;
     var mat_proj = panorama.camera.instance.projectionMatrix.elements;
+
     //var mat_view = panorama.sphere.object3D._modelViewMatrix.elements;
     var mat_view = panorama.sphere.object3D.matrix.elements;
 
@@ -679,6 +681,11 @@ $.extend(true,Panorama.prototype,{
     m.lon=deg_lam;
     m.lat=deg_phi;
 
+    // adjust lon/lat    
+    m.lon = -(90 - m.lon) - 90;
+    m.lat = 90 - m.lat;
+    if (m.lon < 0) m.lon += 360;
+
     panorama.showMouseDebugInfo(m);
 
     return {
@@ -688,7 +695,7 @@ $.extend(true,Panorama.prototype,{
 
     }, // panorama_getMouseCoords
 
-    getMouseCoords: function panorama_getMouseCoords(event) {
+    getMouseCoords2: function panorama_getMouseCoords(event) {
 
       var panorama=this;
       var canvas = panorama.renderer.domElement;
