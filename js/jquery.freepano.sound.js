@@ -76,7 +76,9 @@ $.extend(true,SoundList.prototype,{
     $.each(soundList.list,function(name){
       var sound=this;
       if (!(sound instanceof Sound)) {
-        soundList.list[name]=new Sound($.extend(true,{},soundList.defaults,sound));
+        soundList.list[name]=new Sound($.extend(true,{},soundList.defaults,sound,{
+          soundList: soundList
+        }));
       }
     }); // each soundList.list
 
@@ -110,6 +112,10 @@ $.extend(true,SoundList.prototype,{
     pos.normalize();
     pos.multiplyScalar(object3D.position.length());
 
+    var v=new THREE.Vector3(pos.x,pos.y,pos.z).normalize();
+    v.z=1;
+    v.normalize();
+   
     var widget=sound.widget;
     $.each(sound.list,function(name){
       var soundList_elem=sound.list[name];
@@ -119,9 +125,6 @@ $.extend(true,SoundList.prototype,{
           pos.y,
           pos.z
         );
-        var v=new THREE.Vector3(pos.x,pos.y,pos.z).normalize();
-        v.z=1;
-        v.normalize();
         soundList_elem.instance.orientation(v.x,v.y,v.z);
       }
     });
@@ -176,19 +179,26 @@ $.extend(true,Sound.prototype,{
     // redirect sound.type specific event handlers calls to sound instance via sound.callback
     howler: {
       onload: function howler_onload() {
-        Sound.prototype.callback('load');
+        this.soundList_elem.callback('load');
       },
       onloaderror: function howler_onloaderror() {
-        Sound.prototype.callback('loaderror');
+        this.soundList_elem.callback('loaderror');
       },
       onpause: function howler_onpause() {
-        Sound.prototype.callback('pause');
+        this.soundList_elem.callback('pause');
       },
       onplay: function howler_onplay() {
-        Sound.prototype.callback('play');
+
+        // update sound position on play
+        var widget=this.soundList_elem.soundList.widget;
+        if (widget) {
+          widget.sound.on_widget_update.call(widget);
+        }
+
+        this.soundList_elem.callback('play');
       },
       onend: function howler_onend() {
-        Sound.prototype.callback('end');
+        this.soundList_elem.callback('end');
       }
     }
   }, // Sound.options
@@ -237,6 +247,7 @@ $.extend(true,Sound.prototype,{
     var sound=this;
     try {
       sound.instance=new Howl($.extend(true,{},sound.options[sound.type],sound));
+      sound.instance.soundList_elem=sound;
     } catch (e) {
       console.log(e)
     }
@@ -403,7 +414,7 @@ $.each(window.widgetTypes,function(idx,widgetType){
 
           },widget.sound));
 
-          widget.sound.on_panorama_render=function soundList_set_position_on_panorama_render() {
+          widget.sound.on_widget_update=function soundList_set_position_on_widget_update() {
             var widget=this;
             var sound=widget.sound;
             if (!sound) {
@@ -413,7 +424,7 @@ $.each(window.widgetTypes,function(idx,widgetType){
             if (sound[set_position_method]) {
               sound[set_position_method](widget.panorama,widget.object3D);
             }
-          } // soundList_set_position_on_panorama_render
+          } // soundList_set_position_on_widget_update
 
           widget.sound.on_widget_dispose=function soundList_on_widget_dispose(widget_event) {
 
