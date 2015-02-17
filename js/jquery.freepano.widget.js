@@ -512,14 +512,24 @@ function WidgetFactory(options) {
         mesh_list_update: function widgetList_mesh_list_update() {
           var widgetList=this;
           $.each(widgetList.list,function(name,widgetList_elem) {
-            widgetList_elem.instance.camera.meshes[Widget.name.toLowerCase()]=[];
-            return false; // all widgets from widgetList are of the same constructor
+            if (widgetList_elem.instance.camera.meshes) {
+              widgetList_elem.instance.camera.meshes[Widget.name.toLowerCase()]=[];
+              return false; // all widgets from widgetList are of the same constructor
+            }
           });
+
           $.each(widgetList.list,function(name,widgetList_elem) {
-            $.each(widgetList_elem.instance.object3D.children,function(index,mesh){
-              widgetList_elem.instance.camera.meshes[Widget.name.toLowerCase()].push(this);
-            });
+
+            var meshes=widgetList_elem.instance.camera.meshes;
+
+            if (meshes && meshes[Widget.name.toLowerCase()]) {
+              $.each(widgetList_elem.instance.object3D.children,function(index,mesh){
+                meshes[Widget.name.toLowerCase()].push(this);
+              });
+            }
+
           });
+
         }, // widgetList_mesh_list_update
 
         on_panorama_update: function widgetList_on_panorama_update(e) {
