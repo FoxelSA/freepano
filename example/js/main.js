@@ -639,7 +639,8 @@ $(document).on('filesloaded', function(){
 
       green: {
         shader: THREE.GreenShader,
-        enabled: false
+        enabled: false,
+        uniforms: {}
       },
 
       edge: {
