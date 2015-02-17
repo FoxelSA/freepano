@@ -850,7 +850,7 @@ function WidgetFactory(options) {
         }
 
         var widget=widgetList.list[options.name];
-        var dlon=(widget.coords.lon-panorama.lon+90)%360;
+        var dlon=(widget.coords.lon-panorama.lon)%360;
         var dlat=(widget.coords.lat-panorama.lat)%180;
         var dzoom=(widget.zoom)?widget.zoom-panorama.camera.zoom.current:0;
         if (Math.abs(dlon)>180) {
