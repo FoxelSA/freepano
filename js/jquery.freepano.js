@@ -695,7 +695,7 @@ $.extend(true,Panorama.prototype,{
 
     }, // panorama_getMouseCoords
 
-    getMouseCoords2: function panorama_getMouseCoords(event) {
+    getMouseCoords: function panorama_getMouseCoords(event) {
 
       var panorama=this;
       var canvas = panorama.renderer.domElement;
