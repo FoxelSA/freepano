@@ -290,7 +290,7 @@ $(document).on('filesloaded', function(){
           object: null,
 
           // ... or 'mesh' as THREE.mesh, (default mesh is a circle) 
-          mesh: new THREE.Mesh(new THREE.PlaneGeometry(Math.PI/18,Math.PI/18,1,1), new THREE.MeshBasicMaterial({
+          mesh: new THREE.Mesh(new THREE.PlaneGeometry(Math.PI/4.5,Math.PI/4.5,1,1), new THREE.MeshBasicMaterial({
             map: unicorn_texture,
             transparent: true,
           })),
@@ -445,7 +445,7 @@ $(document).on('filesloaded', function(){
               list: {
                 circle: {
                     coords: {
-                      lon: -90,
+                      lon: 0,
                       lat: 0
                     },
                     sound: {
@@ -469,7 +469,7 @@ $(document).on('filesloaded', function(){
                     }
                 }, // circle
                 square: {
-                    mesh: new THREE.Mesh(new THREE.PlaneGeometry(Math.PI/18,Math.PI/18,1,1), new THREE.MeshBasicMaterial({
+                    mesh: new THREE.Mesh(new THREE.PlaneGeometry(Math.PI/4.5,Math.PI/4.5,1,1), new THREE.MeshBasicMaterial({
                       color: 0x000000,
                       transparent: true,
                       opacity: 0.3,
@@ -477,7 +477,7 @@ $(document).on('filesloaded', function(){
                       depthTest: false
                     })),
                     coords: {
-                      lon: -70,
+                      lon: 10,
                       lat: 0
                     }
                 }, // square
@@ -499,7 +499,7 @@ $(document).on('filesloaded', function(){
                       }));
                     },
                     coords: {
-                      lon: -80,
+                      lon: 20,
                       lat: 0
                     }
                 }, // triangle
@@ -512,7 +512,7 @@ $(document).on('filesloaded', function(){
                     hover: 'white'
                   },
 
-                  mesh: new THREE.Mesh(new THREE.PlaneGeometry(Math.PI/18,Math.PI/18,1,1), new THREE.MeshBasicMaterial({
+                  mesh: new THREE.Mesh(new THREE.PlaneGeometry(Math.PI/4.5,Math.PI/4.5,1,1), new THREE.MeshBasicMaterial({
                     map: unicorn_texture,
                     transparent: true,
                     opacity: 0.3,
@@ -523,7 +523,7 @@ $(document).on('filesloaded', function(){
                   handleTransparency: true,
 
                   coords: {
-                    lon: -60,
+                    lon: 30,
                     lat: 0
                   }
 
@@ -535,7 +535,8 @@ $(document).on('filesloaded', function(){
               list: {
                 0: {
                   coords: {
-                    lon: -90
+                    lon: 0,
+                    lat: -5
                   },
                   target: '1403179809_224762'
                 }
@@ -555,7 +556,8 @@ $(document).on('filesloaded', function(){
               list: {
                 0: {
                   coords: {
-                    lon: 87
+                    lon: -182,
+                    lat: -7
                   },
                   target: '1403179805_224762'
                 }
