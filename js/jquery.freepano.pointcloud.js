@@ -12,7 +12,8 @@ $.extend(true,PointCloud.prototype,{
   defaults: {
     dotMaterial: new THREE.PointCloudMaterial({
 //        map: THREE.ImageUtils.loadTexture(),
-        size: 1,
+        size: 2,
+        color: 'yellow',
         sizeAttenuation: false,
         transparent: true,
         opacity: 0.8,
@@ -20,13 +21,23 @@ $.extend(true,PointCloud.prototype,{
     }), // pointCloud.defaults.dotMaterial
     
     parseJSON: function parseJSON(json) {
+      var pointCloud=this;
+      var panorama=pointCloud.panorama;
       var positions = new Float32Array(json.points.length * 3);
       var i=0;
       console.log('parsing cloud... ('+json.points.length+' points)');
+      var v=new THREE.Vector3();
+      var Xaxis=new THREE.Vector3(1,0,0);
+      var Yaxis=new THREE.Vector3(0,1,0);
       json.points.forEach(function(point,index) {
-        positions[i]=point[0];
-        positions[i+1]=point[1];
-        positions[i+2]=point[2];
+        v.x=0;
+        v.y=0;
+        v.z=panorama.sphere.radius;
+        v.applyAxisAngle(Xaxis,point[1]);
+        v.applyAxisAngle(Yaxis,point[0]);
+        positions[i]=v.x
+        positions[i+1]=-v.y
+        positions[i+2]=v.z
         i+=3;
       });
       console.log('parsing cloud... done');
@@ -103,7 +114,6 @@ $.extend(true,PointCloud.prototype,{
     var pointCloud=this;
     var panorama=pointCloud.panorama;
     panorama.scene.add(pointCloud.object3D);
-    pointCloud.object3D.rotation.copy(panorama.sphere.object3D.rotation);
     panorama.drawScene();
   
   }, // pointCloud_onload
@@ -116,10 +126,12 @@ $.extend(true,PointCloud.prototype,{
 
     var panorama=this;
 
-    var pointCloud=panorama.pointCloud.instance=new PointCloud($.extend(true,{},panorama.pointCloud,{
-      panorama: panorama,
-      url: panorama.sphere.texture.dirName.replace(/\/pyramid\/.*/,'/pointcloud/')+p.list.currentImage+'-freepano.json'
-    }));
+    if (panorama.pointCloud && panorama.pointCloud.active!==false) {
+      var pointCloud=panorama.pointCloud.instance=new PointCloud($.extend(true,{},panorama.pointCloud,{
+        panorama: panorama,
+        url: panorama.sphere.texture.dirName.replace(/\/pyramid\/.*/,'/pointcloud/')+p.list.currentImage+'-freepano.json'
+      }));
+    }
 
   }, // pointCloud_on_panorama_ready
 
@@ -157,7 +169,8 @@ $.extend(true,PointCloud.prototype,{
        if (typeof(e)=="string") {
          e={
            type: e,
-           target: pointCloud
+           target: pointCloud,
+           args: Array.prototype.slice.call(arguments).slice(1)
          }
        }
        if (obj['on_pointcloud_'+e.type]) {
