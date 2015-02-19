@@ -35,8 +35,8 @@ $.extend(true,PointCloud.prototype,{
         v.z=panorama.sphere.radius;
         v.applyAxisAngle(Xaxis,point[1]);
         v.applyAxisAngle(Yaxis,point[0]);
-        positions[i]=v.x
-        positions[i+1]=-v.y
+        positions[i]=-v.x
+        positions[i+1]=v.y
         positions[i+2]=v.z
         i+=3;
       });
@@ -44,16 +44,31 @@ $.extend(true,PointCloud.prototype,{
       return positions;
     }, // pointCloud.defaults.parseJSON
 
-    sortParticles: true
+    sortParticles: true,
+
+    raycaster: {
+      threshold: 0.01
+    }
 
   }, // pointCloud.prototype.defaults
 
   init: function pointCloud_init(){
     var pointCloud=this;
 
+    // init raycaster
+    if (!(pointCloud.raycaster instanceof THREE.Raycaster)) {
+      if (pointCloud.raycaster && pointCloud.raycaster.instance) {
+        delete pointCloud.raycaster.instance;
+      }
+      pointCloud.raycaster.instance=new THREE.Raycaster(pointCloud.raycaster.options);
+      pointCloud.raycaster.instance.params.PointCloud.threshold=pointCloud.raycaster.threshold||0.01;
+    }
+
+    // load url if any
     if (pointCloud.url) {
       pointCloud.load(pointCloud.url);
 
+    // load json if any
     } else if (pointCloud.json) {
       pointCloud.fromJSON(pointCloud.json);
     }
@@ -121,6 +136,33 @@ $.extend(true,PointCloud.prototype,{
   onloaderror: function pointCloud_onloaderror(e) {
     throw e;
   },
+
+  on_panorama_mousemove: function pointCloud_on_panorama_mousemove(e){
+    var panorama=this;
+    var pointCloud=panorama.pointCloud;
+
+    if (!pointCloud || !pointCloud.instance || pointCloud.active===false || !pointCloud.instance.object3D || !pointCloud.instance.object3D.visible) {
+      return;
+    }
+
+    var raycaster=pointCloud.instance.raycaster;
+
+    var canvas=panorama.renderer.domElement;
+    var offset=$(canvas).offset();
+    var mouse={
+      x: ((e.clientX-offset.left) / canvas.width) * 2 - 1,
+      y: -((e.clientY-offset.top) / canvas.height) * 2 + 1
+    }
+
+
+    raycaster.instance.setFromCamera(mouse,panorama.camera.instance);
+    var intersections=raycaster.instance.intersectObject(pointCloud.instance.object3D);
+    if (intersections.length) {
+      var point=pointCloud.hover=intersections[0];
+      console.log(pointCloud.hover);
+    }
+
+  }, // pointCloud_on_panorama_render
 
   on_panorama_ready: function pointCloud_on_panorama_ready(e) {
 
