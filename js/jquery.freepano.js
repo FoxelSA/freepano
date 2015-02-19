@@ -44,6 +44,18 @@
  */
 
 
+var Xaxis=new THREE.Vector3(1,0,0);                                                                                   
+var Yaxis=new THREE.Vector3(0,1,0);
+var Zaxis=new THREE.Vector3(0,0,1);
+
+// return THREE.Vector3 from lon/lat in radians
+function getVector3FromAngles(lon,lat) {
+  var v=new THREE.Vector3(0,0,-1);
+  v.applyAxisAngle(Xaxis,lat);
+  v.applyAxisAngle(Yaxis,lon);
+  return v;
+}
+
 // Texture constructor
 
 function Texture(options) {
@@ -96,7 +108,7 @@ $.extend(true,Sphere.prototype,{
 
   defaults: {
     done: false,
-    radius: 15,
+    radius: 150,
     widthSegments: 36,
     heightSegments: 18,
     texture: null,
@@ -506,9 +518,9 @@ $.extend(true,Panorama.prototype,{
       var R=panorama.initialRotation.clone();
 
       // combine with rotation angles
-      R.multiply((new THREE.Matrix4()).makeRotationAxis(new THREE.Vector3(1,0,0),THREE.Math.degToRad(panorama.rotation.tilt)));
-      R.multiply((new THREE.Matrix4()).makeRotationAxis(new THREE.Vector3(0,1,0),THREE.Math.degToRad(panorama.rotation.heading)));
-      R.multiply((new THREE.Matrix4()).makeRotationAxis(new THREE.Vector3(0,0,1),THREE.Math.degToRad(panorama.rotation.roll)));
+      R.multiply((new THREE.Matrix4()).makeRotationAxis(Xaxis,THREE.Math.degToRad(panorama.rotation.tilt)));
+      R.multiply((new THREE.Matrix4()).makeRotationAxis(Yaxis,THREE.Math.degToRad(panorama.rotation.heading)));
+      R.multiply((new THREE.Matrix4()).makeRotationAxis(Zaxis,THREE.Math.degToRad(panorama.rotation.roll)));
 
       panorama.sphere.object3D.rotation.setFromRotationMatrix(R);
 
@@ -665,6 +677,7 @@ $.extend(true,Panorama.prototype,{
     var pixel_y = ((Math.PI * 0.5 - phi) / Math.PI) * image_h;
 
 
+    /*
     console.log("lam = "+lam);
     console.log("phi = "+phi);
 
@@ -673,6 +686,7 @@ $.extend(true,Panorama.prototype,{
 
     console.log("pixel_x = "+pixel_x);
     console.log("pixel_y = "+pixel_y);
+    */
 
     var m=panorama.mouseCoords;
     var r=panorama.sphere.radius;
@@ -696,6 +710,18 @@ $.extend(true,Panorama.prototype,{
 
     }, // panorama_getMouseCoords
 
+    // compute mouse normalized coordinates
+    getNormalizedMouseCoords: function panorama_getNormalizedMouseCoords(e){
+      var panorama=this;
+      var canvas=panorama.renderer.domElement;
+      var offset=$(canvas).offset();
+      return {
+        x: ((e.clientX-offset.left) / canvas.width) * 2 - 1,
+        y: -((e.clientY-offset.top) / canvas.height) * 2 + 1
+      }
+    }, // panorama_getNormalizedMouseCoords
+
+    /*
     getMouseCoords2: function panorama_getMouseCoords(event) {
 
       var panorama=this;
@@ -756,6 +782,7 @@ $.extend(true,Panorama.prototype,{
       };
 
     }, // panorama_getMouseCoords
+    */
 
     onmousedown: function panorama_mousedown(e){
       if (isLeftButtonDown(e)) {
