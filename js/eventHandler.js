@@ -4,7 +4,7 @@ var eventHandlerDebug=false;
 // setup specified prototype or instance to dispatch events among subscribers
 function setupEventHandler(obj) {
 
-  obj.subscribers: [],
+  obj.subscribers=[];
 
   // allow other prototypes or instances to subscribe to obj events
   obj.subscribe=function eventHandler_subscribe(obj){

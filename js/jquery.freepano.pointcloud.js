@@ -237,8 +237,8 @@ $.extend(true,PointCloud.prototype,{
 
     // trigger pointcloud mouseover event
     if (intersections.length) {
-      var point=pointCloud.hover=intersections[0];
-      pointCloud.callback({
+      var point=pointCloud.instance.hover=intersections[0];
+      pointCloud.instance.callback({
           type: 'mouseover',
           target: intersections
       });
