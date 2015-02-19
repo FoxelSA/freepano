@@ -349,6 +349,7 @@ $.extend(true,Panorama.prototype,{
       lat: 0,
       phi: 0,
       theta: 0,
+      mouseCoords: new THREE.Vector3(),
       rotation: {
         heading: 0,
         tilt: 0,
@@ -618,8 +619,9 @@ $.extend(true,Panorama.prototype,{
 
     /* Compute sphere point vector in OpenGL frame */
     var posi = Array(3);
-    posi[0] = - righ + righ * 2.0 * ( (mouseRel.x * 1.0) / ( ($(canvas).width() * 1.0) - 1 ) );
-    posi[1] = + heig - heig * 2.0 * ( (mouseRel.y * 1.0) / ( ($(canvas).height() * 1.0) - 1 ) );
+
+    posi[0] = - righ + righ * 2.0 * mouseRel.x / ( canvas.width - 1 ) ;
+    posi[1] = + heig - heig * 2.0 * mouseRel.y / ( canvas.height - 1 ) ;
     posi[2] = - near;
 
     /* Compute sphere point vector norm */
@@ -672,7 +674,9 @@ $.extend(true,Panorama.prototype,{
     console.log("pixel_x = "+pixel_x);
     console.log("pixel_y = "+pixel_y);
 
-    var m=panorama.mouseCoords=new THREE.Vector3(posf[0],posf[1],posf[2]).multiplyScalar(panorama.sphere.radius);
+    var m=panorama.mouseCoords;
+    var r=panorama.sphere.radius;
+    m.set(posf[0]*r,posf[1]*r,posf[2]*r);
     m.phi=phi;
     m.theta=lam;
     m.lon=deg_lam;
