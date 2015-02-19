@@ -22,16 +22,18 @@ $.extend(true,PointCloud.prototype,{
 
     // point cloud dot material
     dotMaterial: new THREE.PointCloudMaterial({
-//        map: THREE.ImageUtils.loadTexture(),
-        size: 2,
+        map: THREE.ImageUtils.loadTexture('img/dot.png'),
+        size: 0.15,
         color: 'yellow',
-        sizeAttenuation: false,
+        sizeAttenuation: true,
         transparent: true,
         opacity: 0.8,
-        alphatest: 0.1
+        alphaTest: 0.1,
+        depthTest: false,
+        depthWrite: false
     }), // pointCloud.defaults.dotMaterial
    
-   // generate positions array from json 
+   // generate particle positions array from json 
     parseJSON: function parseJSON(json) {
 
       var pointCloud=this;
@@ -48,20 +50,19 @@ $.extend(true,PointCloud.prototype,{
 
       // for each point defined in the json
       json.points.forEach(function(point,index) {
-
         // initialize vector at z = sphere radius
         v.x=0;
         v.y=0;
-        v.z=panorama.sphere.radius;
+        v.z=1;
 
         // apply rotations
         v.applyAxisAngle(Xaxis,point[1]);
         v.applyAxisAngle(Yaxis,point[0]);
 
         // store position
-        positions[i]=-v.x
-        positions[i+1]=v.y
-        positions[i+2]=v.z
+        positions[i]=-v.x*point[2];
+        positions[i+1]=v.y*point[2];
+        positions[i+2]=v.z*point[2];
         i+=3;
 
       });
@@ -72,11 +73,11 @@ $.extend(true,PointCloud.prototype,{
     }, // pointCloud.defaults.parseJSON
 
     // sort point cloud particles by depth
-    sortParticles: false,
+    sortParticles: true,
 
     // raycaster options
     raycaster: {
-      threshold: 0.01
+      threshold: 0.5 
     }
 
   }, // pointCloud.prototype.defaults
@@ -107,11 +108,6 @@ $.extend(true,PointCloud.prototype,{
     }
 
   }, // pointCloud_init
-
-  onerror: function pointCloud_onerror(error) {
-    alert(error.msg);
-
-  }, // pointCloud_onerror
 
   // load point cloud json from url
   fromURL: function pointCloud_fromURL(url) {
@@ -237,14 +233,137 @@ $.extend(true,PointCloud.prototype,{
 
     // trigger pointcloud mouseover event
     if (intersections.length) {
-      var point=pointCloud.instance.hover=intersections[0];
       pointCloud.instance.callback({
           type: 'mouseover',
-          target: intersections
+          target: intersections,
+          originalEvent: e
       });
     }
 
   }, // pointCloud_on_panorama_render
+
+  // snap to nearest intersecting particle
+  onmouseover: function on_pointcloud_mouseover(e){
+
+    var pointCloud=this;
+    var panorama=pointCloud.panorama;
+    var particle_list=e.target;
+
+    panorama.getMouseCoords(e.originalEvent);
+    var hover=pointCloud.nearestParticle(panorama.mouseCoords,particle_list);
+
+    var material;
+    var cursor=pointCloud.cursor;
+
+    if (!cursor) {
+      cursor=pointCloud.cursor={
+        material: new THREE.SpriteMaterial({
+          map: THREE.ImageUtils.loadTexture('img/dot_hover.png'),
+          depthTest: false,
+          depthWrite: false
+
+        }),
+        geometry: new THREE.Geometry()
+      }
+      cursor.sprite=new THREE.Sprite(cursor.material);
+      pointCloud.scene.add(cursor.sprite);
+    }
+
+    cursor.sprite.position.copy(new THREE.Vector3().copy(pointCloud.getParticlePosition(hover.index)).normalize().multiplyScalar(10));
+    var scale=0.1/p.getZoom();
+    cursor.sprite.scale.set(scale,scale,scale);
+    pointCloud.showParticleInfo(hover.index);
+
+    pointCloud.panorama.drawScene();
+
+  }, // pointCloud_onmouseover
+
+  // return particle with least square distance from coords in radians
+  nearestParticle: function pointCloud_nearestParticle(coords,particle_list) {
+    var pointCloud=this;
+    var panorama=pointCloud.panorama;
+    var candidate=0;
+    var d2min=999;
+    var point_list=pointCloud.json.points;
+
+    $.each(particle_list,function(i){
+
+      var point=point_list[this.index];
+
+      // compute absolute angle difference
+      var dthe=Math.abs(point[0]-panorama.mouseCoords.theta);
+      var dphi=Math.abs(point[1]+panorama.mouseCoords.phi);
+
+      // adjust delta when crossing boundaries
+      // (assume distance is less than half image)
+      if (dthe>Math.PI) dthe=Math.PI*2-dthe;
+      if (dphi>Math.PI/2) dphi=Math.PI-dphi;
+
+      // select least square distance
+      var dsquare=dthe*dthe+dphi*dphi;
+      if (dsquare<d2min) {
+        d2min=dsquare;
+        candidate=i;
+
+      // select nearest point on z axis when equidistant from cursor
+      } else if (dsquare==d2min) {
+        if (point_list[candidate].point[2]>point[2]) {
+          candidate=i;
+        }
+      }
+
+    });
+
+    return particle_list[candidate];
+
+  }, // pointCloud_nearestParticle
+
+  // return particle world coordinates
+  getParticlePosition: function pointCloud_getParticlePosition(index) {
+    var pointCloud=this;
+    var point=pointCloud.json.points[index];
+
+    // initialize vector
+    var v=new THREE.Vector3(0,0,1);
+
+    // apply rotations
+    v.applyAxisAngle(Xaxis,point[1]);
+    v.applyAxisAngle(Yaxis,point[0]);
+
+    // return positions
+    return {
+      x: -v.x*point[2],
+      y: v.y*point[2],
+      z: v.z*point[2]
+    }
+  }, // pointCloud_getParticlePosition
+
+  showParticleInfo: function pointCloud_showParticleInfo(index) {
+    var pointCloud=this;
+    var point=pointCloud.json.points[index];
+    var panorama=pointCloud.panorama;
+
+    var div = $('#particleInfo');
+    if (!div.length) {
+        div = $('<div id="particleInfo">').appendTo(panorama.container).css({
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: 128,
+            backgroundColor: "rgba(0,0,0,.4)",
+            color: 'white'
+        });
+    }
+
+    var html = '<div style="width: 100%; position: relative; margin-left: 10px;">';
+    html += '<strong>Particle info</strong><br />';
+    html += 'theta: ' + point[0].toPrecision(6) + '<br />';
+    html += 'phi: ' + point[1].toPrecision(6) + '<br />';
+    html += 'distance: ' + point[2].toPrecision(6) + '<br />';
+    html += 'index: ' + point[3] + '<br />';
+    div.html(html);
+
+  }, // pointCloud_showParticleInfo
 
   // instantiate point cloud on panorama_ready
   on_panorama_ready: function pointCloud_on_panorama_ready(e) {
