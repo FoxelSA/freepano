@@ -144,9 +144,6 @@ $.extend(true,Controls.prototype, {
 
     },
 
-    // panorama_init() method
-    panorama_init: Panorama.prototype.init,
-
     // init() method
     init: function() {
 
@@ -1134,4 +1131,4 @@ $.extend(true,Controls.prototype, {
 
 });
 
-Panorama.prototype.setupCallback(Controls.prototype);
+Panorama.prototype.dispatchEventsTo(Controls.prototype);

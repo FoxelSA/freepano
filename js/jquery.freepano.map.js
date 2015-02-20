@@ -118,7 +118,7 @@ $.extend(true, Map.prototype, {
             // then show map if hidden and/or return
             if (!$(map.container).is(':visible')) {
                 map.container.show();
-                map.callback('ready');
+                map.dispatch('ready');
             }
             return;
         }
@@ -237,7 +237,7 @@ $.extend(true, Map.prototype, {
             leaflet.setZoom(leaflet.getZoom()-1);
 
         // map is ready
-        map.callback('ready');
+        map.dispatch('ready');
 
     }, // map_show
 
@@ -304,28 +304,12 @@ $.extend(true, Map.prototype, {
           return false;
         }
       });
-    },
-
-    callback: function map_callback(e) {
-
-        var map=this;
-        if (typeof(e)=='string') {
-          e={
-            type: e,
-            target: map
-          }
-        }
-
-        var method='on'+e.type;
-        if (map[method]) {
-          if (map[method].apply(map,[e])===false) {
-            return false;
-          }
-        }
-
-    } // map_callback
+    }
 
 });
 
+// setup Map event dispatcher
+setupEventDispatcher(Map.prototype);
+
 // subscribe to panorama events
-Panorama.prototype.setupCallback(Map.prototype);
+Panorama.prototype.dispatchEventsTo(Map.prototype);

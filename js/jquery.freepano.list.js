@@ -58,13 +58,6 @@ $.extend(true,PanoList.prototype,{
     prefix: '',
     suffix: '',
     initialImage: null,
-    callback: function panorama_callback(panorama_event) {
-      switch(panorama_event.type) {
-        default:
-          console.log(panorama_event);
-          break;
-      }
-    },
     overrided: null
   },
 
@@ -103,7 +96,7 @@ $.extend(true,PanoList.prototype,{
     }
 
     pano_list.currentImage=pano_list.initialImage;
-    pano_list.callback(); // fixme
+    pano_list.dispatch('init');
 
   },
 
@@ -193,7 +186,7 @@ $.extend(true,PanoList.prototype,{
     var panorama=pano_list.panorama;
 
     // dont change panorama if callback return false
-    if (panorama.callback('dispose')===false) {
+    if (panorama.dispatch('dispose')===false) {
       return false;
     }
 
@@ -255,18 +248,10 @@ $.extend(true,PanoList.prototype,{
 
     return next;
 
-  } // panoList_next
+  }, // panoList_next
 
-});
+  on_panorama_preinit: function panoList_on_panorama_preinit() {
 
-// patch Panorama.prototype to instantiate PanoList on init if required, then chain with panorama.init
-$.extend(PanoList.prototype,{
-    panorama_init: Panorama.prototype.init
-});
-
-$.extend(Panorama.prototype,{
-
-  init: function panorama_init() {
     var panorama=this;
     if (panorama.list!==undefined) {
       if (!(panorama.list instanceof PanoList)) {
@@ -277,10 +262,9 @@ $.extend(Panorama.prototype,{
           }
         },panorama.list));
       }
-    } else {
-      PanoList.prototype.panorama_init.call(panorama);
     }
-  }
+
+  } // panoList_on_panorama_preinit
 
 });
 
@@ -299,3 +283,5 @@ function getDistanceFromLatLonInKm(lat1,lon1,lat2,lon2) {
   return d;
 }
 
+setupEventDispatcher(PanoList.prototype);
+Panorama.prototype.dispatchEventsTo(PanoList.prototype);

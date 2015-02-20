@@ -211,14 +211,8 @@ $.extend(true,Sphere.prototype,{
         sphere.texture.height=sphere.texture.rows*texture.image.height;
         sphere.r=sphere.texture.height/Math.PI;
 
-        sphere.done=true;
-
-        // run callback passed to sphere_build if specified, else default sphere callback
-        if (callback) {
-          callback.call(sphere);
-        } else {
-          sphere.callback()
-        }
+        sphere.done=true; 
+        sphere.dispatch('ready');
 
       },0);
     }
@@ -383,6 +377,8 @@ $.extend(true,Panorama.prototype,{
 
       panorama.scene=new THREE.Scene();
 
+      panorama.dispatch('preinit');
+
       // instantiate camera
       if (!(panorama.camera instanceof Camera)) {
         panorama.camera=new Camera($.extend(true,{
@@ -396,10 +392,10 @@ $.extend(true,Panorama.prototype,{
         if (!(panorama.sphere instanceof Sphere)) {
           panorama.sphere=new Sphere($.extend(true,{
             panorama: panorama,
-            callback: function(){
+            onready: function(){
               panorama.updateRotationMatrix();
-              panorama.callback('resize');
-              panorama.callback('ready');
+              panorama.dispatch('resize');
+              panorama.dispatch('ready');
             }
           },panorama.sphere));
         }
@@ -465,49 +461,9 @@ $.extend(true,Panorama.prototype,{
 
       panorama.eventsInit();
 
-      panorama.callback('init');
+      panorama.dispatch('init');
 
     }, // panorama_init
-
-    // asynchronous callback external methods can hook to using setupCallback below
-    callback: function panorama_callback(e){
-      var panorama=this;
-      if (typeof(e)=='string') {
-        e={
-          target: panorama,
-          type: e,
-        };
-      }
-      var method='on'+e.type;
-      if (panorama[method]) {
-        panorama[method].apply(panorama,[e]);
-      }
-    }, // panorama_callback
-
-    // setup panorama_callback hook for specified instance or prototype
-    setupCallback: function panorama_setupCallback(obj) {
-
-      obj.panorama_prototype_callback=Panorama.prototype.callback;
-
-      obj.panorama_callback=function(e) {
-         var panorama=this;
-         if (typeof(e)=="string") {
-           e={
-             type: e,
-             target: panorama
-           }
-         }
-         if (obj['on_panorama_'+e.type]) {
-           if (obj['on_panorama_'+e.type].apply(panorama,[e])===false) {
-              return false;
-           }
-         }
-         return obj.panorama_prototype_callback.apply(e.target,[e]);
-      }
-
-      Panorama.prototype.callback=obj.panorama_callback;
-
-    }, // panorama_setupCallback
 
     // update rotation matrix after changing panorama.rotation values
     updateRotationMatrix: function panorama_updateRotationMatrix() {
@@ -531,12 +487,12 @@ $.extend(true,Panorama.prototype,{
       var canvas=$('canvas:first',this.container);
       $(this.container)
       .off('.panorama'+this.num)
-      .on('mousedown.panorama'+this.num, canvas, function(e){e.target=panorama;panorama.callback(e)})
-      .on('mousemove.panorama'+this.num, canvas, function(e){e.target=panorama;panorama.callback(e)})
-      .on('mouseup.panorama'+this.num, canvas, function(e){e.target=panorama;panorama.callback(e)})
-      .on('mousewheel.panorama'+this.num, canvas, function(e){e.target=panorama;panorama.callback(e)})
-      .on('zoom.panorama'+this.num, canvas, function(e){e.target=panorama;panorama.callback(e)});
-      $(window).on('resize.panorama'+this.num, function(e){e.target=panorama;panorama.callback(e)});
+      .on('mousedown.panorama'+this.num, canvas, function(e){e.target=panorama;panorama.dispatch(e)})
+      .on('mousemove.panorama'+this.num, canvas, function(e){e.target=panorama;panorama.dispatch(e)})
+      .on('mouseup.panorama'+this.num, canvas, function(e){e.target=panorama;panorama.dispatch(e)})
+      .on('mousewheel.panorama'+this.num, canvas, function(e){e.target=panorama;panorama.dispatch(e)})
+      .on('zoom.panorama'+this.num, canvas, function(e){e.target=panorama;panorama.dispatch(e)});
+      $(window).on('resize.panorama'+this.num, function(e){e.target=panorama;panorama.dispatch(e)});
 
     }, // panorama_eventsInit
 
@@ -863,7 +819,7 @@ console.log(this.lon,this.lat);
       this.camera.instance.fov=this.updateFov();
       if (fov!=this.camera.instance.fov) {
         this.camera.instance.updateProjectionMatrix();
-        this.callback('zoom');
+        this.dispatch('zoom');
         this.drawScene(function(){
           $('canvas:first',this.container).trigger('mousemove');
         });
@@ -935,7 +891,7 @@ console.log(this.lon,this.lat);
 
       panorama.camera.instance.lookAt(panorama.lookAtVec);
 
-      panorama.callback('update');
+      panorama.dispatch('update');
 
       panorama.renderer.clear();
       // TODO move post-Processing to jquery.freepano.postprocessing.js
@@ -947,7 +903,7 @@ console.log(this.lon,this.lat);
         panorama.renderer.render(panorama.scene,panorama.camera.instance);
       }
 
-      panorama.callback('render');
+      panorama.dispatch('render');
     },
 
     onresize: function panorama_resize(e){
@@ -994,4 +950,7 @@ $.fn.panorama=function(options){
   return this;
 }
 
-Panorama.prototype.setupCallback(Camera.prototype);
+setupEventDispatcher(Panorama.prototype);
+setupEventDispatcher(Sphere.prototype);
+setupEventDispatcher(Camera.prototype);
+Panorama.prototype.dispatchEventsTo(Camera.prototype);

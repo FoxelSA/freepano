@@ -142,7 +142,12 @@ $.extend(POI_thumb.prototype,{
       this.init();
     },
 
-    panorama_prototype_init: Panorama.prototype.init
+    // instantiate panorama.poiThumb on panorama init
+    on_panorama_preinit: function poiThumb_on_panorama_preinit() {
+      var panorama=this;
+      panorama.poiThumb=new POI_thumb({panorama: panorama});
+      panorama.poiThumb.panorama_prototype_init.call(panorama);
+    } // on_panorama_preinit
 
 });
 
@@ -198,14 +203,5 @@ $.extend(true,POI_thumb.prototype.image.prototype,{
 
 });
 
-// instantiate panorama.poiThumb on panorama init
-$.extend(true,Panorama.prototype,{
-    init: function poiThumb_panorama_prototype_init() {
-      var panorama=this;
-      panorama.poiThumb=new POI_thumb({panorama: panorama});
-      panorama.poiThumb.panorama_prototype_init.call(panorama);
-    }
-});
-
-Panorama.prototype.setupCallback(POI_thumb.prototype);
+Panorama.prototype.dispatchEventsTo(POI_thumb.prototype);
 

@@ -84,26 +84,6 @@ $.extend(true,SoundList.prototype,{
 
   }, // soundList_init
 
-  callback: function soundList_callback(soundList_event) {
-
-    var soundList=this;
-
-    if (typeof(soundList_event)=='string') {
-      soundList_event={
-        type: soundList_event,
-        target: soundList
-      }
-    }
-
-    if (!soundList['on'+soundList_event.type]) {
-      console.log('unhandled soundList_event: '+soundList_event.type);
-      return;
-    }
-
-    return soundList['on'+soundList_event.type](soundList_event);
-
-  }, // soundList_callback
-
   set_position_howler: function soundList_set_position_howler(panorama,object3D){
     var sound=this;
 
@@ -150,8 +130,88 @@ $.extend(true,SoundList.prototype,{
 
   }, // soundList_on_panorama_dispose
 
-  panorama_prototype_init: Panorama.prototype.init,
-  panorama_prototype_callback: Panorama.prototype.callback
+  on_panorama_preinit: function soundList_on_panorama_preinit(e) {
+
+    // sound lists can be bound to Widget instances
+    $.each(window.widgetTypes,function(idx,widgetType){
+
+      var Widget=window[widgetType];
+
+      widgetType=widgetType.toLowerCase();
+
+      Widget.prototype.dispatchEventsTo(SoundList.prototype);
+      SoundList.prototype['on_'+widgetType+'_preinit']=function soundList_widget_preinit_handler() {
+
+          var widget=this;
+
+          // skip SoundList instantiation if sound preferences undefined in widget
+          if (widget.sound!==undefined) {
+
+            // or if sound list is already instantiated
+            if (!(widget.sound instanceof SoundList)) {
+
+              // intantiate sound list
+              widget.sound=new SoundList($.extend(true,{
+
+                // pass widget instance pointer to sound instance
+                widget: widget
+
+              },widget.sound));
+
+              widget.sound.on_widget_dispose=function soundList_on_widget_dispose(widget_event) {
+
+                var widget=this;
+                var sound=widget.sound;
+
+                if (!sound) {
+                  return;
+                }
+
+                $.each(sound.list,function(name,soundList_elem){
+                  if (soundList_elem.instance) soundList_elem.dispose();
+                });
+
+              } // soundList_on_panorama_dispose
+
+            }
+          }
+
+      } // soundList_widget_preinit_handler
+
+      Widget.prototype.dispatchEventsTo(Sound.prototype);
+      Sound.prototype['on_'+widgetType+'_update']=function sound_set_position_on_widget_update() {
+        var widget=this;
+        var sound=widget.sound;
+        if (!sound) {
+          return;
+        }
+        var set_position_method='set_position_'+sound.type;
+        if (sound[set_position_method]) {
+          sound[set_position_method](widget.panorama,widget.object3D);
+        }
+      } // sound_set_position_on_widget_update
+
+    });
+
+    var panorama=this;
+
+    // skip sound list instantiation if "sound" undefined in panorama
+    if (panorama.sound!==undefined) {
+
+      // or if sound list is already instantiated
+      if (!(panorama.sound instanceof SoundList)) {
+
+        // instantiate sound list
+        panorama.sound=new SoundList($.extend(true,{
+
+          // pass panorama instance pointer to sound instance
+          panorama: panorama,
+
+        },panorama.sound));
+      }
+    }
+
+  } // soundList_on_panorama_preinit
 
 }); // extend SoundList.prototype
 
@@ -179,26 +239,26 @@ $.extend(true,Sound.prototype,{
     // redirect sound.type specific event handlers calls to sound instance via sound.callback
     howler: {
       onload: function howler_onload() {
-        this.soundList_elem.callback('load');
+        this.soundList_elem.dispatch('load');
       },
       onloaderror: function howler_onloaderror() {
-        this.soundList_elem.callback('loaderror');
+        this.soundList_elem.dispatch('loaderror');
       },
       onpause: function howler_onpause() {
-        this.soundList_elem.callback('pause');
+        this.soundList_elem.dispatch('pause');
       },
       onplay: function howler_onplay() {
 
         // update sound position on play
         var widget=this.soundList_elem.soundList.widget;
         if (widget) {
-          widget.sound.on_widget_update.call(widget);
+          widget.sound['on_'+widget.constructor.name.toLowerCase()+'_update'].call(widget);
         }
 
-        this.soundList_elem.callback('play');
+        this.soundList_elem.dispatch('play');
       },
       onend: function howler_onend() {
-        this.soundList_elem.callback('end');
+        this.soundList_elem.dispatch('end');
       }
     }
   }, // Sound.options
@@ -276,26 +336,7 @@ $.extend(true,Sound.prototype,{
       console.log(e);
     }
 
-  }, // sound_disposeHowler
-
-  // sound list element callback
-  callback: function sound_callback(sound_event) {
-
-    var sound=this;
-
-    if (typeof(sound_event)=="string"){
-      sound_event={
-        type: sound_event,
-        target: sound
-      }
-    }
-
-    if (sound['on'+sound_event.type]) {
-      sound['on'+sound_event.type](sound_event);
-    } else {
-      console.log('unhandled sound event: '+sound_event.type,sound_event);
-    }
-  }, // sound_callback
+  } // sound_disposeHowler
 
 /*
   updateConeEffect: function sound_updateConeEffect(pos) {
@@ -322,159 +363,6 @@ $.extend(true,Sound.prototype,{
 
 }); // extend Sound.prototype
 
-// sound lists can be bound to panorama instances
-$.extend(true,Panorama.prototype,{
-
-  // initialize sound list on panorama init
-  init: function soundList_panorama_prototype_init() {
-
-    var panorama=this;
-
-    // skip sound list instantiation if "sound" undefined in panorama
-    if (panorama.sound!==undefined) {
-
-      // or if sound list is already instantiated
-      if (!(panorama.sound instanceof SoundList)) {
-
-        // instantiate sound list
-        panorama.sound=new SoundList($.extend(true,{
-
-          // pass panorama instance pointer to sound instance
-          panorama: panorama,
-
-        },panorama.sound));
-      }
-    }
-
-    SoundList.prototype.panorama_prototype_init.call(panorama);
-
-  }, // soundList_panorama_prototype_init
-
-  // hook to Panorama.prototype.callback
-  callback: function soundList_panorama_prototype_callback(e) {
-
-    var panorama=this;
-
-    if (typeof(e)=="string") {
-      e={
-        type: e,
-        target: panorama
-      }
-    }
-
-    // forward panorama event to soundList instance bound to panorama (if any)
-    var method='on_panorama_'+e.type;
-
-    if (panorama.sound && panorama.sound[method]) {
-      if (panorama.sound[method].apply(panorama,[e])===false) {
-        return false;
-      } 
-    } else {
-    	// else forward panorama event to soundList prototype method
-    	if (SoundList.prototype[method]) {
-        if (SoundList.prototype[method].apply(panorama,[e])===false) {
-          return false;
-        }  
-    	}
-    }
-
-    // chain with old panorama.prototype.callback
-    return SoundList.prototype.panorama_prototype_callback.apply(panorama,[e]);
-
-  } // soundList_panorama_prototype_callback
-
-});  // extend Panorama.prototype for SoundList
-
-
-// sound lists can be bound to Widget instances
-$.each(window.widgetTypes,function(idx,widgetType){
-
-  var Widget=window[widgetType];
-
-  SoundList.prototype[widgetType.toLowerCase()+'_prototype_init']=Widget.prototype.init;
-  SoundList.prototype[widgetType.toLowerCase()+'_prototype_callback']= Widget.prototype.callback;
-
-  $.extend(true,Widget.prototype,{
-
-    init: function widget_prototype_init_hook() {
-
-      var widget=this;
-
-      // skip SoundList instantiation if sound preferences undefined in widget
-      if (widget.sound!==undefined) {
-
-        // or if sound list is already instantiated
-        if (!(widget.sound instanceof SoundList)) {
-
-          // intantiate sound list
-          widget.sound=new SoundList($.extend(true,{
-
-            // pass widget instance pointer to sound instance
-            widget: widget
-
-          },widget.sound));
-
-          widget.sound.on_widget_update=function soundList_set_position_on_widget_update() {
-            var widget=this;
-            var sound=widget.sound;
-            if (!sound) {
-              return;
-            }
-            var set_position_method='set_position_'+sound.type;
-            if (sound[set_position_method]) {
-              sound[set_position_method](widget.panorama,widget.object3D);
-            }
-          } // soundList_set_position_on_widget_update
-
-          widget.sound.on_widget_dispose=function soundList_on_widget_dispose(widget_event) {
-
-            var widget=this;
-            var sound=widget.sound;
-
-            if (!sound) {
-              return;
-            }
-
-            $.each(sound.list,function(name,soundList_elem){
-              if (soundList_elem.instance) soundList_elem.dispose();
-            });
-
-          } // soundList_on_panorama_dispose
-
-        }
-      }
-
-      SoundList.prototype[widgetType.toLowerCase()+'_prototype_init'].call(widget);
-
-    },
-
-    // hook to Widget.prototype.callback
-    callback: function widget_prototype_callback_hook(e) {
-
-      var widget=this;
-
-      if (typeof(e)=='string') {
-        e={
-          type: e,
-          target: widget
-        }
-      }
-
-      // forward widget event to sound list object
-      var method="on_widget_"+e.type;
-      if (widget.sound && widget.sound[method]) {
-        if (widget.sound[method].apply(widget,[e])===false){
-          return false;
-        }
-      }
-
-      // chain with old widget.prototype.callback
-      return SoundList.prototype[widgetType.toLowerCase()+'_prototype_callback'].apply(widget,[e]);
-
-    }, // widget_prototype_callback_hook
-
-
-  }); // extend Widget.prototype for SoundList
-
-});
-
+setupEventDispatcher(SoundList.prototype);
+setupEventDispatcher(Sound.prototype);
+Panorama.prototype.dispatchEventsTo(SoundList.prototype);

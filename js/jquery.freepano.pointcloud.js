@@ -121,7 +121,7 @@ $.extend(true,PointCloud.prototype,{
 
       error: function() {
         // trigger pointcloud 'loaderror' event
-        pointCloud.callback('loaderror',Array.prototype.slice.call(arguments));
+        pointCloud.dispatch('loaderror',Array.prototype.slice.call(arguments));
       }, // error
 
       success: function(json){
@@ -129,7 +129,7 @@ $.extend(true,PointCloud.prototype,{
         // no data available ?
         if (!json.points) {
           // trigger pointcloud 'loaderror' event
-          pointCloud.callback('loaderror',Array.prototype.slice.call(arguments));
+          pointCloud.dispatch('loaderror',Array.prototype.slice.call(arguments));
           return;
         }
 
@@ -137,7 +137,7 @@ $.extend(true,PointCloud.prototype,{
         pointCloud.fromJSON(json);
 
         // trigger pointcloud 'load' event
-        pointCloud.callback('load');
+        pointCloud.dispatch('load');
 
       } // success
 
@@ -233,7 +233,7 @@ $.extend(true,PointCloud.prototype,{
 
     // trigger pointcloud mouseover event
     if (intersections.length) {
-      pointCloud.instance.callback({
+      pointCloud.instance.dispatch({
           type: 'mouseover',
           target: intersections,
           originalEvent: e
@@ -395,51 +395,11 @@ $.extend(true,PointCloud.prototype,{
       scene.remove(panorama.pointCloud.instance.object3D);
       delete panorama.pointCloud.instance;
     }
-  }, // pointCloud_on_panorama_dispose
-
-  // asynchronous callback external methods can hook to using setupCallback below
-  callback: function pointCloud_callback(e){
-    var pointCloud=this;
-    if (typeof(e)=='string') {
-      e={
-        target: pointCloud,
-        type: e,
-        args: Array.prototype.slice.call(arguments).slice(1)
-      };
-    }
-    var method='on'+e.type;
-    if (pointCloud[method]) {
-      pointCloud[method].apply(pointCloud,[e]);
-    }
-  }, // pointCloud_callback
-   
-  // setup pointCloud_callback hook for specified instance or prototype
-  setupCallback: function pointCloud_setupCallback(obj) {
-   
-    obj.pointCloud_prototype_callback=PointCloud.prototype.callback;
-   
-    obj.pointCloud_callback=function(e) {
-       var pointCloud=this;
-       if (typeof(e)=="string") {
-         e={
-           type: e,
-           target: pointCloud,
-           args: Array.prototype.slice.call(arguments).slice(1)
-         }
-       }
-       if (obj['on_pointcloud_'+e.type]) {
-         if (obj['on_pointcloud_'+e.type].apply(pointCloud,[e])===false) {
-            return false;
-         }
-       }
-       return obj.pointcloud_prototype_callback.apply(e.target,[e]);
-    }
-   
-    PointCloud.prototype.callback=obj.pointcloud_callback;
-   
-  } // pointcloud_setupCallback
-
+  } // pointCloud_on_panorama_dispose
 
 });
 
-Panorama.prototype.setupCallback(PointCloud.prototype);
+setupEventDispatcher(PointCloud.prototype);
+
+// subscribe to panorama events
+Panorama.prototype.dispatchEventsTo(PointCloud.prototype);

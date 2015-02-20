@@ -23,4 +23,5 @@ $.extend(POI_loader.prototype,{
     }
 });
 
-Panorama.prototype.setupCallback(POI_loader.prototype);
+// subscribe to panorama events
+Panorama.prototype.dispatchEventsTo(POI_loader.prototype);
