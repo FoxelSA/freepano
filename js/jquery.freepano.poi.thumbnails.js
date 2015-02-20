@@ -146,7 +146,6 @@ $.extend(POI_thumb.prototype,{
     on_panorama_preinit: function poiThumb_on_panorama_preinit() {
       var panorama=this;
       panorama.poiThumb=new POI_thumb({panorama: panorama});
-      panorama.poiThumb.panorama_prototype_init.call(panorama);
     } // on_panorama_preinit
 
 });
