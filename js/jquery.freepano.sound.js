@@ -140,6 +140,22 @@ $.extend(true,SoundList.prototype,{
       widgetType=widgetType.toLowerCase();
 
       Widget.prototype.dispatchEventsTo(SoundList.prototype);
+
+      SoundList.prototype['on_'+widgetType+'_dispose']=function soundList_on_widget_dispose(widget_event) {
+
+        var widget=this;
+        var sound=widget.sound;
+
+        if (!sound) {
+          return;
+        }
+
+        $.each(sound.list,function(name,soundList_elem){
+          if (soundList_elem.instance) soundList_elem.dispose();
+        });
+
+      } // soundList_on_widget_dispose
+
       SoundList.prototype['on_'+widgetType+'_preinit']=function soundList_widget_preinit_handler() {
 
           var widget=this;
@@ -157,22 +173,6 @@ $.extend(true,SoundList.prototype,{
                 widget: widget
 
               },widget.sound));
-
-              widget.sound.on_widget_dispose=function soundList_on_widget_dispose(widget_event) {
-
-                var widget=this;
-                var sound=widget.sound;
-
-                if (!sound) {
-                  return;
-                }
-
-                $.each(sound.list,function(name,soundList_elem){
-                  if (soundList_elem.instance) soundList_elem.dispose();
-                });
-
-              } // soundList_on_panorama_dispose
-
             }
           }
 
@@ -190,6 +190,19 @@ $.extend(true,SoundList.prototype,{
           sound[set_position_method](widget.panorama,widget.object3D);
         }
       } // sound_set_position_on_widget_update
+
+      Sound.prototype.dispatchEventsTo(Widget.prototype);
+      Widget.prototype.on_sound_play=function widget_set_sound_position_on_sound_play(e) {
+        var sound=this;
+        var widget=sound.soundList.widget;
+        if (!widget) {
+          return;
+        }
+        var set_position_method='set_position_'+sound.type;
+        if (sound[set_position_method]) {
+          sound[set_position_method](widget.panorama,widget.object3D);
+        }
+      } // widget_set_sound_position_on_sound_play
 
     });
 
@@ -248,13 +261,6 @@ $.extend(true,Sound.prototype,{
         this.soundList_elem.dispatch('pause');
       },
       onplay: function howler_onplay() {
-
-        // update sound position on play
-        var widget=this.soundList_elem.soundList.widget;
-        if (widget) {
-          widget.sound['on_'+widget.constructor.name.toLowerCase()+'_update'].call(widget);
-        }
-
         this.soundList_elem.dispatch('play');
       },
       onend: function howler_onend() {
@@ -336,7 +342,29 @@ $.extend(true,Sound.prototype,{
       console.log(e);
     }
 
-  } // sound_disposeHowler
+  }, // sound_disposeHowler
+
+  set_position_howler: function sound_set_position_howler(panorama,object3D){
+    var sound=this;
+    if (!sound.instance) {
+      return;
+    }
+    var pos=object3D.position.clone();
+    pos.applyMatrix4(panorama.camera.instance.matrixWorldInverse);
+    pos.normalize();
+    pos.multiplyScalar(object3D.position.length());
+
+    var v=new THREE.Vector3(pos.x,pos.y,pos.z).normalize();
+    v.z=1;
+    v.normalize();
+    sound.instance.pos(
+      pos.x,
+      pos.y,
+      pos.z
+    );
+    sound.instance.orientation(v.x,v.y,v.z);
+
+  } // sound_set_position_howler
 
 /*
   updateConeEffect: function sound_updateConeEffect(pos) {
