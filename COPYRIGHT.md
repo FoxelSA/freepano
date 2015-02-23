@@ -4,7 +4,7 @@
 freepano - WebGL panorama viewer<br />
 This program is part of the FOXEL project <[http://foxel.ch](http://foxel.ch)>.
 
-Copyright (c) 2014 FOXEL SA - [http://foxel.ch](http://foxel.ch)<br />
+Copyright (c) 2014-2015 FOXEL SA - [http://foxel.ch](http://foxel.ch)<br />
 Please read <[http://foxel.ch/license](http://foxel.ch/license)> for more
 information.
 
