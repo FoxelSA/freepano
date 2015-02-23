@@ -101,7 +101,7 @@ $(document).on('filesloaded', function(){
 
     rotation: {
 
-      // intial rotation matrix 
+      // intial rotation matrix
       matrix: new THREE.Matrix4(),
 
       // vertical axis rotation (added to initial rotation matrix)
@@ -122,7 +122,7 @@ $(document).on('filesloaded', function(){
 
 /*
     // panorama.limits: limits
-    
+
     limits: {
 
       // panorama vertical rotation limits
@@ -191,13 +191,13 @@ $(document).on('filesloaded', function(){
 
       // defaults for sounds defined in 'panorama.sound.list' below,
       // where more sound options are described
-      
+
       defaults: {
 
         // sound type (only Howler is supported)
         type: 'howler',
 
-        // event handlers 
+        // event handlers
         onloaderror: function sound_onloaderror(sound_event) {
            console.log('sound_onloaderror: ',this,sound_event);
         },
@@ -236,7 +236,7 @@ $(document).on('filesloaded', function(){
 
     poi: {
 
-      // use a secondary scene for rendering widgets (eg when using filters) 
+      // use a secondary scene for rendering widgets (eg when using filters)
       overlay: false,
 
       // panorama.poi.defaults: default values for POIs
@@ -289,7 +289,7 @@ $(document).on('filesloaded', function(){
           // as THREE.Object3D (default object is null)
           object: null,
 
-          // ... or 'mesh' as THREE.mesh, (default mesh is a circle) 
+          // ... or 'mesh' as THREE.mesh, (default mesh is a circle)
           mesh: new THREE.Mesh(new THREE.PlaneGeometry(Math.PI/4.5,Math.PI/4.5,1,1), new THREE.MeshBasicMaterial({
             map: unicorn_texture,
             transparent: true,
@@ -362,12 +362,12 @@ $(document).on('filesloaded', function(){
     hud: {
       list: {
         testarro: {
-          color: {  
+          color: {
             active: '#0000ff',
             normal: '#ffffff',
             hover: '#000000'
-          },     
-          coords: { 
+          },
+          coords: {
             lon: 0,
             lat: 0
           }
@@ -503,7 +503,7 @@ $(document).on('filesloaded', function(){
                       lat: 0
                     }
                 }, // triangle
-                
+
                 unicorn: {
 
                   color: {
@@ -592,6 +592,10 @@ $(document).on('filesloaded', function(){
     },
 
     map: {
+        active: true
+    },
+
+    example: {
         active: true
     },
 
