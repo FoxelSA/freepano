@@ -35,29 +35,75 @@
  *      You are required to attribute the work as explained in the "Usage and
  *      Attribution" section of <http://foxel.ch/license>.
  */
+ 
+// this file must be loaded after jquery.freepano.poi.js
 
 function POI_loader(options) {
   if (!this instanceof POI_loader) {
-    return POI_loader(options);
+    return new POI_loader(options);
   }
-  $.extend(true,this,options);
+  $.extend(true,this,POI_loader.prototype.defaults,options);
   this.init();
 }
 
 $.extend(POI_loader.prototype,{
+
+    defaults: {
+      poi_path: window.poi_path
+    },
+
     init: function poiLoader_init() {
     },
+
     on_panorama_ready: function poiLoader_onPanoramaReady(e){
       var panorama=this;
+      var poiLoader=panorama.poiLoader;
+
+      if (e.poiLoader_was_here){
+        console.log('poiLoader was here');
+        return;
+      }
+      e.poiLoader_was_here=true;
+
+      if (!document.location.search.match(/action=poi_edit/)) {
+         if (panorama.poi) panorama.poi.list={};
+         return;
+      }
+
       $.ajax({
-          url: poi_path+panorama.list.currentImage+'.json',
+          url: poiLoader.poi_path+panorama.list.currentImage+'.json',
           error: function() {
-            $.notify('Error: Cannot load POI data');
+/*            $.notify('Aucunes données à afficher',{
+              sticky: false,
+              stayTime: 5000
+            });
+            */
+            if (panorama.poi) panorama.poi.list={};
+            // propagate panorama 'ready' event
+            panorama.dispatch(e);
           },
-          success: function(json) {
-            panorama.poi=JSON.parse(json);
+          success: function(poi_list) {
+            panorama.poi=$.extend(true,panorama.poi,panorama.defaults.poi,poiLoader.defaults.poi,poi_list);
+            // propagate panorama 'ready' event
+            panorama.dispatch(e);
+            panorama.drawScene();
           }
       });
+
+      // we need to set panorama.poi before panorama.poi.on_panorama_ready() is run,
+      // then delay panorama 'ready' propagation (wait for ajax completion)
+      return false;
+    },
+
+    panorama_prototype_init: Panorama.prototype.init
+
+});
+
+$.extend(true,Panorama.prototype,{
+    init: function poiLoader_panorama_prototype_init() {
+      var panorama=this;
+      panorama.poiLoader=new POI_loader({panorama: panorama});
+      panorama.poiLoader.panorama_prototype_init.call(panorama);
     }
 });
 
