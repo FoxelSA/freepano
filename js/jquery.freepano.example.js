@@ -8,6 +8,7 @@
  * Author(s):
  *
  *      Alexandre Kraft <a.kraft@foxel.ch>
+ *      Luc Deschenaux <l.deschenaux@foxel.ch>
  *
  *
  * This file is part of the FOXEL project <http://foxel.ch>.
@@ -35,6 +36,8 @@
  *      You are required to attribute the work as explained in the "Usage and
  *      Attribution" section of <http://foxel.ch/license>.
  */
+
+(function($,Panorama){
 
 /**
  * Class Constructor
@@ -70,17 +73,36 @@ $.extend(true,Example.prototype, {
     },
 
     // init() method
+    // the overridable part of the object constructor
     init: function example_init() {
         console.log('init() called on example module');
     },
 
     // on_panorama_preinit() method
+    //
+    // this method is run by the Panorama event dispatcher when the Panorama 'preinit' event is triggered with:
+    //    "panorama.dispatch('preinit');"  which is run at the beginning of Panorama.prototype.init()
+    //     allowing modules to modify at will options defined in the Panorama instantiation options,
+    //     and other components (eg: overriding or hooking core and modules methods)
+    //
+    // this is possible because:
+    //
+    // 1. the event dispatcher has been setup for Panorama at the bottom of jquery.freepano.js with:
+    //        "setupEventDispatcher(Panorama.prototype);"
+    //
+    // 2. the current prototype subscribe to Panorama events at the bottom of this file, with:
+    //       "Panorama.prototype.dispatchEventsTo(Example.prototype);"
+    //
+    // check eventDispatcher.js for more details
+    //
     on_panorama_preinit: function example_on_panorama_preinit() {
         console.log('on_panorama_preinit() called on Example Module');
     },
 
     // on_panorama_init() method
     on_panorama_init: function example_on_panorama_init() {
+
+        var panorama=this;
 
         console.log('on_panorama_init() called on Example Module');
 
@@ -90,7 +112,7 @@ $.extend(true,Example.prototype, {
         // options override set for it (see default values above).
         //
         // remove this test if your module must be started anyway.
-        if (typeof this.example === 'undefined')
+        if (typeof panorama.example === 'undefined')
             return;
 
         // module instantiation
@@ -98,8 +120,8 @@ $.extend(true,Example.prototype, {
         // depending your case, you may want to instantiate your module during
         // the init stage, pre-initialization (on_panorama_preinit()) stage or
         // even when the panorama is ready (on_panorama_ready()).
-        if (!(this.example instanceof Example))
-            this.example = new Example($.extend(true,{panorama:this},this.example));
+        if (!(panorama.example instanceof Example))
+            panorama.example = new Example($.extend(true,{panorama:panorama},panorama.example));
 
     },
 
@@ -111,6 +133,8 @@ $.extend(true,Example.prototype, {
 });
 
 /**
- * Register Class Prototype on Events Dispatcher
+ * Subscribe to panorama events
  */
 Panorama.prototype.dispatchEventsTo(Example.prototype);
+
+})(jQuery,Panorama);
