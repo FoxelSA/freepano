@@ -57,11 +57,11 @@ $.extend(true,Example.prototype, {
     // default values
     //
     // default values are automatically overrided if some are passed as
-    // parameters on freepano instanciation. default values are not mandatory.
+    // parameters on freepano instantiation. default values are not mandatory.
     //
     // as an example, an active flag state is set by default to false. see
     // /example/js/main.js to have a look how this flag is overrided on freepano
-    // instanciation through example: { active: true }.
+    // instantiation through example: { active: true }.
     defaults: {
 
         // example flag
@@ -86,7 +86,7 @@ $.extend(true,Example.prototype, {
 
         // default values override
         //
-        // by default freepano doesn't instanciate a module if there is no
+        // by default freepano doesn't instantiate a module if there is no
         // options override set for it (see default values above).
         //
         // remove this test if your module must be started anyway.
@@ -95,7 +95,7 @@ $.extend(true,Example.prototype, {
 
         // module instantiation
         //
-        // depending your case, you may want to instanciate your module during
+        // depending your case, you may want to instantiate your module during
         // the init stage, pre-initialization (on_panorama_preinit()) stage or
         // even when the panorama is ready (on_panorama_ready()).
         if (!(this.example instanceof Example))
