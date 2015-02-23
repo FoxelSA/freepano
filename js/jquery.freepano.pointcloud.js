@@ -228,16 +228,31 @@ $.extend(true,PointCloud.prototype,{
   on_panorama_render: function pointCloud_on_panorama_render(){
 
     var panorama=this;
+    if (!panorama.pointCloud) {
+      return;
+    }
+
     var pointCloud=panorama.pointCloud.instance;
+    if (!pointCloud) {
+      return;
+    }
+
+    var cursor=pointCloud.cursor;
+    if (cursor) {
+      var scale=0.1/p.getZoom();
+      cursor.sprite.scale.set(scale,scale,scale);
+    }
 
     if (pointCloud.overlay) {
       panorama.renderer.clearDepth();
       panorama.renderer.render(pointCloud.scene,panorama.camera.instance);  
     }
 
+    pointCloud.dispatch('render');
+
   }, // on_panorama_render
 
-  // trigger pointcloud 'mouseover' event on particle mouseover
+  // trigger pointcloud 'particlemouseover' event on particle mouseover
   on_panorama_mousemove: function pointCloud_on_panorama_mousemove(e){
 
     var panorama=this;
@@ -271,27 +286,59 @@ $.extend(true,PointCloud.prototype,{
     // trigger pointcloud mouseover event
     if (intersections.length) {
       pointCloud.instance.dispatch({
-          type: 'mouseover',
+          type: 'particlemouseover',
           target: intersections,
           originalEvent: e
       });
+    } else {
+      if (pointCloud.hover){
+        pointCloud.instance.dispatch({
+            type: 'particlemouseout',
+            target: pointCloud.hover.index
+        });
+      }
     }
 
   }, // pointCloud_on_panorama_render
 
   // snap to nearest intersecting particle
-  onmouseover: function on_pointcloud_mouseover(e){
+  onparticlemouseover: function on_pointcloud_particlemouseover(e){
 
     var pointCloud=this;
     var panorama=pointCloud.panorama;
+
     var particle_list=e.target;
 
+    // get nearest point index
     panorama.getMouseCoords(e.originalEvent);
     var hover=pointCloud.nearestParticle(panorama.mouseCoords,particle_list);
+
+    // if we were already hovering
+    if (pointCloud.hover) {
+      // and it was another point
+      if (hover.index != pointCloud.hover.index){
+        // then trigger 'particlemouseout'
+        var e={
+            type: 'particlemouseout',
+            target: pointCloud.hover.index
+        }
+        // unless event handler doesnt agree to remove hover attribute
+        if (pointCloud.dispatch(e)===false) {
+          return false;
+        }
+      } else {
+        // already hovering the same point, return
+        return 
+      }
+    }
+
+    // mousein
+    pointCloud.hover=hover;
 
     var material;
     var cursor=pointCloud.cursor;
 
+    // instantiate cursor if needed
     if (!cursor) {
       cursor=pointCloud.cursor={
         material: new THREE.SpriteMaterial({
@@ -307,13 +354,25 @@ $.extend(true,PointCloud.prototype,{
     }
 
     cursor.sprite.position.copy(new THREE.Vector3().copy(pointCloud.getParticlePosition(hover.index)).normalize().multiplyScalar(10));
-    var scale=0.1/p.getZoom();
-    cursor.sprite.scale.set(scale,scale,scale);
-    pointCloud.showParticleInfo(hover.index);
 
     pointCloud.panorama.drawScene();
 
-  }, // pointCloud_onmouseover
+    pointCloud.dispatch({
+        type: 'particlemousein',
+        target: hover.index
+    });
+
+  }, // pointCloud_particleonmouseover
+
+  onparticlemousein: function pointCloud_onparticlemousein(e) {
+    var pointCloud=this;
+    pointCloud.showParticleInfo(pointCloud.hover.index);
+  }, // pointCloud_onparticlemousein
+
+  onparticlemouseout: function pointCloud_onparticlemouseout(e) {
+    var pointCloud=this;
+    pointCloud.hideParticleInfo();
+  }, // pointCloud_onparticlemousein
 
   // return particle with least square distance from coords in radians
   nearestParticle: function pointCloud_nearestParticle(coords,particle_list) {
@@ -401,6 +460,10 @@ $.extend(true,PointCloud.prototype,{
     div.html(html);
 
   }, // pointCloud_showParticleInfo
+
+  hideParticleInfo: function pointCloud_hideParticleInfo(){
+    $('#particleInfo').hide(0);
+  }, // pointCloud_hideParticleInfo
 
   // instantiate point cloud on panorama_ready
   on_panorama_ready: function pointCloud_on_panorama_ready(e) {
