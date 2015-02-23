@@ -55,12 +55,17 @@ $.extend(POI_loader.prototype,{
     init: function poiLoader_init() {
     },
 
+    on_panorama_init: function poiLoader_onPanoramaInit(e) {
+      var panorama=this;
+      panorama.poiLoader=new POI_loader({panorama: panorama});
+    }, // poiLoader_onPanoramaInit
+
     on_panorama_ready: function poiLoader_onPanoramaReady(e){
       var panorama=this;
       var poiLoader=panorama.poiLoader;
 
       if (e.poiLoader_was_here){
-        console.log('poiLoader was here');
+        console.log('fixme');
         return;
       }
       e.poiLoader_was_here=true;
@@ -95,16 +100,6 @@ $.extend(POI_loader.prototype,{
       return false;
     },
 
-    panorama_prototype_init: Panorama.prototype.init
-
-});
-
-$.extend(true,Panorama.prototype,{
-    init: function poiLoader_panorama_prototype_init() {
-      var panorama=this;
-      panorama.poiLoader=new POI_loader({panorama: panorama});
-      panorama.poiLoader.panorama_prototype_init.call(panorama);
-    }
 });
 
 // subscribe to panorama events
