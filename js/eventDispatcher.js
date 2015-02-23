@@ -70,6 +70,7 @@
  */
 
 var eventDispatcherDebug=1;
+window.eventDispatcherSerial=0;
 
 // setup specified prototype or instance to dispatch events among subscribers
 function setupEventDispatcher(obj) {
@@ -88,6 +89,8 @@ function setupEventDispatcher(obj) {
   obj.dispatch=function eventDispatcher_dispatch(e){
     var obj=this;
 
+    var serial=window.eventDispatcherSerial++;
+
     // convert event to object, if needed
     if (typeof(e)=='string') {
       e={
@@ -96,7 +99,7 @@ function setupEventDispatcher(obj) {
       }
     }
 
-    console.log('dispatching '+obj.constructor.name+' "'+e.type+'"');
+    console.log(serial+' dispatching '+obj.constructor.name+' "'+e.type+'"');
 
     // forward also additional arguments, if any
     var args=Array.prototype.slice(arguments);
@@ -107,19 +110,19 @@ function setupEventDispatcher(obj) {
     $.each(obj.subscribers,function(i,subscriber){
       if (subscriber[method] && typeof(subscriber[method]=="function")) {
         if (eventDispatcherDebug) {
-          console.log(subscriber.constructor.name+'.'+method);
+          console.log(serial+' '+method+' -> '+subscriber.constructor.name);
         }
         if (subscriber[method].apply(obj,[e].concat(args||[]))===false) {
           // stop propagation if any subscriber handler return false
           stopPropagation=true;
           if (eventDispatcherDebug) {
-            console.log('propagation stopped by: '+subscriber.constructor.name+'.'+method);
+            console.log(serial+' '+method+' -> '+'propagation stopped by: '+subscriber.constructor.name);
           }
           return false;
         }
       } else {
         if (eventDispatcherDebug>1){
-          console.log('warning: '+subscriber.constructor.name+'.'+method+' is undefined');
+          console.log(serial+' '+method+' -> '+'warning: '+subscriber.constructor.name+'.'+method+' is undefined');
         }
       }
     });
@@ -132,17 +135,17 @@ function setupEventDispatcher(obj) {
     method='on'+e.type;
     if (obj[method] && typeof(obj[method]=="function")) {
       if (eventDispatcherDebug) {
-        console.log(obj.constructor.name+'.'+method);
+        console.log(serial+' '+method+' -> '+obj.constructor.name);
       }
       if (obj[method].apply(obj,[e].concat(args||[]))===false) {
         if (eventDispatcherDebug) {
-          console.log('propagation stopped by: '+obj.constructor.name+'.'+method);
+          console.log(serial+' '+method+' -> '+'propagation stopped by: '+obj.constructor.name);
         }
         return false;
       }
     } else {
       if (eventDispatcherDebug>1){
-        console.log('warning: '+obj.constructor.name+'.'+method+' is undefined');
+        console.log(serial+' '+method+' -> '+'warning: '+obj.constructor.name+'.'+method+' is undefined');
       }
     }
 
