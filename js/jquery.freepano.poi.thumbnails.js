@@ -94,6 +94,8 @@ $.extend(POI_thumb.prototype,{
 
       poiThumb.update();
 
+      poiThumb.dispatch('ready');
+
     }, // poiThumb_onPanoramaReady
 
     update: function poiThumb_update(name){
@@ -202,5 +204,9 @@ $.extend(true,POI_thumb.prototype.image.prototype,{
 
 });
 
+// subscribe to Panorama events
 Panorama.prototype.dispatchEventsTo(POI_thumb.prototype);
+
+// setup event dispatcher for POI_thumb
+setupEventDispatcher(POI_thumb.prototype);
 
