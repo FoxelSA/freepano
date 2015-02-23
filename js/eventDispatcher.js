@@ -69,7 +69,7 @@
  *
  */
 
-var eventDispatcherDebug=1;
+var eventDispatcherDebug=false;
 window.eventDispatcherSerial=0;
 
 // setup specified prototype or instance to dispatch events among subscribers
@@ -89,8 +89,6 @@ function setupEventDispatcher(obj) {
   obj.dispatch=function eventDispatcher_dispatch(e){
     var obj=this;
 
-    var serial=window.eventDispatcherSerial++;
-
     // convert event to object, if needed
     if (typeof(e)=='string') {
       e={
@@ -99,7 +97,10 @@ function setupEventDispatcher(obj) {
       }
     }
 
-    console.log(serial+' dispatching '+obj.constructor.name+' "'+e.type+'"');
+    if (eventDispatcherDebug) {
+      var serial=window.eventDispatcherSerial++;
+      console.log(serial+' dispatching '+obj.constructor.name+' "'+e.type+'"');
+    }
 
     // forward also additional arguments, if any
     var args=Array.prototype.slice(arguments);
