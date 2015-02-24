@@ -543,8 +543,8 @@ function WidgetFactory(options) {
           var panorama=this;
           var widgetList=panorama[Widget.name.toLowerCase()];
 
-          if (!widgetList.overlay) return;
           if (!(widgetList instanceof WidgetList)) return;
+          if (!widgetList.overlay) return;
 
           // render widgets over panorama scene
           panorama.renderer.clearDepth();

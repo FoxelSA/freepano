@@ -654,7 +654,7 @@ $.extend(true,Panorama.prototype,{
 
     // adjust lon/lat    
     m.lon = -(90 - m.lon) - 90;
-    m.lat = 90 - m.lat;
+    m.lat = m.lat;
     if (m.lon < 0) m.lon += 360;
 
     panorama.showMouseDebugInfo(m);
