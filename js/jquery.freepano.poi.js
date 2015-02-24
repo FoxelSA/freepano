@@ -1,13 +1,18 @@
 /*
  * freepano - WebGL panorama viewer
  *
- * Copyright (c) 2014,2015 FOXEL SA - http://foxel.ch
+ * Copyright (c) 2014-2015 FOXEL SA - http://foxel.ch
  * Please read <http://foxel.ch/license> for more information.
  *
  *
  * Author(s):
  *
  *      Luc Deschenaux <l.deschenaux@foxel.ch>
+ *
+ *
+ * Contributor(s):
+ *
+ *      Alexandre Kraft <a.kraft@foxel.ch>
  *
  *
  * This file is part of the FOXEL project <http://foxel.ch>.
@@ -37,6 +42,19 @@
  */
 
 WidgetFactory('POI');
+
+$.extend(true,POI.prototype,{
+
+    defaults: {
+        color: {
+            normal: 'white',
+            selected: 'white',
+            hover: 'cyan',
+            active: 'purple'
+        }
+    }
+
+}); // extend POI prototype
 
 $.extend(true,POI_list.prototype,{
 

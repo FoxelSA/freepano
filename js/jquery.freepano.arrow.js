@@ -10,6 +10,11 @@
  *      Luc Deschenaux <l.deschenaux@foxel.ch>
  *
  *
+ * Contributor(s):
+ *
+ *      Alexandre Kraft <a.kraft@foxel.ch>
+ *
+ *
  * This file is part of the FOXEL project <http://foxel.ch>.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -40,10 +45,13 @@ WidgetFactory('Arrow');
 
 $.extend(true,Arrow.prototype,{
 
-    color: {
-      active: '#0000ff',
-      hover: '#000000',
-      normal: '#ffffff'                                                                                     
+    defaults: {
+        color: {
+            normal: 'black',
+            selected: 'black',
+            hover: 'white',
+            active: 'orange'
+        }
     },
 
     defaultMesh: function arrow_mesh() {
@@ -62,7 +70,7 @@ $.extend(true,Arrow.prototype,{
       geometry.faces.push(new THREE.Face3(5,6,4));
 
       var mesh=new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({
-        color: 0xffffff,
+        color: arrow.getColorByState('normal'),
         transparent: true,
         opacity: 0.3
       }));

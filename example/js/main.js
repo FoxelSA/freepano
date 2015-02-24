@@ -1,7 +1,7 @@
 /*
  * freepano - WebGL panorama viewer
  *
- * Copyright (c) 2014 FOXEL SA - http://foxel.ch
+ * Copyright (c) 2014-2015 FOXEL SA - http://foxel.ch
  * Please read <http://foxel.ch/license> for more information.
  *
  *
@@ -436,14 +436,22 @@ $(document).on('filesloaded', function(){
             */
             poi: {
               defaults: {
-                color: {
-                  active: '#0000ff',
-                  hover: '#ffffff',
-                  normal: '#000000'
+                color: { // todo: not implemented
+                    normal: 'blue',
+                    selected: 'blue',
+                    hover: 'white',
+                    active: 'brown'
                 }
               },
               list: {
                 circle: {
+                    size: 5,
+                    color: {
+                        normal: 'lightgreen',
+                        selected: 'lightgreen',
+                        hover: 'yellow',
+                        active: 'red'
+                    },
                     coords: {
                       lon: 0,
                       lat: 0
@@ -469,34 +477,37 @@ $(document).on('filesloaded', function(){
                     }
                 }, // circle
                 square: {
-                    mesh: new THREE.Mesh(new THREE.PlaneGeometry(Math.PI/4.5,Math.PI/4.5,1,1), new THREE.MeshBasicMaterial({
-                      color: 0x000000,
-                      transparent: true,
-                      opacity: 0.3,
-                      depthWrite: false,
-                      depthTest: false
-                    })),
+                    mesh: function square_mesh() {
+                        var poi = this;
+                        return new THREE.Mesh(new THREE.PlaneBufferGeometry(poi.size,poi.size,1,1), new THREE.MeshBasicMaterial({
+                            color: poi.getColorByState('normal'),
+                            transparent: true,
+                            opacity: 0.3,
+                            depthWrite: false,
+                            depthTest: false
+                        }));
+                    },
                     coords: {
                       lon: 10,
                       lat: 0
                     }
                 }, // square
                 triangle: {
-                    mesh: function test2_mesh() {
-                      var poi=this;
-                      var geometry=new THREE.Geometry();
-                      var s=poi.size;
-                      geometry.vertices.push(new THREE.Vector3(-s,-s,0));
-                      geometry.vertices.push(new THREE.Vector3(s,-s,0));
-                      geometry.vertices.push(new THREE.Vector3(0,s,0));
-                      geometry.faces.push(new THREE.Face3(0,1,2));
-                      return new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({
-                        color: 0x000000,
-                        transparent: true,
-                        opacity: 0.3,
-                        depthWrite: false,
-                        depthTest: false
-                      }));
+                    mesh: function triangle_mesh() {
+                        var poi=this;
+                        var geometry=new THREE.Geometry();
+                        var s=poi.size/1.75;
+                        geometry.vertices.push(new THREE.Vector3(-s,-s,0));
+                        geometry.vertices.push(new THREE.Vector3(s,-s,0));
+                        geometry.vertices.push(new THREE.Vector3(0,s,0));
+                        geometry.faces.push(new THREE.Face3(0,1,2));
+                        return new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({
+                            color: poi.getColorByState('normal'),
+                            transparent: true,
+                            opacity: 0.3,
+                            depthWrite: false,
+                            depthTest: false
+                        }));
                     },
                     coords: {
                       lon: 20,
@@ -506,19 +517,17 @@ $(document).on('filesloaded', function(){
 
                 unicorn: {
 
-                  color: {
-                    active: 'purple',
-                    normal: 'cyan',
-                    hover: 'white'
-                  },
-
-                  mesh: new THREE.Mesh(new THREE.PlaneGeometry(Math.PI/4.5,Math.PI/4.5,1,1), new THREE.MeshBasicMaterial({
-                    map: unicorn_texture,
-                    transparent: true,
-                    opacity: 0.3,
-                    depthWrite: false,
-                    depthTest: false
-                  })),
+                    mesh: function unicorn_mesh() {
+                        var poi=this;
+                        return new THREE.Mesh(new THREE.PlaneBufferGeometry(poi.size,poi.size,1,1), new THREE.MeshBasicMaterial({
+                            color: poi.getColorByState('normal'),
+                            map: unicorn_texture,
+                            transparent: true,
+                            opacity: 0.3,
+                            depthWrite: false,
+                            depthTest: false
+                        }));
+                    },
 
                   handleTransparency: true,
 
