@@ -1,13 +1,18 @@
 /*
  * freepano - WebGL panorama viewer
  *
- * Copyright (c) 2014,2015 FOXEL SA - http://foxel.ch
+ * Copyright (c) 2014-2015 FOXEL SA - http://foxel.ch
  * Please read <http://foxel.ch/license> for more information.
  *
  *
  * Author(s):
  *
  *      Luc Deschenaux <l.deschenaux@foxel.ch>
+ *
+ *
+ * Contributor(s):
+ *
+ *      Alexandre Kraft <a.kraft@foxel.ch>
  *
  *
  * This file is part of the FOXEL project <http://foxel.ch>.
@@ -92,8 +97,14 @@ function WidgetFactory(options) {
           lon: 0,
           lat: 90
         },
-        size: Math.PI/9,
+        size: Math.PI*1.5,
         handleTransparency: true,
+        color: {
+            normal: 'black',
+            selected: 'black',
+            hover: 'black',
+            active: 'black'
+        },
         lookAtVec3: new THREE.Vector3(0,0,0)
       },
 
@@ -226,15 +237,15 @@ function WidgetFactory(options) {
 
       // create default mesh
       defaultMesh: function widget_defaultMesh() {
-         var widget=this;
-         var circle=new THREE.Mesh(new THREE.CircleGeometry(widget.size,100), new THREE.MeshBasicMaterial({
-               color: 0x000000,
+        var widget=this;
+        var circle=new THREE.Mesh(new THREE.CircleGeometry(widget.size,100), new THREE.MeshBasicMaterial({
+               color: widget.getColorByState('normal'),
                transparent: true,
                opacity: 0.3,
                depthWrite: false,
                depthTest: false
-         }));
-         return circle;
+        }));
+        return circle;
       }, // widget_defaultMesh
 
       // update widget display properties and coordinates
@@ -274,12 +285,12 @@ function WidgetFactory(options) {
         if (widget.color && widget.color.selected) {
           if (!widget.selected){
             widget.selected=true;
-            widget.setColor(widget.color.selected);
+            widget.setColor(widget.getColorByState('selected'));
             $.each(widgetList.list,function(name){
               var _widget=this.instance;
               if (_widget.selected && _widget!=widget){
                 _widget.selected=false;
-                _widget.setColor(_widget.color.normal)
+                _widget.setColor(_widget.getColorByState('normal'))
                 _widget.dispatch('unselect');
               }
             });
@@ -296,16 +307,16 @@ function WidgetFactory(options) {
 
         // set widget mode to active
         widgetList._active=widget;
-        this.setColor(this.color.active);
+        this.setColor(widget.getColorByState('active'));
 
         // restore widget color on mouseup
         $(document).on('mouseup.'+Widget.name.toLowerCase()+'_widget_mousedown',function(){
           if (widgetList._active) {
             if (widget.color && widgetList.hover.length && widgetList.hover[0].object.parent.name==widgetList._active.name) {
-              widget.setColor(widget.color.hover);
+              widget.setColor(widget.getColorByState('hover'));
               widget.panorama.drawScene();
             } else {
-              widget.setColor(widget.selected?widget.color.selected:widget.color.normal);
+              widget.setColor(widget.selected?widget.getColorByState('selected'):widget.getColorByState('normal'));
               widget.panorama.drawScene();
             }
             widgetList._active=null;
@@ -318,7 +329,7 @@ function WidgetFactory(options) {
       _onmouseup: function _widget_mouseup(e){
         var widget=this;
         var widgetList=widget.panorama[this.constructor.name.toLowerCase()];
-        widget.setColor(this.color.hover);
+        widget.setColor(widget.getColorByState('hover'));
         if (widgetList._active==widget){
           setTimeout(function(){
             widget.dispatch('click');
@@ -328,9 +339,10 @@ function WidgetFactory(options) {
 
       _onmousein: function _widget_mousein(e){
 
+        var widget=this;
         var panorama=this.panorama;
 
-        if (!this.color || panorama.mode.rotate) return;
+        if (panorama.mode.rotate) return;
 
         // find the active widget if any
         var activeWidget=null;
@@ -347,14 +359,14 @@ function WidgetFactory(options) {
 
         // restore active color on mousein when mouse button is down
         if (activeWidget) {
-          if (activeWidget==this) {
-            this.setColor(this.color.active);
-          }
-          return;
+            if (activeWidget==this) {
+                this.setColor(widget.getColorByState('active'));
+            }
+            return;
         }
 
         // or set hover color
-        this.setColor(this.color.hover);
+        this.setColor(widget.getColorByState('hover'));
 
       }, // _widget_mousein
 
@@ -362,17 +374,26 @@ function WidgetFactory(options) {
         var widget=this;
         if (!widget.color || widget.panorama.mode.rotate) return;
         widget.panorama[widget.constructor.name.toLowerCase()]._hover=null;
-        widget.setColor(widget.selected?widget.color.selected:widget.color.normal);
+        widget.setColor(widget.selected?widget.getColorByState('selected'):widget.getColorByState('normal'));
       }, // _widget_mouseout
 
       setColor: function widget_setColor(color) {
         var widget=this;
-        console.log('setColor',this,color);
+        //console.log('setColor',this,color);
         $.each(widget.object3D.children,function(){
           this.material.color.set(color);
         });
         widget.panorama.drawScene();
       }, // widget_setColor
+
+      getColorByState: function widget_getColorByState(state) {
+            var widget = this;
+            var color = widget.defaults.color[state];
+            if (widget.color && widget.color[state]) {
+                color = widget.color[state];
+            }
+            return color;
+      }, // widget_getColorByState
 
       scale: function widget_scale(scaleFactor) {
         if (scaleFactor instanceof THREE.Vector3) {

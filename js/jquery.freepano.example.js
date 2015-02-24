@@ -8,6 +8,10 @@
  * Author(s):
  *
  *      Alexandre Kraft <a.kraft@foxel.ch>
+ *
+ *
+ * Contributor(s):
+ *
  *      Luc Deschenaux <l.deschenaux@foxel.ch>
  *
  *
