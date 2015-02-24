@@ -436,7 +436,7 @@ $(document).on('filesloaded', function(){
             */
             poi: {
               defaults: {
-                color: { // todo: not implemented
+                color: {
                     normal: 'blue',
                     selected: 'blue',
                     hover: 'white',
@@ -480,7 +480,6 @@ $(document).on('filesloaded', function(){
                     mesh: function square_mesh() {
                         var poi = this;
                         return new THREE.Mesh(new THREE.PlaneBufferGeometry(poi.size,poi.size,1,1), new THREE.MeshBasicMaterial({
-                            color: poi.getColorByState('normal'),
                             transparent: true,
                             opacity: 0.3,
                             depthWrite: false,
@@ -502,7 +501,6 @@ $(document).on('filesloaded', function(){
                         geometry.vertices.push(new THREE.Vector3(0,s,0));
                         geometry.faces.push(new THREE.Face3(0,1,2));
                         return new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({
-                            color: poi.getColorByState('normal'),
                             transparent: true,
                             opacity: 0.3,
                             depthWrite: false,
@@ -520,7 +518,6 @@ $(document).on('filesloaded', function(){
                     mesh: function unicorn_mesh() {
                         var poi=this;
                         return new THREE.Mesh(new THREE.PlaneBufferGeometry(poi.size,poi.size,1,1), new THREE.MeshBasicMaterial({
-                            color: poi.getColorByState('normal'),
                             map: unicorn_texture,
                             transparent: true,
                             opacity: 0.3,

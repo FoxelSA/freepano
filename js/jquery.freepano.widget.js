@@ -98,7 +98,8 @@ function WidgetFactory(options) {
         },
         size: Sphere.prototype.defaults.radius/30,
         handleTransparency: true,
-        color: {
+        handleMouseEvents: true,
+        color: { // to disable colors, set to null when instantiating
             normal: 'black',
             selected: 'black',
             hover: 'black',
@@ -145,6 +146,9 @@ function WidgetFactory(options) {
             widget.object3D=widget.object3D();
           }
         }
+
+        // set default color, if any
+        widget.setColor('normal');
 
         // add widget to scene
         widget.scene.add(widget.object3D);
@@ -238,7 +242,6 @@ function WidgetFactory(options) {
       defaultMesh: function widget_defaultMesh() {
         var widget=this;
         var circle=new THREE.Mesh(new THREE.CircleGeometry(widget.size,100), new THREE.MeshBasicMaterial({
-               color: widget.getColorByState('normal'),
                transparent: true,
                opacity: 0.3,
                depthWrite: false,
@@ -281,23 +284,20 @@ function WidgetFactory(options) {
         var widget=this;
         var widgetList=widget.panorama[this.constructor.name.toLowerCase()];
         // todo: handle multiple selection, with shift and ctrl modifiers
-        if (widget.color && widget.color.selected) {
-          if (!widget.selected){
-            widget.selected=true;
-            widget.setColor(widget.getColorByState('selected'));
-            $.each(widgetList.list,function(name){
-              var _widget=this.instance;
-              if (_widget.selected && _widget!=widget){
-                _widget.selected=false;
-                _widget.setColor(_widget.getColorByState('normal'))
-                _widget.dispatch('unselect');
-              }
-            });
-            widget.dispatch('select');
-          }
+        if (!widget.selected){
+          widget.selected=true;
+          widget.setColor('selected');
+          $.each(widgetList.list,function(name){
+            var _widget=this.instance;
+            if (_widget.selected && _widget!=widget){
+              _widget.selected=false;
+              _widget.setColor('normal')
+              _widget.dispatch('unselect');
+            }
+          });
+          widget.dispatch('select');
         }
-        console.log('click',this);
-      },
+      }, // widget_click
 
       _onmousedown: function _widget_mousedown(e){
 
@@ -306,16 +306,16 @@ function WidgetFactory(options) {
 
         // set widget mode to active
         widgetList._active=widget;
-        this.setColor(widget.getColorByState('active'));
+        widget.setColor('active');
 
         // restore widget color on mouseup
         $(document).on('mouseup.'+Widget.name.toLowerCase()+'_widget_mousedown',function(){
           if (widgetList._active) {
-            if (widget.color && widgetList.hover.length && widgetList.hover[0].object.parent.name==widgetList._active.name) {
-              widget.setColor(widget.getColorByState('hover'));
+            if (widgetList.hover.length && widgetList.hover[0].object.parent.name==widgetList._active.name) {
+              widget.setColor('hover');
               widget.panorama.drawScene();
             } else {
-              widget.setColor(widget.selected?widget.getColorByState('selected'):widget.getColorByState('normal'));
+              widget.setColor(widget.selected?'selected':'normal');
               widget.panorama.drawScene();
             }
             widgetList._active=null;
@@ -328,7 +328,7 @@ function WidgetFactory(options) {
       _onmouseup: function _widget_mouseup(e){
         var widget=this;
         var widgetList=widget.panorama[this.constructor.name.toLowerCase()];
-        widget.setColor(widget.getColorByState('hover'));
+        widget.setColor('hover');
         if (widgetList._active==widget){
           setTimeout(function(){
             widget.dispatch('click');
@@ -339,7 +339,7 @@ function WidgetFactory(options) {
       _onmousein: function _widget_mousein(e){
 
         var widget=this;
-        var panorama=this.panorama;
+        var panorama=widget.panorama;
 
         if (panorama.mode.rotate) return;
 
@@ -353,19 +353,19 @@ function WidgetFactory(options) {
           }
         });
 
-        var widgetList=panorama[this.constructor.name.toLowerCase()];
-        widgetList._hover=this;
+        var widgetList=panorama[widget.constructor.name.toLowerCase()];
+        widgetList._hover=widget;
 
         // restore active color on mousein when mouse button is down
         if (activeWidget) {
-            if (activeWidget==this) {
-                this.setColor(widget.getColorByState('active'));
+            if (activeWidget==widget) {
+              widget.setColor('active');
             }
             return;
         }
 
         // or set hover color
-        this.setColor(widget.getColorByState('hover'));
+        widget.setColor('hover');
 
       }, // _widget_mousein
 
@@ -373,26 +373,34 @@ function WidgetFactory(options) {
         var widget=this;
         if (!widget.color || widget.panorama.mode.rotate) return;
         widget.panorama[widget.constructor.name.toLowerCase()]._hover=null;
-        widget.setColor(widget.selected?widget.getColorByState('selected'):widget.getColorByState('normal'));
+        widget.setColor(widget.selected?'selected':widget.color.normal);
       }, // _widget_mouseout
 
       setColor: function widget_setColor(color) {
         var widget=this;
-        //console.log('setColor',this,color);
+
+        if (typeof(color)=='string') {
+          // if color specified as string is listed in the prototype default colors
+          if (Widget.prototype.defaults.color && Widget.prototype.defaults.color[color]) {
+            // and is undefined for this instance
+            if (!widget.color || !widget.color[color]) {
+              // then return
+              return;
+            } else {
+              // else get color defined for this instance
+              color=widget.color[color];
+            }
+          } // else assume it is a literal color
+        }
+
+        // set color for every object3d children
         $.each(widget.object3D.children,function(){
           this.material.color.set(color);
         });
-        widget.panorama.drawScene();
-      }, // widget_setColor
 
-      getColorByState: function widget_getColorByState(state) {
-            var widget = this;
-            var color = widget.defaults.color[state];
-            if (widget.color && widget.color[state]) {
-                color = widget.color[state];
-            }
-            return color;
-      }, // widget_getColorByState
+        widget.panorama.drawScene();
+
+      }, // widget_setColor
 
       scale: function widget_scale(scaleFactor) {
         if (scaleFactor instanceof THREE.Vector3) {
@@ -412,6 +420,7 @@ function WidgetFactory(options) {
     $.extend(true, WidgetList.prototype, {
 
         defaults: {
+          handleMouseEvents: true,
           overlay: true,
           list: {}
         },
@@ -779,8 +788,16 @@ function WidgetFactory(options) {
           return;
         }
 
+        // if mouse events are not disabled for widget list
+        if (!widgetList.handleMouseEvents) return;
+
+
         // call handlers for first widget from hovering list
         var widget=widgetList.list[widgetList.hover[0].object.parent.name].instance;
+
+
+        // if mouse events are not disabled for hovered widget
+        if (!widget.handleMouseEvents) return;
 
         // 1. private mouseevent handler (for hover / active color handling)
         if (widget['_on'+e.type] && widget.color) {

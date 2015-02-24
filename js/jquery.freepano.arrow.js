@@ -70,7 +70,7 @@ $.extend(true,Arrow.prototype,{
       geometry.faces.push(new THREE.Face3(5,6,4));
 
       var mesh=new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({
-        color: arrow.getColorByState('normal'),
+        color: arrow.color.normal,
         transparent: true,
         opacity: 0.3
       }));
