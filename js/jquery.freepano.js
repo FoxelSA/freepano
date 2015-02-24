@@ -268,7 +268,7 @@ $.extend(true,Camera.prototype,{
     defaults: {
       fov: 120,
       nearPlane: 0.1,
-      farPlane: Sphere.prototype.defaults.radius+1,
+      farPlane: Sphere.prototype.defaults.radius*2,
       zoom: {
         max: 1.5,
         min: 0.5,
