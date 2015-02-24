@@ -90,14 +90,13 @@ function WidgetFactory(options) {
     $.extend(true, Widget.prototype, {
 
       defaults: {
-        overlay: true,
         mesh: null,
         object3D: null,
         coords: {
           lon: 0,
           lat: 90
         },
-        size: Math.PI*1.5,
+        size: Sphere.prototype.defaults.radius/30,
         handleTransparency: true,
         color: {
             normal: 'black',
@@ -413,11 +412,9 @@ function WidgetFactory(options) {
     $.extend(true, WidgetList.prototype, {
 
         defaults: {
+          overlay: true,
           list: {}
         },
-
-        // save pointer to Panorama.prototype.callback in WidgetList.prototype
-        panorama_prototype_callback: Panorama.prototype.callback,
 
         // save pointer to Panorama.prototype.onmousedown in WidgetList.prototype
         panorama_prototype_onmousedown: Panorama.prototype.onmousedown,
