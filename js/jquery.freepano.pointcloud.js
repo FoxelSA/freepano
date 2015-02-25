@@ -215,6 +215,8 @@ $.extend(true,PointCloud.prototype,{
     var scene=(pointCloud.overlay)?pointCloud.scene:panorama.scene;
     scene.add(pointCloud.object3D);
 
+    pointCloud.dispatch('ready');
+
     panorama.drawScene();
   
   }, // pointCloud_onload
@@ -291,10 +293,10 @@ $.extend(true,PointCloud.prototype,{
           originalEvent: e
       });
     } else {
-      if (pointCloud.hover){
+      if (pointCloud.instance.hover){
         pointCloud.instance.dispatch({
             type: 'particlemouseout',
-            target: pointCloud.hover.index
+            target: pointCloud.instance.hover.index
         });
       }
     }
@@ -464,6 +466,21 @@ $.extend(true,PointCloud.prototype,{
   hideParticleInfo: function pointCloud_hideParticleInfo(){
     $('#particleInfo').hide(0);
   }, // pointCloud_hideParticleInfo
+
+  on_panorama_click: function pointCloud_on_panorama_click(e) {
+    var panorama=this;
+    var pointCloud=panorama.pointCloud.instance;
+
+    if (!pointCloud.hover) {
+      return;
+    }
+
+    pointCloud.dispatch({
+        type: 'particleclick',
+        target: pointCloud.hover.index
+    });
+
+  }, // pointCloud_on_panorama_click
 
   // instantiate point cloud on panorama_ready
   on_panorama_ready: function pointCloud_on_panorama_ready(e) {
