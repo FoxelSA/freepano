@@ -234,8 +234,6 @@ $.extend(true,ParticleSequence.prototype,{
 
       // measure text
       ctx.font=options.font||" "+options.fontSize+"px helvetica";
-      ctx.fillStyle=options.fillStyle||"rgba(0,0,0,1)";
-      ctx.strokeStyle=options.strokeStyle||"rgba(255,255,255,1)";
       ctx.align='left';
       ctx.textBaseline='middle';
       var size=ctx.measureText(text);
