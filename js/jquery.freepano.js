@@ -44,7 +44,7 @@
  */
 
 
-var Xaxis=new THREE.Vector3(1,0,0);                                                                                   
+var Xaxis=new THREE.Vector3(1,0,0);
 var Yaxis=new THREE.Vector3(0,1,0);
 var Zaxis=new THREE.Vector3(0,0,1);
 
@@ -163,6 +163,12 @@ $.extend(true,Sphere.prototype,{
 //           color: 'white'
         });
         mesh=new THREE.Mesh(geometry,material);
+
+        $.extend(true,mesh,{
+          col: col,
+          row: row
+        });
+
         sphere.object3D.add(mesh);
       }
     }
@@ -183,10 +189,7 @@ $.extend(true,Sphere.prototype,{
       }
     );
 
-    $.extend(tileTexture,sphere.texture.options,{
-      col: col,
-      row: row
-    });
+    $.extend(tileTexture,sphere.texture.options);
 
     return tileTexture;
 
@@ -211,7 +214,7 @@ $.extend(true,Sphere.prototype,{
         sphere.texture.height=sphere.texture.rows*texture.image.height;
         sphere.r=sphere.texture.height/Math.PI;
 
-        sphere.done=true; 
+        sphere.done=true;
         sphere.dispatch('ready');
 
       },0);
@@ -235,8 +238,8 @@ $.extend(true,Sphere.prototype,{
 
       var mesh=this;
 
-      var row=mesh.material.map.row;
-      var col=mesh.material.map.col;
+      var row=mesh.row;
+      var col=mesh.col;
 
       var tileTexture=sphere.loadTile(col,row,callback);
 
@@ -652,7 +655,7 @@ $.extend(true,Panorama.prototype,{
     m.lon=deg_lam;
     m.lat=deg_phi;
 
-    // adjust lon/lat    
+    // adjust lon/lat
     m.lon = -(90 - m.lon) - 90;
     m.lat = m.lat;
     if (m.lon < 0) m.lon += 360;
@@ -714,7 +717,7 @@ $.extend(true,Panorama.prototype,{
       var phi = Math.acos(m.y);
       var theta = Math.atan2(m.z, m.x);
 
-      // adjust lon/lat    
+      // adjust lon/lat
       m.lon = -(90 - THREE.Math.radToDeg(theta)) - 90;
       m.lat = 90 - THREE.Math.radToDeg(phi);
       if (m.lon < 0) m.lon += 360;
