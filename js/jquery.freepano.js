@@ -82,6 +82,7 @@ $.extend(true,Texture.prototype,{
     },
     columns: 2,
     rows: 1,
+    tileHeight: 512
   }, // Texture defaults
 
   init: function texture_init(){
@@ -113,6 +114,7 @@ $.extend(true,Sphere.prototype,{
     heightSegments: 18,
     texture: null,
     object3D: null,
+    shownTiles: null,
     callback: function(){}
 
   }, // sphere defaults
@@ -154,13 +156,9 @@ $.extend(true,Sphere.prototype,{
         var geometry=new THREE.SphereGeometry(sphere.radius,sphere.widthSegments,sphere.heightSegments,col*phiLength,phiLength,row*thetaLength,thetaLength);
         geometry.applyMatrix(transform);
 
-        var tileTexture=sphere.loadTile(col,row,callback);
         var material=new THREE.MeshBasicMaterial({
-           map: tileTexture,
-           depthTest: false,
-           depthWrite: false
-//           wireframe: true,
-//           color: 'white'
+           wireframe: true,
+           color: 0xffffff
         });
         mesh=new THREE.Mesh(geometry,material);
 
@@ -172,7 +170,89 @@ $.extend(true,Sphere.prototype,{
         sphere.object3D.add(mesh);
       }
     }
+
+    // sphere ready
+    setTimeout(function(){
+        sphere.texture.height=sphere.texture.rows*sphere.texture.tileHeight;
+        sphere.r=sphere.texture.height/Math.PI;
+        sphere.done=true;
+        sphere.dispatch('ready');
+        setTimeout(function() {
+            sphere.initFrustumTiles();
+            sphere.drawFrustumTiles();
+        },0);
+    },0);
+
   }, // sphere_build
+
+    initFrustumTiles: function sphere_initFrustumTiles() {
+
+        var sphere = this;
+        sphere.shownTiles = new Array(sphere.texture.rows);
+        for (var i=0; i < sphere.shownTiles.length; i++) {
+            sphere.shownTiles[i] = new Array(sphere.texture.columns);
+            for (var j=0; j < sphere.shownTiles[i].length; j++)
+                sphere.shownTiles[i][j] = false;
+        }
+
+    }, // sphere_initFrustumTiles
+
+    drawFrustumTiles: function sphere_drawFrustumTiles() {
+
+
+        var sphere = this;
+        if (!sphere.shownTiles)
+            return;
+
+        // update camera frustum
+        sphere.panorama.camera.updateFrustum();
+
+        // loop over each mesh of the sphere
+        $.each(sphere.object3D.children, function() {
+
+            var mesh=this;
+
+            // visible
+            if (sphere.panorama.camera.frustum.intersectsObject( mesh )) {
+
+                // not already shown
+                if (!sphere.shownTiles[mesh.row][mesh.col]) {
+
+                    var material = new THREE.MeshBasicMaterial({
+                        map: sphere.loadTile(mesh.col,mesh.row),
+                        depthTest: false,
+                        depthWrite: false
+                    });
+
+                    mesh.material = material;
+                    mesh.material.needsUpdate = true;
+
+                    sphere.shownTiles[mesh.row][mesh.col] = true;
+
+                }
+
+            // not visible
+            } else {
+
+                // store as not shown
+                sphere.shownTiles[mesh.row][mesh.col] = false;
+
+                // todo: dispose texture/material to free memory
+
+                /*
+                if (mesh.material) {
+                if (mesh.material.map) {
+                mesh.material.map.dispose();
+                }
+                mesh.material.dispose();
+                }
+                */
+
+            }
+
+        });
+
+    }, // sphere_drawFrustumTiles
 
   loadTile: function sphere_loadTile(col,row,callback) {
 
@@ -299,8 +379,8 @@ $.extend(true,Camera.prototype,{
 
     updateFrustum: function camera_updateFrustum() {
       var camera=this;
-//      camera.instance.updateMatrixWorld(); // make sure the camera matrix is updated
-//      camera.instance.matrixWorldInverse.getInverse(camera.instance.matrixWorld);
+      //camera.instance.updateMatrixWorld(); // make sure the camera matrix is updated
+      //camera.instance.matrixWorldInverse.getInverse(camera.instance.matrixWorld);
       camera.viewProjectionMatrix.multiplyMatrices(camera.instance.projectionMatrix, camera.instance.matrixWorldInverse);
       camera.frustum.setFromMatrix(camera.viewProjectionMatrix);
     },
@@ -747,7 +827,7 @@ $.extend(true,Panorama.prototype,{
       if (isLeftButtonDown(e)) {
         this.mode.rotate=true;
         e.preventDefault();
-        console.log(this.lon,this.lat);
+        //console.log(this.lon,this.lat);
         this.mousedownPos={
           lon: this.lon,
           lat: this.lat,
@@ -770,7 +850,7 @@ $.extend(true,Panorama.prototype,{
           this.lon=(this.mousedownPos.lon-(cursorCoords.lon-this.mousedownPos.cursorCoords.lon))%360;
           this.lat=this.mousedownPos.lat+(cursorCoords.lat-this.mousedownPos.cursorCoords.lat);
           if (this.lon<0) this.lon+=360;
-console.log(this.lon,this.lat);
+          //console.log(this.lon,this.lat);
           this.drawScene();
         }
       } else {
@@ -864,6 +944,7 @@ console.log(this.lon,this.lat);
         return;
       }
       var panorama=this;
+      panorama.sphere.drawFrustumTiles();
       requestAnimationFrame(function(){
         panorama.renderFrame();
         if (callback) callback();
