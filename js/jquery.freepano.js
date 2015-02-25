@@ -490,6 +490,7 @@ $.extend(true,Panorama.prototype,{
       .on('mousedown.panorama'+this.num, canvas, function(e){e.target=panorama;panorama.dispatch(e)})
       .on('mousemove.panorama'+this.num, canvas, function(e){e.target=panorama;panorama.dispatch(e)})
       .on('mouseup.panorama'+this.num, canvas, function(e){e.target=panorama;panorama.dispatch(e)})
+      .on('click.panorama'+this.num, canvas, function(e){e.target=panorama;panorama.dispatch(e)})
       .on('mousewheel.panorama'+this.num, canvas, function(e){e.target=panorama;panorama.dispatch(e)})
       .on('zoom.panorama'+this.num, canvas, function(e){e.target=panorama;panorama.dispatch(e)});
       $(window).on('resize.panorama'+this.num, function(e){e.target=panorama;panorama.dispatch(e)});
