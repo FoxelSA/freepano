@@ -148,6 +148,11 @@ $.extend(true,ParticleSequence.prototype,{
         return;
       }
 
+      // dont add the same particle twice in a row
+      if (seq.particleIndex_list[prevcount-1]==index) {
+        return;
+      }
+
       // register particle index
       seq.particleIndex_list.push(index);
 
@@ -174,8 +179,8 @@ $.extend(true,ParticleSequence.prototype,{
         var v1=new THREE.Vector3().copy(pointCloud.getParticlePosition(seq.particleIndex_list[prevcount-1]));
         var v2=vw;
 
-        // compute segment length, rounded to mm
-        var distance=Math.round(v1.distanceTo(v2)*1000)/1000;
+        // compute segment length, rounded to cm
+        var distance=Math.round(v1.distanceTo(v2)*100)/100;
 
         // instantiate segment label text sprite
         var canvas=seq.labelText2Canvas(distance+'m');
@@ -205,6 +210,40 @@ $.extend(true,ParticleSequence.prototype,{
       }
 
     }, // particleSequence_add
+
+    pop: function particleSequence_pop(particleIndex) {
+
+      var seq=this;
+      var line=seq.line;
+      var pointCloud=seq.pointCloud;
+      var panorama=pointCloud.panorama;
+      var prevcount=seq.particleIndex_list.length;
+
+      if (!prevcount) {
+        return;
+      }
+
+      if (seq.particleIndex_list[prevcount-1]!=particleIndex) {
+        return;
+      }
+
+      // remove particle from list
+      seq.particleIndex_list.pop();
+
+      // remove particle from Line
+      var geometry=line.instance.geometry;
+      geometry.vertices.unshift(new THREE.Vector3());
+      geometry.verticesNeedUpdate=true;
+      geometry.computeLineDistances();
+
+      // remove label
+      var index=seq.label.object3D_list.length-1;
+      if (index>=0) {
+        seq.label.scene.remove(seq.label.object3D_list[index]);
+        seq.label.object3D_list.pop();
+      }
+
+    }, // particleSequence_pop
 
     labelText2Canvas: function particleSequence_labelText2Canvas(text,options){
 
@@ -298,10 +337,60 @@ $.extend(true,ParticleSequence.prototype,{
       }
 
       seq.add(e.target);
+      seq.lastclicked=e.target;
 
       panorama.drawScene();
 
     }, // particleSequence_on_panorama_click
+
+    on_pointcloud_particlemousein: function particleSequence_on_pointcloud_particlemousein(e) {
+      var pointCloud=this;
+      var seq=pointCloud.sequence;
+      var panorama=pointCloud.panorama;
+
+      if (!seq) {
+        return;
+      }
+
+      if (!seq.mode.wheredowegofromhere) {
+        return;
+      }
+
+      if (!seq.particleIndex_list.length) {
+        return;
+      }
+
+      seq.add(e.target);
+      panorama.drawScene();
+
+    }, // on_pointcloud_particlemousein
+
+    on_pointcloud_particlemouseout: function particleSequence_on_pointcloud_particlemouseout(e) {
+      var pointCloud=this;
+      var seq=pointCloud.sequence;
+      var panorama=pointCloud.panorama;
+
+      if (!seq) {
+        return;
+      }
+
+      if (!seq.mode.wheredowegofromhere) {
+        return;
+      }
+
+      if (seq.particleIndex_list.length<2) {
+        return;
+      }
+
+      // dont remove the particle we just added
+      if  (seq.mode.add && seq.lastclicked==e.target) {
+        return;
+      }
+
+      seq.pop(e.target);
+      panorama.drawScene();
+
+    }, // on_pointcloud_particlemouseout
 
     on_pointcloud_ready: function particleSequence_on_pointcloud_ready(e) {
       var pointCloud=this;
