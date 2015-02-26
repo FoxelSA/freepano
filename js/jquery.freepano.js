@@ -80,8 +80,8 @@ $.extend(true,Texture.prototype,{
         dirName: null,
         baseName: null,
         options: {
-            wrapS: THREE.clampToEdgeWrapping,
-            wrapT: THREE.clampToEdgeWrapping,
+            wrapS: THREE.ClampToEdgeWrapping,
+            wrapT: THREE.ClampToEdgeWrapping,
             magFilter: THREE.LinearFilter,
             minFilter: THREE.LinearFilter
         },
