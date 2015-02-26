@@ -936,9 +936,9 @@ function WidgetFactory(options) {
         // call previous panorama.prototype.callback
         var ret=WidgetList.prototype.panorama_prototype_onmousedown.apply(panorama,[e]);
 
-        // unset panorama.mode.rotate when mousedown activated a widget
+        // unset panorama.mode.mayrotate when mousedown activated a widget
         if (panorama[Widget.name.toLowerCase()] && panorama[Widget.name.toLowerCase()]._active){
-          panorama.mode.rotate=false;
+          panorama.mode.mayrotate=false;
         }
 
         return ret;
