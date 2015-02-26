@@ -548,7 +548,6 @@ $.extend(true,Panorama.prototype,{
       .on('mousedown.panorama'+this.num, canvas, function(e){e.target=panorama;panorama.dispatch(e)})
       .on('mousemove.panorama'+this.num, canvas, function(e){e.target=panorama;panorama.dispatch(e)})
       .on('mouseup.panorama'+this.num, canvas, function(e){e.target=panorama;panorama.dispatch(e)})
-      .on('click.panorama'+this.num, canvas, function(e){e.target=panorama;panorama.dispatch(e)})
       .on('mousewheel.panorama'+this.num, canvas, function(e){e.target=panorama;panorama.dispatch(e)})
       .on('zoom.panorama'+this.num, canvas, function(e){e.target=panorama;panorama.dispatch(e)});
       $(window).on('resize.panorama'+this.num, function(e){e.target=panorama;panorama.dispatch(e)});
@@ -801,7 +800,8 @@ $.extend(true,Panorama.prototype,{
 
     onmousedown: function panorama_mousedown(e){
       if (isLeftButtonDown(e)) {
-        this.mode.rotate=true;
+        this.mode.leftButtonDown=true;
+        this.mode.mayrotate=true;
         e.preventDefault();
         //console.log(this.lon,this.lat);
         this.mousedownPos={
@@ -810,6 +810,8 @@ $.extend(true,Panorama.prototype,{
           cursorCoords: this.getMouseCoords(e),
           textureCoords: this.getTextureCoordinates(this.mouseCoords.lon,this.mouseCoords.lat)
         };
+      } else {
+        this.mode.leftButtonDown=false;
       }
     },
 
@@ -817,9 +819,18 @@ $.extend(true,Panorama.prototype,{
       if (!this.sphere.done) {
         return;
       }
-      if (e.done) return;
+
+      if (e.done) {
+        console.log('fixme');
+        return;
+      }
       e.done=true;
+
       if (isLeftButtonDown(e)) {
+        if (this.mode.mayrotate) {
+          this.mode.mayrotate=false;
+          this.mode.rotate=true;
+        }
         if (this.mode.rotate) {
           e.preventDefault();
           var cursorCoords=this.getMouseCoords(e);
@@ -827,17 +838,35 @@ $.extend(true,Panorama.prototype,{
           this.lat=this.mousedownPos.lat+(cursorCoords.lat-this.mousedownPos.cursorCoords.lat);
           if (this.lon<0) this.lon+=360;
           //console.log(this.lon,this.lat);
+          this.dispatch('rotate');
           this.drawScene();
         }
       } else {
+        this.mode.mayrotate=false;
         this.mode.rotate=false;
+        this.mode.leftButtonDown=false;
       }
       return false;
     },
 
 
     onmouseup: function panorama_mouseup(e){
+
+      var leftButtonUp=this.mode.leftButtonDown;
+      var rotating=this.mode.rotate;
+
       this.mode.rotate=false;
+      this.mode.mayrotate=false;
+      this.mode.leftButtonDown=false;
+
+      // dont dispatch click after rotation
+      // nor after single mouseup
+      
+      if (!rotating && leftButtonUp) {
+        e.type='click';
+        this.dispatch(e);
+      }
+
     },
 
     // return current zoom factor

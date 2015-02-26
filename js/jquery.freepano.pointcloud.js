@@ -460,6 +460,7 @@ $.extend(true,PointCloud.prototype,{
     html += 'distance: ' + point[2].toPrecision(6) + '<br />';
     html += 'index: ' + point[3] + '<br />';
     div.html(html);
+    div.show(0);
 
   }, // pointCloud_showParticleInfo
 
