@@ -1,7 +1,7 @@
 /*
  * freepano - WebGL panorama viewer
  *
- * Copyright (c) 2014,2015 FOXEL SA - http://foxel.ch
+ * Copyright (c) 2014-2015 FOXEL SA - http://foxel.ch
  * Please read <http://foxel.ch/license> for more information.
  *
  *
@@ -35,7 +35,7 @@
  *      You are required to attribute the work as explained in the "Usage and
  *      Attribution" section of <http://foxel.ch/license>.
  */
- 
+
 // this file must be loaded after jquery.freepano.poi.js
 
 function POI_loader(options) {

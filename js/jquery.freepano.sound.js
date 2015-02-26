@@ -1,7 +1,7 @@
 /*
  * freepano - WebGL panorama viewer
  *
- * Copyright (c) 2014,2015 FOXEL SA - http://foxel.ch
+ * Copyright (c) 2014-2015 FOXEL SA - http://foxel.ch
  * Please read <http://foxel.ch/license> for more information.
  *
  *
@@ -95,7 +95,7 @@ $.extend(true,SoundList.prototype,{
     var v=new THREE.Vector3(pos.x,pos.y,pos.z).normalize();
     v.z=1;
     v.normalize();
-   
+
     var widget=sound.widget;
     $.each(sound.list,function(name){
       var soundList_elem=sound.list[name];
