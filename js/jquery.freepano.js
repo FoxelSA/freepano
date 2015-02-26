@@ -82,11 +82,20 @@ $.extend(true,Texture.prototype,{
     },
     columns: 2,
     rows: 1,
-    tileHeight: 512
+    tileHeight: 512,
+    defaultMaterial: null
   }, // Texture defaults
 
-  init: function texture_init(){
-  },
+    init: function texture_init(){
+
+        // default material
+        this.defaultMaterial = new THREE.MeshBasicMaterial({
+            wireframe: true,
+            color: 0xffffff,
+            needsUpdate: true
+        });
+
+    }, // texture_init
 
   getTileName: function texture_getTileName(col,row) {
     return this.dirName+'/'+this.baseName+'_'+row+'_'+col+'.jpg';
@@ -114,7 +123,6 @@ $.extend(true,Sphere.prototype,{
     heightSegments: 18,
     texture: null,
     object3D: null,
-    shownTiles: null,
     callback: function(){}
 
   }, // sphere defaults
@@ -148,6 +156,10 @@ $.extend(true,Sphere.prototype,{
     // tiles to go
     sphere.tilesToLoad=columns*rows;
 
+    // sphere texture height
+    sphere.texture.height=rows*sphere.texture.tileHeight;
+    sphere.r=sphere.texture.height/Math.PI;
+
     var transform=new THREE.Matrix4().makeScale(-1,1,1);
 
     // build sphere
@@ -156,15 +168,12 @@ $.extend(true,Sphere.prototype,{
         var geometry=new THREE.SphereGeometry(sphere.radius,sphere.widthSegments,sphere.heightSegments,col*phiLength,phiLength,row*thetaLength,thetaLength);
         geometry.applyMatrix(transform);
 
-        var material=new THREE.MeshBasicMaterial({
-           wireframe: true,
-           color: 0xffffff
-        });
-        mesh=new THREE.Mesh(geometry,material);
+        mesh=new THREE.Mesh(geometry,sphere.texture.defaultMaterial);
 
         $.extend(true,mesh,{
           col: col,
-          row: row
+          row: row,
+          shown: false
         });
 
         sphere.object3D.add(mesh);
@@ -173,36 +182,25 @@ $.extend(true,Sphere.prototype,{
 
     // sphere ready
     setTimeout(function(){
-        sphere.texture.height=sphere.texture.rows*sphere.texture.tileHeight;
-        sphere.r=sphere.texture.height/Math.PI;
-        sphere.done=true;
+
+        // sphere done
+        sphere.done = true;
+
+        // dispatch panorama ready
         sphere.dispatch('ready');
+
+        // draw tiles
         setTimeout(function() {
-            sphere.initFrustumTiles();
             sphere.drawFrustumTiles();
         },0);
+
     },0);
 
   }, // sphere_build
 
-    initFrustumTiles: function sphere_initFrustumTiles() {
-
-        var sphere = this;
-        sphere.shownTiles = new Array(sphere.texture.rows);
-        for (var i=0; i < sphere.shownTiles.length; i++) {
-            sphere.shownTiles[i] = new Array(sphere.texture.columns);
-            for (var j=0; j < sphere.shownTiles[i].length; j++)
-                sphere.shownTiles[i][j] = false;
-        }
-
-    }, // sphere_initFrustumTiles
-
     drawFrustumTiles: function sphere_drawFrustumTiles() {
 
-
         var sphere = this;
-        if (!sphere.shownTiles)
-            return;
 
         // update camera frustum
         sphere.panorama.camera.updateFrustum();
@@ -213,40 +211,45 @@ $.extend(true,Sphere.prototype,{
             var mesh=this;
 
             // visible
-            if (sphere.panorama.camera.frustum.intersectsObject( mesh )) {
+            // load tile if not already shown, do nothing otherwise
+            if (sphere.panorama.camera.frustum.intersectsObject(mesh)) {
 
-                // not already shown
-                if (!sphere.shownTiles[mesh.row][mesh.col]) {
+                // already shown
+                if (mesh.shown)
+                    return;
 
-                    var material = new THREE.MeshBasicMaterial({
-                        map: sphere.loadTile(mesh.col,mesh.row),
-                        depthTest: false,
-                        depthWrite: false
-                    });
+                // set as show
+                mesh.shown = true;
 
-                    mesh.material = material;
-                    mesh.material.needsUpdate = true;
+                // load tile
+                var material = new THREE.MeshBasicMaterial({
+                    map: sphere.loadTile(mesh.col,mesh.row),
+                    depthTest: false,
+                    depthWrite: false
+                });
 
-                    sphere.shownTiles[mesh.row][mesh.col] = true;
-
-                }
+                // set material
+                mesh.material = material;
+                mesh.material.needsUpdate = true;
 
             // not visible
+            // dispose tile if shown, do nothing otherwise
             } else {
 
-                // store as not shown
-                sphere.shownTiles[mesh.row][mesh.col] = false;
+                // set as not shown
+                mesh.shown = false;
 
-                // todo: dispose texture/material to free memory
+                // dispose texture/material to free memory
+                if (mesh.material && mesh.material.map) {
 
-                /*
-                if (mesh.material) {
-                if (mesh.material.map) {
-                mesh.material.map.dispose();
+                    // dispose tile
+                    mesh.material.map.dispose();
+                    mesh.material.dispose();
+
+                    // default material
+                    mesh.material = sphere.texture.defaultMaterial;
+
                 }
-                mesh.material.dispose();
-                }
-                */
 
             }
 
@@ -262,7 +265,10 @@ $.extend(true,Sphere.prototype,{
       sphere.texture.getTileName(col,row),
       THREE.UVMapping,
       function loadTexture_onload(texture){
-        sphere.texture_onload(texture,callback);
+        setTimeout(function(){
+            // redraw panorama
+            sphere.panorama.drawScene.call(sphere.panorama);
+        },0);
       },
       function loadTexture_onerror(){
         $.notify('Cannot load panorama.');
@@ -273,67 +279,25 @@ $.extend(true,Sphere.prototype,{
 
     return tileTexture;
 
-  },
+  }, // sphere_loadTile
 
-  texture_onload: function sphere_loadTextureOnload(texture,callback){
-    var sphere=this;
+    updateTexture: function sphere_updateTexture(callback) {
 
-    // redraw panorama after a texture is loaded
-    setTimeout(function(){
-      sphere.panorama.drawScene.call(sphere.panorama);
-    },0);
+        var sphere=this;
 
-    // check for remaining textures to load
-    --sphere.tilesToLoad;
-    if (!sphere.tilesToLoad) {
+        // set all mesh as not shown
+        // this will cause the tiles to be reloaded
+        $.each(sphere.object3D.children, function() {
+            this.shown = false;
+        });
 
-      // panorama loaded
-      setTimeout(function(){
+        // draw tiles
+        sphere.drawFrustumTiles();
 
-        // set texture height and sphere radius
-        sphere.texture.height=sphere.texture.rows*texture.image.height;
-        sphere.r=sphere.texture.height/Math.PI;
-
-        sphere.done=true;
+        // dispatch panorama ready
         sphere.dispatch('ready');
 
-      },0);
-    }
-  }, // sphere_texture_onload
-
-  setTexture: function sphere_setTexture(texture_options,callback) {
-    var sphere=this;
-    $.extend(true,sphere.texture,texture_options);
-    sphere.updateTexture(callback);
-  }, // sphere_setTexture
-
-  updateTexture: function sphere_updateTexture(callback) {
-    var sphere=this;
-
-    var columns=sphere.texture.columns;
-    var rows=sphere.texture.rows;
-    sphere.tilesToLoad=columns*rows;
-
-    $.each(sphere.object3D.children,function(){
-
-      var mesh=this;
-
-      var row=mesh.row;
-      var col=mesh.col;
-
-      var tileTexture=sphere.loadTile(col,row,callback);
-
-      mesh.material.map=tileTexture;
-      mesh.material.needsUpdate=true;
-
-    });
-  }, // sphere_updateTexture
-
-  isTileVisible: function sphere_isTileVisible(col,row) {
-    var sphere=this;
-    var panorama=sphere.panorama;
-    return panorama.camera.frustum.intersectsSphere(mesh.geometry.boundingSphere);
-  }
+    } // sphere_updateTexture
 
 }); // extend Sphere prototype
 
