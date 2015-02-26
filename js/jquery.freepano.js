@@ -132,8 +132,8 @@ $.extend(true,Sphere.prototype,{
   defaults: {
     done: false,
     radius: 150,
-    widthSegments: 36,
-    heightSegments: 18,
+    widthSegments: 16,
+    heightSegments: 8,
     texture: null,
     object3D: null,
     callback: function(){}
