@@ -81,8 +81,8 @@ $.extend(true,Texture.prototype,{
         dirName: null,
         baseName: null,
         options: {
-            wrapS: THREE.clampToEdgeWrapping,
-            wrapT: THREE.clampToEdgeWrapping,
+            wrapS: THREE.ClampToEdgeWrapping,
+            wrapT: THREE.ClampToEdgeWrapping,
             magFilter: THREE.LinearFilter,
             minFilter: THREE.LinearFilter
         },
@@ -1120,7 +1120,7 @@ $.extend(true,Panorama.prototype,{
       if (!panorama.sphere.done) {
         return;
       }
-//      panorama.lat=Math.max(panorama.limits.lat.min,Math.min(panorama.limits.lat.max,panorama.lat));
+      panorama.lat=Math.max(panorama.limits.lat.min,Math.min(panorama.limits.lat.max,panorama.lat));
 
       // update camera rotation
       panorama.theta=panorama.lon*Math.PI/180;
