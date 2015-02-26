@@ -1,7 +1,7 @@
 /*
  * freepano - WebGL panorama viewer
  *
- * Copyright (c) 2014,2015 FOXEL SA - http://foxel.ch
+ * Copyright (c) 2014-2015 FOXEL SA - http://foxel.ch
  * Please read <http://foxel.ch/license> for more information.
  *
  *
@@ -56,36 +56,45 @@ function getVector3FromAngles(lon,lat) {
   return v;
 }
 
-// Texture constructor
-
+/*
+ * Texture
+ * Class Constructor
+ */
 function Texture(options) {
 
-  if (!(this instanceof Texture)) {
-    return new Texture(options);
-  }
+    if (!(this instanceof Texture))
+        return new Texture(options);
 
-  $.extend(true,this,this.defaults,options);
-  this.init();
+    $.extend(true,this,this.defaults,options);
+    this.init();
 
-} // Texture
+} // Texture Constructor
 
+/*
+ * Texture
+ * Class Prototype
+ */
 $.extend(true,Texture.prototype,{
 
-  defaults: {
-    dirName: null,
-    baseName: null,
-    options: {
-      wrapS: THREE.clampToEdgeWrapping,
-      wrapT: THREE.clampToEdgeWrapping,
-      magFilter: THREE.LinearFilter,
-      minFilter: THREE.LinearFilter
-    },
-    columns: 2,
-    rows: 1,
-    tileHeight: 512,
-    defaultMaterial: null
-  }, // Texture defaults
+    defaults: {
+        dirName: null,
+        baseName: null,
+        options: {
+            wrapS: THREE.clampToEdgeWrapping,
+            wrapT: THREE.clampToEdgeWrapping,
+            magFilter: THREE.LinearFilter,
+            minFilter: THREE.LinearFilter
+        },
+        columns: 2,
+        rows: 1,
+        tileHeight: 512,
+        defaultMaterial: null
+    }, // defaults
 
+    /**
+     * init()
+     * Initializes Texture properties.
+     */
     init: function texture_init(){
 
         // default material
@@ -97,11 +106,15 @@ $.extend(true,Texture.prototype,{
 
     }, // texture_init
 
-  getTileName: function texture_getTileName(col,row) {
-    return this.dirName+'/'+this.baseName+'_'+row+'_'+col+'.jpg';
-  }
+    /**
+     * getTileName()
+     * Returns the texture tile name.
+     */
+    getTileName: function texture_getTileName(col,row) {
+        return this.dirName+'/'+this.baseName+'_'+row+'_'+col+'.jpg';
+    } // texture_getTileName
 
-}); // extend Texture.prototype
+}); // Texture Prototype
 
 
 // Sphere constructor
@@ -152,9 +165,6 @@ $.extend(true,Sphere.prototype,{
     // sphere segments angular size
     var phiLength=2*Math.PI/columns;
     var thetaLength=Math.PI/rows;
-
-    // tiles to go
-    sphere.tilesToLoad=columns*rows;
 
     // sphere texture height
     sphere.texture.height=rows*sphere.texture.tileHeight;
