@@ -99,8 +99,8 @@ $.extend(true,Texture.prototype,{
 
         // default material
         this.defaultMaterial = new THREE.MeshBasicMaterial({
-            wireframe: true,
-            color: 0xffffff,
+            wireframe: false,
+            color: 0x000000,
             needsUpdate: true
         });
 
