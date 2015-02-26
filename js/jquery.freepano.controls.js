@@ -1,7 +1,7 @@
 /*
  * freepano - WebGL panorama viewer
  *
- * Copyright (c) 2014, 2015 FOXEL SA - http://foxel.ch
+ * Copyright (c) 2014-2015 FOXEL SA - http://foxel.ch
  * Please read <http://foxel.ch/license> for more information.
  *
  *
@@ -430,13 +430,13 @@ $.extend(true,Controls.prototype, {
                 controls.panorama.lon -= moveStep;
                 break;
             case 38:            // arrow top
-                controls.panorama.lat -= moveStep;
+                controls.panorama.lat += moveStep;
                 break;
             case 39:            // arrow right
                 controls.panorama.lon += moveStep;
                 break;
             case 40:            // arrow bottom
-                controls.panorama.lat += moveStep;
+                controls.panorama.lat -= moveStep;
                 break;
             default:
                 needDrawScene = false;
@@ -1107,7 +1107,7 @@ $.extend(true,Controls.prototype, {
 
         // panorama orientation per device orientation
         lon -= controls.devicemotion.internal.calibration.rotation.sign * e.rotationRate[controls.devicemotion.internal.calibration.rotation.axis] * elapsed;
-        lat += controls.devicemotion.internal.calibration.tilt.sign * e.rotationRate[controls.devicemotion.internal.calibration.tilt.axis] * elapsed;
+        lat -= controls.devicemotion.internal.calibration.tilt.sign * e.rotationRate[controls.devicemotion.internal.calibration.tilt.axis] * elapsed;
 
         // assign orientation
         controls.panorama.lon = lon;
