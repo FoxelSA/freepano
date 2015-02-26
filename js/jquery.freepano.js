@@ -183,7 +183,8 @@ $.extend(true,Sphere.prototype,{
         $.extend(true,mesh,{
           col: col,
           row: row,
-          shown: false
+          shown: false,
+          dispose: false
         });
 
         sphere.object3D.add(mesh);
@@ -250,7 +251,7 @@ $.extend(true,Sphere.prototype,{
                 mesh.shown = false;
 
                 // dispose texture/material to free memory
-                if (mesh.material && mesh.material.map) {
+                if (mesh.dispose && mesh.material && mesh.material.map) {
 
                     // dispose tile
                     mesh.material.map.dispose();
