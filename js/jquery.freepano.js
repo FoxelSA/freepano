@@ -1,7 +1,7 @@
 /*
  * freepano - WebGL panorama viewer
  *
- * Copyright (c) 2014,2015 FOXEL SA - http://foxel.ch
+ * Copyright (c) 2014-2015 FOXEL SA - http://foxel.ch
  * Please read <http://foxel.ch/license> for more information.
  *
  *
@@ -56,42 +56,65 @@ function getVector3FromAngles(lon,lat) {
   return v;
 }
 
-// Texture constructor
-
+/*
+ * Texture
+ * Class Constructor
+ */
 function Texture(options) {
 
-  if (!(this instanceof Texture)) {
-    return new Texture(options);
-  }
+    if (!(this instanceof Texture))
+        return new Texture(options);
 
-  $.extend(true,this,this.defaults,options);
-  this.init();
+    $.extend(true,this,this.defaults,options);
+    this.init();
 
-} // Texture
+} // Texture Constructor
 
+/*
+ * Texture
+ * Class Prototype
+ */
 $.extend(true,Texture.prototype,{
 
-  defaults: {
-    dirName: null,
-    baseName: null,
-    options: {
-      wrapS: THREE.clampToEdgeWrapping,
-      wrapT: THREE.clampToEdgeWrapping,
-      magFilter: THREE.LinearFilter,
-      minFilter: THREE.LinearFilter
-    },
-    columns: 2,
-    rows: 1,
-  }, // Texture defaults
+    defaults: {
+        dirName: null,
+        baseName: null,
+        options: {
+            wrapS: THREE.clampToEdgeWrapping,
+            wrapT: THREE.clampToEdgeWrapping,
+            magFilter: THREE.LinearFilter,
+            minFilter: THREE.LinearFilter
+        },
+        columns: 2,
+        rows: 1,
+        tileHeight: 512,
+        defaultMaterial: null
+    }, // defaults
 
-  init: function texture_init(){
-  },
+    /**
+     * init()
+     * Initializes Texture properties.
+     */
+    init: function texture_init(){
 
-  getTileName: function texture_getTileName(col,row) {
-    return this.dirName+'/'+this.baseName+'_'+row+'_'+col+'.jpg';
-  }
+        // default material
+        this.defaultMaterial = new THREE.MeshBasicMaterial({
+            wireframe: false,
+            color: 0x000000,
+            needsUpdate: true
+        });
 
-}); // extend Texture.prototype
+    }, // texture_init
+
+    /**
+     * getTileName()
+     * Returns the texture tile name.
+     */
+    getTileName: function texture_getTileName(col,row) {
+        return this.dirName+'/'+this.baseName+'_'+row+'_'+col+'.jpg';
+    } // texture_getTileName
+
+}); // Texture Prototype
 
 
 // Sphere constructor
@@ -143,8 +166,9 @@ $.extend(true,Sphere.prototype,{
     var phiLength=2*Math.PI/columns;
     var thetaLength=Math.PI/rows;
 
-    // tiles to go
-    sphere.tilesToLoad=columns*rows;
+    // sphere texture height
+    sphere.texture.height=rows*sphere.texture.tileHeight;
+    sphere.r=sphere.texture.height/Math.PI;
 
     var transform=new THREE.Matrix4().makeScale(-1,1,1);
 
@@ -154,25 +178,94 @@ $.extend(true,Sphere.prototype,{
         var geometry=new THREE.SphereGeometry(sphere.radius,sphere.widthSegments,sphere.heightSegments,col*phiLength,phiLength,row*thetaLength,thetaLength);
         geometry.applyMatrix(transform);
 
-        var tileTexture=sphere.loadTile(col,row,callback);
-        var material=new THREE.MeshBasicMaterial({
-           map: tileTexture,
-           depthTest: false,
-           depthWrite: false
-//           wireframe: true,
-//           color: 'white'
-        });
-        mesh=new THREE.Mesh(geometry,material);
+        mesh=new THREE.Mesh(geometry,sphere.texture.defaultMaterial);
 
         $.extend(true,mesh,{
           col: col,
-          row: row
+          row: row,
+          shown: false
         });
 
         sphere.object3D.add(mesh);
       }
     }
+
+    // sphere ready
+    setTimeout(function(){
+
+        // sphere done
+        sphere.done = true;
+
+        // dispatch panorama ready
+        sphere.dispatch('ready');
+
+        // draw tiles
+        setTimeout(function() {
+            sphere.drawFrustumTiles();
+        },0);
+
+    },0);
+
   }, // sphere_build
+
+    drawFrustumTiles: function sphere_drawFrustumTiles() {
+
+        var sphere = this;
+
+        // update camera frustum
+        sphere.panorama.camera.updateFrustum();
+
+        // loop over each mesh of the sphere
+        $.each(sphere.object3D.children, function() {
+
+            var mesh=this;
+
+            // visible
+            // load tile if not already shown, do nothing otherwise
+            if (sphere.panorama.camera.frustum.intersectsObject(mesh)) {
+
+                // already shown
+                if (mesh.shown)
+                    return;
+
+                // set as show
+                mesh.shown = true;
+
+                // load tile
+                var material = new THREE.MeshBasicMaterial({
+                    map: sphere.loadTile(mesh.col,mesh.row),
+                    depthTest: false,
+                    depthWrite: false
+                });
+
+                // set material
+                mesh.material = material;
+                mesh.material.needsUpdate = true;
+
+            // not visible
+            // dispose tile if shown, do nothing otherwise
+            } else {
+
+                // set as not shown
+                mesh.shown = false;
+
+                // dispose texture/material to free memory
+                if (mesh.material && mesh.material.map) {
+
+                    // dispose tile
+                    mesh.material.map.dispose();
+                    mesh.material.dispose();
+
+                    // default material
+                    mesh.material = sphere.texture.defaultMaterial;
+
+                }
+
+            }
+
+        });
+
+    }, // sphere_drawFrustumTiles
 
   loadTile: function sphere_loadTile(col,row,callback) {
 
@@ -182,7 +275,10 @@ $.extend(true,Sphere.prototype,{
       sphere.texture.getTileName(col,row),
       THREE.UVMapping,
       function loadTexture_onload(texture){
-        sphere.texture_onload(texture,callback);
+        setTimeout(function(){
+            // redraw panorama
+            sphere.panorama.drawScene.call(sphere.panorama);
+        },0);
       },
       function loadTexture_onerror(){
         $.notify('Cannot load panorama.');
@@ -193,67 +289,25 @@ $.extend(true,Sphere.prototype,{
 
     return tileTexture;
 
-  },
+  }, // sphere_loadTile
 
-  texture_onload: function sphere_loadTextureOnload(texture,callback){
-    var sphere=this;
+    updateTexture: function sphere_updateTexture(callback) {
 
-    // redraw panorama after a texture is loaded
-    setTimeout(function(){
-      sphere.panorama.drawScene.call(sphere.panorama);
-    },0);
+        var sphere=this;
 
-    // check for remaining textures to load
-    --sphere.tilesToLoad;
-    if (!sphere.tilesToLoad) {
+        // set all mesh as not shown
+        // this will cause the tiles to be reloaded
+        $.each(sphere.object3D.children, function() {
+            this.shown = false;
+        });
 
-      // panorama loaded
-      setTimeout(function(){
+        // draw tiles
+        sphere.drawFrustumTiles();
 
-        // set texture height and sphere radius
-        sphere.texture.height=sphere.texture.rows*texture.image.height;
-        sphere.r=sphere.texture.height/Math.PI;
-
-        sphere.done=true;
+        // dispatch panorama ready
         sphere.dispatch('ready');
 
-      },0);
-    }
-  }, // sphere_texture_onload
-
-  setTexture: function sphere_setTexture(texture_options,callback) {
-    var sphere=this;
-    $.extend(true,sphere.texture,texture_options);
-    sphere.updateTexture(callback);
-  }, // sphere_setTexture
-
-  updateTexture: function sphere_updateTexture(callback) {
-    var sphere=this;
-
-    var columns=sphere.texture.columns;
-    var rows=sphere.texture.rows;
-    sphere.tilesToLoad=columns*rows;
-
-    $.each(sphere.object3D.children,function(){
-
-      var mesh=this;
-
-      var row=mesh.row;
-      var col=mesh.col;
-
-      var tileTexture=sphere.loadTile(col,row,callback);
-
-      mesh.material.map=tileTexture;
-      mesh.material.needsUpdate=true;
-
-    });
-  }, // sphere_updateTexture
-
-  isTileVisible: function sphere_isTileVisible(col,row) {
-    var sphere=this;
-    var panorama=sphere.panorama;
-    return panorama.camera.frustum.intersectsSphere(mesh.geometry.boundingSphere);
-  }
+    } // sphere_updateTexture
 
 }); // extend Sphere prototype
 
@@ -299,8 +353,8 @@ $.extend(true,Camera.prototype,{
 
     updateFrustum: function camera_updateFrustum() {
       var camera=this;
-//      camera.instance.updateMatrixWorld(); // make sure the camera matrix is updated
-//      camera.instance.matrixWorldInverse.getInverse(camera.instance.matrixWorld);
+      //camera.instance.updateMatrixWorld(); // make sure the camera matrix is updated
+      //camera.instance.matrixWorldInverse.getInverse(camera.instance.matrixWorld);
       camera.viewProjectionMatrix.multiplyMatrices(camera.instance.projectionMatrix, camera.instance.matrixWorldInverse);
       camera.frustum.setFromMatrix(camera.viewProjectionMatrix);
     },
@@ -748,7 +802,7 @@ $.extend(true,Panorama.prototype,{
       if (isLeftButtonDown(e)) {
         this.mode.rotate=true;
         e.preventDefault();
-        console.log(this.lon,this.lat);
+        //console.log(this.lon,this.lat);
         this.mousedownPos={
           lon: this.lon,
           lat: this.lat,
@@ -771,7 +825,7 @@ $.extend(true,Panorama.prototype,{
           this.lon=(this.mousedownPos.lon-(cursorCoords.lon-this.mousedownPos.cursorCoords.lon))%360;
           this.lat=this.mousedownPos.lat+(cursorCoords.lat-this.mousedownPos.cursorCoords.lat);
           if (this.lon<0) this.lon+=360;
-console.log(this.lon,this.lat);
+          //console.log(this.lon,this.lat);
           this.drawScene();
         }
       } else {
@@ -865,6 +919,7 @@ console.log(this.lon,this.lat);
         return;
       }
       var panorama=this;
+      panorama.sphere.drawFrustumTiles();
       requestAnimationFrame(function(){
         panorama.renderFrame();
         if (callback) callback();

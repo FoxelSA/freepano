@@ -398,7 +398,8 @@ $(document).on('filesloaded', function(){
 
           // full panorama dimension, in tiles
           columns: 16,
-          rows: 8
+          rows: 8,
+          tileHeight: 512
 
         },
 
