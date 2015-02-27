@@ -501,7 +501,6 @@ function Panorama(options) {
 $.extend(true,Panorama.prototype,{
 
     defaults: {
-<<<<<<< HEAD
       mode: {},
       container: 'body',
       fov: {
@@ -517,48 +516,31 @@ $.extend(true,Panorama.prototype,{
           precision: 'highp',
           antialias: false,
           alpha: false
-=======
-        mode: {},
-        container: 'body',
-        fov: {
-            start: 120,
-            min: 1,
-            max: 120
->>>>>>> 97663bfec28ae3915b0469eb9df7a1972dec6027
         },
-        camera: undefined,
-        sphere: undefined,
-        postProcessing: undefined,
-        renderer: {
-            options: {
-                precision: 'lowp',
-                antialias: false,
-                alpha: false
-            },
-            properties: {
-                autoClear: false,
-                renderPluginsPre: [],
-                renderPluginsPost: []
-            }
-        },
-        lon: 0,
-        lat: 0,
-        phi: 0,
-        theta: 0,
-        mouseCoords: new THREE.Vector3(),
-        rotation: {
-            heading: 0,
-            tilt: 0,
-            roll: 0,
-            step: 0.1
-        },
-        initialRotation: new THREE.Matrix4(),
-        limits: {
-            lat: {
-                min: -85,
-                max: 85
-            }
+        properties: {
+          autoClear: false,
+          renderPluginsPre: [],
+          renderPluginsPost: []
         }
+      },
+      lon: 0,
+      lat: 0,
+      phi: 0,
+      theta: 0,
+      mouseCoords: new THREE.Vector3(),
+      rotation: {
+          heading: 0,
+          tilt: 0,
+          roll: 0,
+          step: 0.1
+      },
+      initialRotation: new THREE.Matrix4(),
+      limits: {
+          lat: {
+              min: -85,
+              max: 85
+          }
+      }
     }, // defaults
 
     /**
