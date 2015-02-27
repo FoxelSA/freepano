@@ -1240,24 +1240,41 @@ $.extend(true,Panorama.prototype,{
 
 
 
+    /**
+     * onmousedown()
+     * Event triggered on mouse button down. Stores information about the
+     * mouse click and position. These informations are used in siblings
+     * mouse events.
+     *
+     * @return  void
+     */
+    onmousedown: function panorama_onmousedown(e) {
+
+        // left button
+        if (isLeftButtonDown(e)) {
+
+            e.preventDefault();
+
+            // flags
+            this.mode.leftButtonDown = true;
+            this.mode.mayrotate = true;
+
+            // position
+            this.mousedownPos = {
+                lon: this.lon,
+                lat: this.lat,
+                cursorCoords: this.getMouseCoords(e),
+                textureCoords: this.getTextureCoordinates(this.mouseCoords.lon,this.mouseCoords.lat)
+            };
+
+        // another button
+        } else {
+            this.mode.leftButtonDown = false;
+        }
+
+    }, // panorama_onmousedown
 
 
-    onmousedown: function panorama_mousedown(e){
-      if (isLeftButtonDown(e)) {
-        this.mode.leftButtonDown=true;
-        this.mode.mayrotate=true;
-        e.preventDefault();
-        //console.log(this.lon,this.lat);
-        this.mousedownPos={
-          lon: this.lon,
-          lat: this.lat,
-          cursorCoords: this.getMouseCoords(e),
-          textureCoords: this.getTextureCoordinates(this.mouseCoords.lon,this.mouseCoords.lat)
-        };
-      } else {
-        this.mode.leftButtonDown=false;
-      }
-    },
 
     onmousemove: function panorama_mousemove(e){
       if (!this.sphere.done) {
