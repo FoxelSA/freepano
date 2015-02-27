@@ -282,6 +282,11 @@ $.extend(true,Sphere.prototype,{
                 // set as show
                 mesh.shown = true;
 
+                // return if material already instantiated
+                if (!mesh.dispose && mesh.material) {
+                  return;
+                }
+
                 // load tile
                 var material = new THREE.MeshBasicMaterial({
                     map: sphere.loadTile(mesh.col,mesh.row),
@@ -870,7 +875,9 @@ $.extend(true,Panorama.prototype,{
             m.lon += 360;
 
         // debug
-        // panorama.showMouseDebugInfo(m);
+        if (panorama.showMouseInfo) {
+          panorama.showMouseDebugInfo(m);
+        }
 
         return {
             lon: cursor.lon,
@@ -903,9 +910,9 @@ $.extend(true,Panorama.prototype,{
 
         // data
         var html = '<div style="width:100%;position:relative;margin-left:10px;">'
-                        + 'x: ' + vector.x.toPrecision(6) + '<br />'
-                        + 'y: ' + vector.y.toPrecision(6) + '<br />'
-                        + 'z: ' + vector.z.toPrecision(6) + '<br />'
+//                        + 'x: ' + vector.x.toPrecision(6) + '<br />'
+//                        + 'y: ' + vector.y.toPrecision(6) + '<br />'
+//                        + 'z: ' + vector.z.toPrecision(6) + '<br />'
                         + 'lon: ' + vector.lon.toPrecision(6) + '<br />'
                         + 'lat: ' + vector.lat.toPrecision(6) + '<br />'
                         + 'pix x: ' + vector.pixel_x.toPrecision(6) + '<br />'
