@@ -402,18 +402,18 @@ function Camera(options) {
 $.extend(true,Camera.prototype,{
 
     defaults: {
-      fov: 120,
-      nearPlane: 0.1,
-      farPlane: Sphere.prototype.defaults.radius*2,
-      zoom: {
-        max: 2.5,
-        min: 0.5,
-        step: 0.05,
-        current: 1
-      },
-      frustum: new THREE.Frustum(),
-      viewProjectionMatrix: new THREE.Matrix4()
-    }, // Camera defaults
+        fov: 120,
+        nearPlane: 0.1,
+        farPlane: Sphere.prototype.defaults.radius*2,
+        zoom: {
+            max: 2.5,
+            min: 0.5,
+            step: 0.05,
+            current: 1
+        },
+        frustum: new THREE.Frustum(),
+        viewProjectionMatrix: new THREE.Matrix4()
+    }, // defaults
 
     /**
      * init()
@@ -506,46 +506,47 @@ function Panorama(options) {
 $.extend(true,Panorama.prototype,{
 
     defaults: {
-      mode: {},
-      container: 'body',
-      fov: {
-        start: 120,
-        min: 1,
-        max: 120
-      },
-      camera: undefined,
-      sphere: undefined,
-      postProcessing: undefined,
-      renderer: {
-        options: {
-          precision: 'highp',
-          antialias: false,
-          alpha: false
+        mode: {},
+        container: 'body',
+        fov: {
+            start: 120,
+            min: 1,
+            max: 120
         },
-        properties: {
-          autoClear: false,
-          renderPluginsPre: [],
-          renderPluginsPost: []
-        }
-      },
-      lon: 0,
-      lat: 0,
-      phi: 0,
-      theta: 0,
-      mouseCoords: new THREE.Vector3(),
-      rotation: {
-          heading: 0,
-          tilt: 0,
-          roll: 0,
-          step: 0.1
-      },
-      initialRotation: new THREE.Matrix4(),
-      limits: {
-          lat: {
-              min: -85,
-              max: 85
-          }
-      }
+        camera: undefined,
+        sphere: undefined,
+        postProcessing: undefined,
+        renderer: {
+            options: {
+                precision: 'highp',
+                antialias: false,
+                alpha: false
+            },
+            properties: {
+                autoClear: false,
+                renderPluginsPre: [],
+                renderPluginsPost: []
+            }
+        },
+        lon: 0,
+        lat: 0,
+        phi: 0,
+        theta: 0,
+        mouseCoords: new THREE.Vector3(),
+        rotation: {
+            heading: 0,
+            tilt: 0,
+            roll: 0,
+            step: 0.1
+        },
+        initialRotation: new THREE.Matrix4(),
+        limits: {
+            lat: {
+                min: -85,
+                max: 85
+            }
+        },
+        showMouseInfo: false
     }, // defaults
 
     /**
@@ -706,21 +707,21 @@ $.extend(true,Panorama.prototype,{
                 e.target = panorama;panorama.dispatch(e);
             })
             .on('mousemove.panorama'+this.num, canvas, function(e) {
-                e.target=panorama;panorama.dispatch(e);
+                e.target = panorama;panorama.dispatch(e);
             })
             .on('mouseup.panorama'+this.num, canvas, function(e) {
-                e.target=panorama;panorama.dispatch(e);
+                e.target = panorama;panorama.dispatch(e);
             })
             .on('mousewheel.panorama'+this.num, canvas, function(e) {
-                e.target=panorama;panorama.dispatch(e);
+                e.target = panorama;panorama.dispatch(e);
             })
             .on('zoom.panorama'+this.num, canvas, function(e) {
-                e.target=panorama;panorama.dispatch(e);
+                e.target = panorama;panorama.dispatch(e);
             });
 
         // window resize
         $(window).on('resize.panorama'+this.num, function(e) {
-            e.target=panorama;panorama.dispatch(e);
+            e.target = panorama;panorama.dispatch(e);
         });
 
     }, // panorama_eventsInit
@@ -875,9 +876,8 @@ $.extend(true,Panorama.prototype,{
             m.lon += 360;
 
         // debug
-        if (panorama.showMouseInfo) {
-          panorama.showMouseDebugInfo(m);
-        }
+        if (panorama.showMouseInfo)
+            panorama.showMouseDebugInfo(m);
 
         return {
             lon: cursor.lon,
