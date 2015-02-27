@@ -56,6 +56,7 @@ function getVector3FromAngles(lon,lat) {
   return v;
 }
 
+
 /*
  * Texture
  * Class Constructor
@@ -95,8 +96,10 @@ $.extend(true,Texture.prototype,{
     /**
      * init()
      * Initializes Texture properties.
+     *
+     * @return  void
      */
-    init: function texture_init(){
+    init: function texture_init() {
 
         // default material
         this.defaultMaterial = new THREE.MeshBasicMaterial({
@@ -109,7 +112,9 @@ $.extend(true,Texture.prototype,{
 
     /**
      * getTileName()
-     * Returns the texture tile name.
+     * Returns the texture tile path based on its column, row and base name.
+     *
+     * @return  String      Texture tile path.
      */
     getTileName: function texture_getTileName(col,row) {
         return this.dirName+'/'+this.baseName+'_'+row+'_'+col+'.jpg';
@@ -118,99 +123,143 @@ $.extend(true,Texture.prototype,{
 }); // Texture Prototype
 
 
-// Sphere constructor
-
+/*
+ * Sphere
+ * Class Constructor
+ */
 function Sphere(options) {
-  if (!(this instanceof Sphere)) {
-    return new Sphere(options);
-  }
-  $.extend(true,this,this.defaults,options);
-  this.init();
-}
 
+    if (!(this instanceof Sphere))
+        return new Sphere(options);
+
+    $.extend(true,this,this.defaults,options);
+    this.init();
+
+} // Sphere Constructor
+
+/*
+ * Sphere
+ * Class Prototype
+ */
 $.extend(true,Sphere.prototype,{
 
-  defaults: {
-    done: false,
-    radius: 150,
-    widthSegments: 16,
-    heightSegments: 8,
-    texture: null,
-    object3D: null,
-    callback: function(){}
+    defaults: {
+        done: false,
+        radius: 150,
+        widthSegments: 16,
+        heightSegments: 8,
+        texture: null,
+        object3D: null,
+        callback: function(){}
+    }, // defaults
 
-  }, // sphere defaults
+    /**
+     * init()
+     * Initializes Sphere properties.
+     *
+     * @return  void
+     */
+    init: function sphere_init(callback) {
 
-  init: function sphere_init(callback) {
+        var sphere = this;
 
-    var sphere=this;
-    if (sphere.texture!==undefined) {
-      if (!(sphere.texture instanceof Texture)) {
-        sphere.texture=new Texture(sphere.texture);
-        sphere.done=false;
-      }
-    }
-    sphere.object3D=new THREE.Object3D();
-    sphere.build(callback);
+        // texture
+        if (sphere.texture !== undefined) {
+            if (!(sphere.texture instanceof Texture)) {
+                sphere.texture = new Texture(sphere.texture);
+                sphere.done = false;
+            }
+        }
 
-  }, // sphere_init
+        // object3d
+        // sphere partial meshes will be grouped in it
+        sphere.object3D = new THREE.Object3D();
 
-  build: function sphere_build(callback) {
+        // build the sphere
+        sphere.build(callback);
 
-    var sphere=this;
+    }, // sphere_init
 
-    // panorama tiles number
-    var columns=sphere.texture.columns;
-    var rows=sphere.texture.rows;
+    /**
+     * build()
+     * Builds the sphere object with partial meshes and default material.
+     *
+     * @return  void
+     */
+    build: function sphere_build(callback) {
 
-    // sphere segments angular size
-    var phiLength=2*Math.PI/columns;
-    var thetaLength=Math.PI/rows;
+        var sphere = this;
 
-    // sphere texture height
-    sphere.texture.height=rows*sphere.texture.tileHeight;
-    sphere.r=sphere.texture.height/Math.PI;
+        // tiles
+        var columns = sphere.texture.columns;
+        var rows = sphere.texture.rows;
 
-    var transform=new THREE.Matrix4().makeScale(-1,1,1);
+        // sphere segments angular size
+        var phiLength = 2*Math.PI/columns;
+        var thetaLength = Math.PI/rows;
 
-    // build sphere
-    for(var col=0; col<columns; ++col) {
-      for(var row=0; row<rows; ++row) {
-        var geometry=new THREE.SphereGeometry(sphere.radius,sphere.widthSegments,sphere.heightSegments,col*phiLength,phiLength,row*thetaLength,thetaLength);
-        geometry.applyMatrix(transform);
+        // sphere texture height
+        sphere.texture.height = rows*sphere.texture.tileHeight;
 
-        mesh=new THREE.Mesh(geometry,sphere.texture.defaultMaterial);
+        // sphere radius
+        sphere.r = sphere.texture.height/Math.PI;
 
-        $.extend(true,mesh,{
-          col: col,
-          row: row,
-          shown: false,
-          dispose: false
-        });
+        // transformation matrix (inversion)
+        var transform = new THREE.Matrix4().makeScale(-1,1,1);
 
-        sphere.object3D.add(mesh);
-      }
-    }
+        // loop over columns and rows
+        for(var col=0; col<columns; ++col) {
+            for(var row=0; row<rows; ++row) {
 
-    // sphere ready
-    setTimeout(function(){
+                // build partial geometry
+                var geometry = new THREE.SphereGeometry(sphere.radius,sphere.widthSegments,sphere.heightSegments,col*phiLength,phiLength,row*thetaLength,thetaLength);
 
-        // sphere done
-        sphere.done = true;
+                // apply transformation matrix
+                geometry.applyMatrix(transform);
 
-        // dispatch panorama ready
-        sphere.dispatch('ready');
+                // mesh with partial geometry and default material
+                var mesh = new THREE.Mesh(geometry,sphere.texture.defaultMaterial);
 
-        // draw tiles
-        setTimeout(function() {
-            sphere.drawFrustumTiles();
+                // mesh properties
+                $.extend(true,mesh, {
+                    col: col,
+                    row: row,
+                    shown: false,
+                    dispose: false
+                });
+
+                // add mesh in object
+                sphere.object3D.add(mesh);
+
+            }
+        }
+
+        // sphere built
+        // dispatch event and start tiling
+        setTimeout(function(){
+
+            // mark sphere as done/builded
+            sphere.done = true;
+
+            // dispatch ready event
+            sphere.dispatch('ready');
+
+            // frustum based tiling
+            setTimeout(function() {
+                sphere.updateFrustumTiling();
+            },0);
+
         },0);
 
-    },0);
+    }, // sphere_build
 
-  }, // sphere_build
-
-    drawFrustumTiles: function sphere_drawFrustumTiles() {
+    /**
+     * updateFrustumTiling()
+     * Tiling management, displays (or dispose) tiles depending of the camera frustum.
+     *
+     * @return  void
+     */
+    updateFrustumTiling: function sphere_updateFrustumTiling() {
 
         var sphere = this;
 
@@ -220,7 +269,7 @@ $.extend(true,Sphere.prototype,{
         // loop over each mesh of the sphere
         $.each(sphere.object3D.children, function() {
 
-            var mesh=this;
+            var mesh = this;
 
             // visible
             // load tile if not already shown, do nothing otherwise
@@ -262,40 +311,53 @@ $.extend(true,Sphere.prototype,{
                     mesh.material = sphere.texture.defaultMaterial;
 
                 }
-
             }
 
         });
 
-    }, // sphere_drawFrustumTiles
+    }, // sphere_updateFrustumTiling
 
-  loadTile: function sphere_loadTile(col,row,callback) {
+    /**
+     * loadTile()
+     * Loads a tile image.
+     *
+     * @return  Texture     Loaded texture as a Texture object.
+     */
+    loadTile: function sphere_loadTile(col,row,callback) {
 
-    var sphere=this;
+        var sphere = this;
 
-    var tileTexture=THREE.ImageUtils.loadTexture(
-      sphere.texture.getTileName(col,row),
-      THREE.UVMapping,
-      function loadTexture_onload(texture){
-        setTimeout(function(){
-            // redraw panorama
-            sphere.panorama.drawScene.call(sphere.panorama);
-        },0);
-      },
-      function loadTexture_onerror(){
-        $.notify('Cannot load panorama.');
-      }
-    );
+        // load the texture
+        var tileTexture = THREE.ImageUtils.loadTexture(sphere.texture.getTileName(col,row),THREE.UVMapping,
+            // success
+            function loadTexture_onload(texture) {
+                // panorama redraw
+                setTimeout(function(){
+                    sphere.panorama.drawScene.call(sphere.panorama);
+                },0);
+            },
+            // error
+            function loadTexture_onerror() {
+                $.notify('Cannot load panorama tiles.');
+            }
+        );
 
-    $.extend(tileTexture,sphere.texture.options);
+        // texture properties
+        $.extend(tileTexture,sphere.texture.options);
 
-    return tileTexture;
+        return tileTexture;
 
-  }, // sphere_loadTile
+    }, // sphere_loadTile
 
+    /**
+     * updateTexture()
+     * Asks the sphere to reload the texture object as it has changed.
+     *
+     * @return  void
+     */
     updateTexture: function sphere_updateTexture(callback) {
 
-        var sphere=this;
+        var sphere = this;
 
         // set all mesh as not shown
         // this will cause the tiles to be reloaded
@@ -303,25 +365,35 @@ $.extend(true,Sphere.prototype,{
             this.shown = false;
         });
 
-        // draw tiles
-        sphere.drawFrustumTiles();
+        // frustum based tiling
+        sphere.updateFrustumTiling();
 
-        // dispatch panorama ready
+        // dispatch ready event
         sphere.dispatch('ready');
 
     } // sphere_updateTexture
 
-}); // extend Sphere prototype
+}); // Sphere Prototype
 
-// Camera constructor
+
+/*
+ * Camera
+ * Class Constructor
+ */
 function Camera(options) {
-  if (!(this instanceof Camera)){
-    return new Camera(options);
-  }
-  $.extend(true,this,this.defaults,options);
-  this.init();
-}
 
+    if (!(this instanceof Camera))
+        return new Camera(options);
+
+    $.extend(true,this,this.defaults,options);
+    this.init();
+
+} // Camera Constructor
+
+/*
+ * Camera
+ * Class Prototype
+ */
 $.extend(true,Camera.prototype,{
 
     defaults: {
@@ -338,56 +410,98 @@ $.extend(true,Camera.prototype,{
       viewProjectionMatrix: new THREE.Matrix4()
     }, // Camera defaults
 
+    /**
+     * init()
+     * Initializes Camera properties.
+     *
+     * @return  void
+     */
     init: function camera_init() {
 
-      var camera=this;
+        var camera = this;
 
-      camera.instance=new THREE.PerspectiveCamera(
-        camera.fov,
-        $(camera.panorama.container).width()/$(camera.panorama.container).height(),
-        camera.nearPlane,
-        camera.farPlane
-      );
+        // perspective camera
+        camera.instance=new THREE.PerspectiveCamera(
+            camera.fov,
+            $(camera.panorama.container).width()/$(camera.panorama.container).height(),
+            camera.nearPlane,
+            camera.farPlane
+        );
 
-      camera.target=new THREE.Vector3(0,0,0);
+        // camera look at initial position
+        camera.target = new THREE.Vector3(0,0,0);
 
     }, // camera_init
 
+    /**
+     * updateFrustum()
+     * Updates the frustum object based on camera projection matrix.
+     *
+     * @return  void
+     */
     updateFrustum: function camera_updateFrustum() {
-      var camera=this;
-      //camera.instance.updateMatrixWorld(); // make sure the camera matrix is updated
-      //camera.instance.matrixWorldInverse.getInverse(camera.instance.matrixWorld);
-      camera.viewProjectionMatrix.multiplyMatrices(camera.instance.projectionMatrix, camera.instance.matrixWorldInverse);
-      camera.frustum.setFromMatrix(camera.viewProjectionMatrix);
-    },
 
+        var camera = this;
+
+        // camera.instance.updateMatrixWorld();
+        // camera.instance.matrixWorldInverse.getInverse(camera.instance.matrixWorld);
+
+        // camera projection matrix
+        camera.viewProjectionMatrix.multiplyMatrices(camera.instance.projectionMatrix,camera.instance.matrixWorldInverse);
+
+        // set frustum from camera projection matrix
+        camera.frustum.setFromMatrix(camera.viewProjectionMatrix);
+
+    }, // camera_updateFrustum
+
+    /**
+     * on_panorama_resize()
+     * Event triggered on panorama resize. Updates the frustrum object.
+     *
+     * @return  void
+     */
     on_panorama_resize: function camera_on_panorama_resize(e) {
-      this.camera.updateFrustum();
-    },
+        this.camera.updateFrustum();
+    }, // camera_on_panorama_resize
 
+    /**
+     * on_panorama_zoom()
+     * Event triggered on panorama zoom. Updates the frustrum object.
+     *
+     * @return  void
+     */
     on_panorama_zoom: function camera_on_panorama_zoom(e) {
-      this.camera.updateFrustum();
-    }
+        this.camera.updateFrustum();
+    } // camera_on_panorama_zoom
 
-}); // extend Camera.prototype
+}); // Camera Prototype
 
-// Panorama constructor
+
+/*
+ * Panorama
+ * Class Constructor
+ */
 function Panorama(options) {
 
-  if (!(this instanceof Panorama)) {
-    return new Panorama(options);
-  }
+    if (!(this instanceof Panorama))
+        return new Panorama(options);
 
-  window.p=this;
+    // globalize
+    window.p = this;
 
-  $.extend(true,this,this.defaults,options);
+    $.extend(true,this,this.defaults,options);
+    this.init();
 
-  this.init();
+} // Panorama Constructor
 
-} // Panorama constructor
-
+/*
+ * Panorama
+ * Class Prototype
+ */
 $.extend(true,Panorama.prototype,{
+
     defaults: {
+<<<<<<< HEAD
       mode: {},
       container: 'body',
       fov: {
@@ -403,401 +517,567 @@ $.extend(true,Panorama.prototype,{
           precision: 'highp',
           antialias: false,
           alpha: false
+=======
+        mode: {},
+        container: 'body',
+        fov: {
+            start: 120,
+            min: 1,
+            max: 120
+>>>>>>> 97663bfec28ae3915b0469eb9df7a1972dec6027
         },
-        properties: {
-          autoClear: false,
-          renderPluginsPre: [],
-          renderPluginsPost: []
-        }
-      },
-      lon: 0,
-      lat: 0,
-      phi: 0,
-      theta: 0,
-      mouseCoords: new THREE.Vector3(),
-      rotation: {
-        heading: 0,
-        tilt: 0,
-        roll: 0,
-        step: 0.1
-      },
-      initialRotation: new THREE.Matrix4(),
-      limits: {
-        lat: {
-            min: -85,
-            max: 85
-        }
-      }
-    }, // panorama defaults
-
-    init: function panorama_init(){
-      var panorama=this;
-      $(panorama.container).data('pano',panorama);
-
-      panorama.scene=new THREE.Scene();
-
-      panorama.dispatch('preinit');
-
-      // instantiate camera
-      if (!(panorama.camera instanceof Camera)) {
-        panorama.camera=new Camera($.extend(true,{
-          panorama: panorama,
-          fov: panorama.fov.start
-        },panorama.camera));
-      }
-
-      // instantiate sphere
-      if (panorama.sphere!==undefined) {
-        if (!(panorama.sphere instanceof Sphere)) {
-          panorama.sphere=new Sphere($.extend(true,{
-            panorama: panorama,
-            onready: function(){
-              panorama.updateRotationMatrix();
-              panorama.dispatch('resize');
-              panorama.dispatch('ready');
+        camera: undefined,
+        sphere: undefined,
+        postProcessing: undefined,
+        renderer: {
+            options: {
+                precision: 'lowp',
+                antialias: false,
+                alpha: false
+            },
+            properties: {
+                autoClear: false,
+                renderPluginsPre: [],
+                renderPluginsPost: []
             }
-          },panorama.sphere));
+        },
+        lon: 0,
+        lat: 0,
+        phi: 0,
+        theta: 0,
+        mouseCoords: new THREE.Vector3(),
+        rotation: {
+            heading: 0,
+            tilt: 0,
+            roll: 0,
+            step: 0.1
+        },
+        initialRotation: new THREE.Matrix4(),
+        limits: {
+            lat: {
+                min: -85,
+                max: 85
+            }
         }
-        panorama.scene.add(panorama.sphere.object3D);
-      }
+    }, // defaults
 
-      // instantiate renderer
-      if (!(panorama.renderer instanceof THREE.WebGLRenderer)) {
-        // try webgl renderer
-        try {
-          panorama.renderer=$.extend(new THREE.WebGLRenderer(panorama.renderer.parameters),panorama.renderer.properties);
-          panorama.renderer.setPixelRatio(window.devicePixelRatio);
-        } catch(e) {
-          // fallback to 2D canvas
-          try {
-            panorama.renderer=new THREE.CanvasRenderer();
-            panorama.renderer.renderPluginsPre=[];
-            panorama.renderer.renderPluginsPost=[];
-            $.notify('Cannot initialize WebGL. Canvas 2D used instead, please expect slow rendering results.',{type:'warning',sticky:false});
-          } catch (ex) {
-            $.notify('Cannot initialize WebGL neither fallback on Canvas 2D.');
-            $.notify('Please check your browser configuration and/or compatibilty with HTML5 standards.',{type:'warning'});
-            console.log(e);
-            return;
-          }
-        }
-      }
+    /**
+     * init()
+     * Initializes Panorama properties, including Scene, Camera, Sphere, WebGL
+     * renderer and Effects/Shaders.
+     *
+     * @return  void
+     */
+    init: function panorama_init() {
 
-      panorama.renderer.setSize($(panorama.container).width(),$(panorama.container).height());
-      $(panorama.container).append(panorama.renderer.domElement);
+        var panorama = this;
+        $(panorama.container).data('pano',panorama);
 
-      // TODO: move post-processing in speparate module
-      if (panorama.postProcessing) {
+        // scene
+        panorama.scene = new THREE.Scene();
 
-        // instantiate composer
-        panorama.composer=new THREE.EffectComposer(panorama.renderer);
+        // dispatch preinit event
+        panorama.dispatch('preinit');
 
-        // add renderer pass
-        panorama.composer.addPass(new THREE.RenderPass(panorama.scene,panorama.camera.instance));
-
-        // add shader passes
-        $.each(panorama.postProcessing,function() {
-          if (this instanceof Boolean) {
-            return true;
-          }
-          this.pass=new THREE.ShaderPass(this.shader);
-          this.pass.enabled=this.enabled;
-          var pass=this.pass;
-          $.each(this.uniforms,function(uniform,set){
-            set.call(pass.uniforms[uniform],panorama);
-          });
-          panorama.composer.addPass(this.pass);
-        });
-
-        // copy result to screen
-        if (panorama.postProcessing.renderToScreen!==false) {
-          var effect=new THREE.ShaderPass(THREE.CopyShader);
-          effect.renderToScreen=true;
-          panorama.composer.addPass(effect);
+        // camera
+        if (!(panorama.camera instanceof Camera)) {
+            panorama.camera = new Camera($.extend(true,{
+                panorama: panorama,
+                fov: panorama.fov.start
+            },panorama.camera));
         }
 
-      } // panorama.postProcessing
+        // sphere
+        if (panorama.sphere !== undefined) {
 
-      panorama.eventsInit();
+            // instance
+            if (!(panorama.sphere instanceof Sphere)) {
+                panorama.sphere = new Sphere($.extend(true,{
+                    panorama: panorama,
+                    onready: function(){
+                        panorama.updateRotationMatrix();
+                        panorama.dispatch('resize');
+                        panorama.dispatch('ready');
+                    }
+                },panorama.sphere));
+            }
 
-      panorama.dispatch('init');
+            // add sphere to panorama
+            panorama.scene.add(panorama.sphere.object3D);
+
+        }
+
+        // renderer
+        if (!(panorama.renderer instanceof THREE.WebGLRenderer)) {
+
+            // webgl renderer
+            try {
+                panorama.renderer = $.extend(new THREE.WebGLRenderer(panorama.renderer.parameters),panorama.renderer.properties);
+                panorama.renderer.setPixelRatio(window.devicePixelRatio);
+
+            // canvas 2d fallback
+            } catch(e) {
+
+                try {
+
+                    panorama.renderer = new THREE.CanvasRenderer();
+                    panorama.renderer.renderPluginsPre = [];
+                    panorama.renderer.renderPluginsPost = [];
+
+                    // notify user
+                    $.notify('Cannot initialize WebGL. Canvas 2D used instead, please expect slow rendering results.',{type:'warning',sticky:false});
+
+                // even canvas 2d is failing
+                } catch (ex) {
+
+                    $.notify('Cannot initialize WebGL neither fallback on Canvas 2D.');
+                    $.notify('Please check your browser configuration and/or compatibilty with HTML5 standards.',{type:'warning'});
+
+                    // log error in console for debugging purpose
+                    console.log(e);
+
+                    // quit
+                    return;
+
+                }
+            }
+        }
+
+        // renderer dom element
+        panorama.renderer.setSize($(panorama.container).width(),$(panorama.container).height());
+        $(panorama.container).append(panorama.renderer.domElement);
+
+        // post-processing
+        // @todo: move post-processing in a separate module
+        if (panorama.postProcessing) {
+
+            // effect composer
+            panorama.composer = new THREE.EffectComposer(panorama.renderer);
+
+            // add render pass
+            panorama.composer.addPass(new THREE.RenderPass(panorama.scene,panorama.camera.instance));
+
+            // add shader passes
+            $.each(panorama.postProcessing,function() {
+
+                if (this instanceof Boolean)
+                    return true;
+
+                // shader pass
+                this.pass = new THREE.ShaderPass(this.shader);
+                this.pass.enabled = this.enabled;
+
+                // uniforms calls
+                var pass = this.pass;
+                $.each(this.uniforms,function(uniform,_set) {
+                    _set.call(pass.uniforms[uniform],panorama);
+                });
+
+                // add pass to composer
+                panorama.composer.addPass(this.pass);
+
+            });
+
+            // copy result to screen
+            if (panorama.postProcessing.renderToScreen !== false) {
+
+                // copy shader pass
+                var effect = new THREE.ShaderPass(THREE.CopyShader);
+                effect.renderToScreen = true;
+
+                // add pass to composer
+                panorama.composer.addPass(effect);
+
+            }
+        }
+
+        // init panorama events
+        panorama.eventsInit();
+
+        // dispatch init event
+        panorama.dispatch('init');
 
     }, // panorama_init
 
-    // update rotation matrix after changing panorama.rotation values
-    updateRotationMatrix: function panorama_updateRotationMatrix() {
+    /**
+     * eventsInit()
+     * Initializes Panorama events.
+     *
+     * @return  void
+     */
+    eventsInit: function panorama_eventsInit() {
 
-      var panorama=this;
+        var panorama = this;
 
-      // set panorama initial rotation
-      var R=panorama.initialRotation.clone();
+        // renderer canvas
+        var canvas=$('canvas:first',this.container);
 
-      // combine with rotation angles
-      R.multiply((new THREE.Matrix4()).makeRotationAxis(Xaxis,THREE.Math.degToRad(panorama.rotation.tilt)));
-      R.multiply((new THREE.Matrix4()).makeRotationAxis(Yaxis,THREE.Math.degToRad(panorama.rotation.heading)));
-      R.multiply((new THREE.Matrix4()).makeRotationAxis(Zaxis,THREE.Math.degToRad(panorama.rotation.roll)));
+        // container events
+        $(this.container)
+            .off('.panorama'+this.num)
+            .on('mousedown.panorama'+this.num, canvas, function(e) {
+                e.target = panorama;panorama.dispatch(e);
+            })
+            .on('mousemove.panorama'+this.num, canvas, function(e) {
+                e.target=panorama;panorama.dispatch(e);
+            })
+            .on('mouseup.panorama'+this.num, canvas, function(e) {
+                e.target=panorama;panorama.dispatch(e);
+            })
+            .on('mousewheel.panorama'+this.num, canvas, function(e) {
+                e.target=panorama;panorama.dispatch(e);
+            })
+            .on('zoom.panorama'+this.num, canvas, function(e) {
+                e.target=panorama;panorama.dispatch(e);
+            });
 
-      panorama.sphere.object3D.rotation.setFromRotationMatrix(R);
-
-    }, // panorama_updateRotationMatrix
-
-    eventsInit: function panorama_eventsInit(){
-      var panorama=this;
-      var canvas=$('canvas:first',this.container);
-      $(this.container)
-      .off('.panorama'+this.num)
-      .on('mousedown.panorama'+this.num, canvas, function(e){e.target=panorama;panorama.dispatch(e)})
-      .on('mousemove.panorama'+this.num, canvas, function(e){e.target=panorama;panorama.dispatch(e)})
-      .on('mouseup.panorama'+this.num, canvas, function(e){e.target=panorama;panorama.dispatch(e)})
-      .on('mousewheel.panorama'+this.num, canvas, function(e){e.target=panorama;panorama.dispatch(e)})
-      .on('zoom.panorama'+this.num, canvas, function(e){e.target=panorama;panorama.dispatch(e)});
-      $(window).on('resize.panorama'+this.num, function(e){e.target=panorama;panorama.dispatch(e)});
+        // window resize
+        $(window).on('resize.panorama'+this.num, function(e) {
+            e.target=panorama;panorama.dispatch(e);
+        });
 
     }, // panorama_eventsInit
 
-    getTextureCoordinates: function panorama_getTextureCoordinates(lon,lat){
-      var panorama=this;
-      var step=panorama.sphere.texture.height/180;
-      lon=(lon-180)%360;
-      if (lon<0) lon+=360;
-      var left=step*lon;
-      var top=panorama.sphere.texture.height-(step*(lat+90));
-      return {
-        top: top,
-        left: left
-      }
+    /**
+     * updateRotationMatrix()
+     * Updates the sphere rotation matrix based on X,Y,Z axis. This method must
+     * be called after changing the panorama rotation values.
+     *
+     * @return  void
+     */
+    updateRotationMatrix: function panorama_updateRotationMatrix() {
+
+        var panorama = this;
+
+        // panorama initial rotation
+        var R = panorama.initialRotation.clone();
+
+        // combine with rotation angles
+        R.multiply((new THREE.Matrix4()).makeRotationAxis(Xaxis,THREE.Math.degToRad(panorama.rotation.tilt)));
+        R.multiply((new THREE.Matrix4()).makeRotationAxis(Yaxis,THREE.Math.degToRad(panorama.rotation.heading)));
+        R.multiply((new THREE.Matrix4()).makeRotationAxis(Zaxis,THREE.Math.degToRad(panorama.rotation.roll)));
+
+        // set sphere rotation from computed matrix
+        panorama.sphere.object3D.rotation.setFromRotationMatrix(R);
+
+    }, // panorama_updateRotationMatrix
+
+    /**
+     * getTextureCoordinates()
+     * Returns the top/left coordinates on the texture based on latitude/longitude.
+     *
+     * @return  Object      Top and left coordinates as an Object.
+     */
+    getTextureCoordinates: function panorama_getTextureCoordinates(lon,lat) {
+
+        var panorama = this;
+
+        // step
+        var step = panorama.sphere.texture.height/180;
+
+        // normalize longitude
+        lon = (lon-180) % 360;
+        if (lon < 0)
+            lon += 360;
+
+        // top/left
+        return {
+            top: panorama.sphere.texture.height-(step*(lat+90)),
+            left: step*lon
+        };
+
     }, // panorama_getTextureCoordinates
 
-    textureToWorldCoords: function panorama_textureToWorldCoords(x,y) {
-        var panorama=this;
-        var step=panorama.sphere.texture.height/180;
-        var theta=(x*step)*(Math.PI/180);
-        var phi=(90-(y*step))*(Math.PI/180);
-        var v=new THREE.Vector4();
-        v.x=this.sphere.radius*Math.sin(phi)*Math.cos(theta);
-        v.y=this.sphere.radius*Math.sin(phi)*Math.sin(theta);
-        v.z=this.sphere.radius*Math.cos(phi);
-        v.normalize();
-        v.applyMatrix4(this.sphere.object3D.matrix);
-        var r=Math.sqrt(v.x*v.x+v.y*v.y+v.z*v.z);
-        var phi=Math.acos(v.y/r);
-        var theta=Math.atan2(v.z,v.x);
-        var lon=theta/(Math.PI/180);
-        var lat=phi/(Math.PI/180);
-        return {
-          coords: v,
-          lon: lon,
-          lat: lat
-        }
-    }, // textureToWorldCoords
+    /**
+     * getMouseCoords()
+     * Returns the latitude/longitude coordinates relative to the mouse pointer.
+     * This method also sets the mouse coordinates xyz/phi/theta vector and
+     * computed the vertical/horizontal FOV.
+     *
+     * @return  Object      Latitude and longitude coordinates as an Object.
+     */
+    getMouseCoords: function panorama_getMouseCoords(e) {
 
+        var panorama = this;
+
+        // field of view
+        var fov = {
+            v: panorama.camera.instance.fov,
+            h: panorama.camera.instance.fov * panorama.camera.instance.aspect
+        };
+
+        // relative mouse coordinates
+        var offset = $(panorama.renderer.domElement).offset();
+        var mouseRel = {
+            x: e.clientX-offset.left,
+            y: e.clientY-offset.top
+        };
+
+        // model-view matrix
+        var modelViewMatrix = new THREE.Matrix4().multiplyMatrices(panorama.camera.instance.matrixWorldInverse,panorama.sphere.object3D.matrixWorld);
+        var mat_view = modelViewMatrix.elements;
+
+        // camera projection matrix
+        var mat_proj = panorama.camera.instance.projectionMatrix.elements;
+
+        // retrieve frustum parameters from projection matrix
+        var near = mat_proj[14] / ( 2.0 * ( mat_proj[10] - 1.0 ) );
+        var righ = near / mat_proj[0];
+        var heig = near / mat_proj[5];
+
+        // compute sphere point vector in gl frame
+        var posi = Array(3);
+        posi[0] = - righ + righ * 2.0 * mouseRel.x / ( panorama.renderer.domElement.width - 1 );
+        posi[1] = + heig - heig * 2.0 * mouseRel.y / ( panorama.renderer.domElement.height - 1 );
+        posi[2] = - near;
+
+        // compute sphere point vector norm
+        var norm = Math.sqrt( posi[0] * posi[0] + posi[1] * posi[1] + posi[2] * posi[2] );
+
+        // normalize sphere point position
+        posi[0] /= norm;
+        posi[1] /= norm;
+        posi[2] /= norm;
+
+        // get mouse coordinates in the camera referential
+        var cursor = panorama.cursorCoords = {
+            vector: new THREE.Vector3(posi[0],posi[1],posi[2]).multiplyScalar(panorama.sphere.radius),
+            phi: Math.acos(posi[1]),
+            theta: Math.atan2(posi[2],posi[0])
+        };
+        cursor.lon = THREE.Math.radToDeg(cursor.theta);
+        cursor.lat = THREE.Math.radToDeg(cursor.phi);
+
+        // remove linear transformation
+        var posf = Array(3);
+        posf[0] = mat_view[0] * posi[0] + mat_view[1] * posi[1] + mat_view[2] * posi[2];
+        posf[1] = mat_view[4] * posi[0] + mat_view[5] * posi[1] + mat_view[6] * posi[2];
+        posf[2] = mat_view[8] * posi[0] + mat_view[9] * posi[1] + mat_view[10] * posi[2];
+
+        // compute ellipsoidal coordinates
+        var lam = Math.atan2(posf[2],posf[0]);
+        var phi = Math.asin(posf[1]);
+
+        // normalize longitude
+        lam = ( lam >= 0 ) ? lam : lam + ( Math.PI * 2.0 );
+
+        // texture size
+        var texture_w = panorama.sphere.texture.height * 2;
+        var texture_h = panorama.sphere.texture.height;
+
+        // set mouse coordinates accordingly
+        var m = panorama.mouseCoords;
+        m.set(posf[0]*panorama.sphere.radius,posf[1]*panorama.sphere.radius,posf[2]*panorama.sphere.radius);
+
+        // set mouse ellipsoidal coordinates
+        m.phi = phi;
+        m.theta = lam;
+
+        // set mouse pixel coordinates
+        m.pixel_x = (lam / (2.0 * Math.PI) ) * texture_w;
+        m.pixel_y = ((Math.PI * 0.5 - phi) / Math.PI) * texture_h;
+
+        // set mouse lam/phi (lon/lat) degrees
+        m.lon = lam * (180/Math.PI);
+        m.lat = phi * (180/Math.PI);
+
+        // adjust lon/lat
+        m.lon = -(90 - m.lon) - 90;
+        m.lat = m.lat;
+        if (m.lon < 0)
+            m.lon += 360;
+
+        // debug
+        // panorama.showMouseDebugInfo(m);
+
+        return {
+            lon: cursor.lon,
+            lat: cursor.lat
+        };
+
+    }, // panorama_getMouseCoords
+
+    /**
+     * showMouseDebugInfo()
+     * Displays mouse information upon the renderer. Debug purposes only.
+     *
+     * @return  void
+     */
     showMouseDebugInfo: function panorama_showMouseDebugInfo(vector){
 
-      var div = $('#mouseDebugInfo');
-      if (!div.length) {
-          div = $('<div id="mouseDebugInfo">').appendTo(this.container).css({
-              position: 'absolute',
-              top: 0,
-              right: 0,
-              width: 128,
-              backgroundColor: "rgba(0,0,0,.4)",
-              color: 'white'
-          });
-      }
+        var div = $('#mouseDebugInfo');
 
-      var html = '<div style="width: 100%; position: relative; margin-left: 10px;">';
-      html += 'x: ' + vector.x.toPrecision(6) + '<br />';
-      html += 'y: ' + vector.y.toPrecision(6) + '<br />';
-      html += 'z: ' + vector.z.toPrecision(6) + '<br />';
-      html += 'lon: ' + vector.lon.toPrecision(6) + '<br />';
-      html += 'lat: ' + vector.lat.toPrecision(6) + '<br />';
-      div.html(html);
+        // create div
+        if (!div.length) {
+            div = $('<div id="mouseDebugInfo">').appendTo(this.container).css({
+                position: 'absolute',
+                top: 0,
+                right: 0,
+                width: 128,
+                backgroundColor: "rgba(0,0,0,.4)",
+                color: 'white'
+            });
+        }
+
+        // data
+        var html = '<div style="width:100%;position:relative;margin-left:10px;">'
+                        + 'x: ' + vector.x.toPrecision(6) + '<br />'
+                        + 'y: ' + vector.y.toPrecision(6) + '<br />'
+                        + 'z: ' + vector.z.toPrecision(6) + '<br />'
+                        + 'lon: ' + vector.lon.toPrecision(6) + '<br />'
+                        + 'lat: ' + vector.lat.toPrecision(6) + '<br />'
+                        + 'pix x: ' + vector.pixel_x.toPrecision(6) + '<br />'
+                        + 'pix y: ' + vector.pixel_y.toPrecision(6) + '<br />'
+                    + '</div>';
+
+        // display
+        div.html(html);
 
     }, // panorama_showMouseDebugInfo
 
-    // set mouseCoords (xyz/phi/theta) and return lon/lat
-    getMouseCoords: function panorama_getMouseCoords(e) {
-
-      var panorama=this;
-      var camera=panorama.camera.instance;
-      var canvas=panorama.renderer.domElement;
-
-      // field of view
-      var fov={
-        v: camera.fov,
-        h: camera.fov*camera.aspect
-      }
-
-      // relative mouse coordinates
-      var offset=$(canvas).offset();
-      var mouseRel={
-        x: e.clientX-offset.left,
-        y: e.clientY-offset.top
-      }
-
-    var modelViewMatrix=new THREE.Matrix4().multiplyMatrices(panorama.camera.instance.matrixWorldInverse,panorama.sphere.object3D.matrixWorld);
-    var mat_view = modelViewMatrix.elements;
-    var mat_proj = panorama.camera.instance.projectionMatrix.elements;
-
-    /* Retrieve frustum parameters from projection matrix */
-    var near = mat_proj[14] / ( 2.0 * ( mat_proj[10] - 1.0 ) );
-    var righ = near / mat_proj[0];
-    var heig = near / mat_proj[5];
-
-    /* Compute sphere point vector in OpenGL frame */
-    var posi = Array(3);
-
-    posi[0] = - righ + righ * 2.0 * mouseRel.x / ( canvas.width - 1 ) ;
-    posi[1] = + heig - heig * 2.0 * mouseRel.y / ( canvas.height - 1 ) ;
-    posi[2] = - near;
-
-    /* Compute sphere point vector norm */
-    var norm = Math.sqrt( posi[0] * posi[0] + posi[1] * posi[1] + posi[2] * posi[2] );
-
-    /* Normalize sphere point position */
-    posi[0] /= norm;
-    posi[1] /= norm;
-    posi[2] /= norm;
-
-    // get mouse coordinates in the camera referential
-    var cursor=panorama.cursorCoords={
-      vector: new THREE.Vector3(posi[0],posi[1],posi[2]).multiplyScalar(panorama.sphere.radius),
-      phi: Math.acos(posi[1]),
-      theta: Math.atan2(posi[2],posi[0])
-    }
-    cursor.lon=THREE.Math.radToDeg(cursor.theta);
-    cursor.lat=THREE.Math.radToDeg(cursor.phi);
-
-    /* Remove linear transformation */
-    var posf = Array(3);
-    posf[0] = mat_view[0] * posi[0] + mat_view[1] * posi[1] + mat_view[2] * posi[2];
-    posf[1] = mat_view[4] * posi[0] + mat_view[5] * posi[1] + mat_view[6] * posi[2];
-    posf[2] = mat_view[8] * posi[0] + mat_view[9] * posi[1] + mat_view[10] * posi[2];
-
-    /* Compute ellipsoidal coordinates */
-    var lam = Math.atan2( posf[2], posf[0] );
-    var phi = Math.asin ( posf[1] );
-
-    /* Normalize longitude */
-    lam = ( lam >= 0 ) ? lam : lam + ( Math.PI * 2.0 );
-
-
-    var image_w = panorama.sphere.texture.height*2;
-    var image_h = panorama.sphere.texture.height;
-
-    var deg_lam = lam*(180/Math.PI);
-    var deg_phi = phi*(180/Math.PI);
-
-    var pixel_x = (lam / (2.0 * Math.PI) ) * image_w;
-    var pixel_y = ((Math.PI * 0.5 - phi) / Math.PI) * image_h;
-
-
+    /**
+     * textureToWorldCoords() -- unused
+     * ...
+     *
+     * @return  ...
+     */
     /*
-    console.log("lam = "+lam);
-    console.log("phi = "+phi);
+    textureToWorldCoords: function panorama_textureToWorldCoords(x,y) {
 
-    console.log("deg_lam = "+deg_lam);
-    console.log("deg_phi = "+deg_phi);
+        var panorama = this;
 
-    console.log("pixel_x = "+pixel_x);
-    console.log("pixel_y = "+pixel_y);
+        var step = panorama.sphere.texture.height/180;
+        var theta = (x*step)*(Math.PI/180);
+        var phi = (90-(y*step))*(Math.PI/180);
+
+        var v = new THREE.Vector4();
+        v.x = this.sphere.radius*Math.sin(phi)*Math.cos(theta);
+        v.y = this.sphere.radius*Math.sin(phi)*Math.sin(theta);
+        v.z = this.sphere.radius*Math.cos(phi);
+
+        v.normalize();
+        v.applyMatrix4(this.sphere.object3D.matrix);
+
+        var r = Math.sqrt(v.x*v.x+v.y*v.y+v.z*v.z);
+        var phi = Math.acos(v.y/r);
+        var theta = Math.atan2(v.z,v.x);
+
+        var lon = theta/(Math.PI/180);
+        var lat = phi/(Math.PI/180);
+
+        return {
+            coords: v,
+            lon: lon,
+            lat: lat
+        };
+
+    }, // panorama_textureToWorldCoords
     */
 
-    var m=panorama.mouseCoords;
-    var r=panorama.sphere.radius;
-    m.set(posf[0]*r,posf[1]*r,posf[2]*r);
-    m.phi=phi;
-    m.theta=lam;
-    m.lon=deg_lam;
-    m.lat=deg_phi;
-
-    // adjust lon/lat
-    m.lon = -(90 - m.lon) - 90;
-    m.lat = m.lat;
-    if (m.lon < 0) m.lon += 360;
-
-    panorama.showMouseDebugInfo(m);
-
-    return {
-      lon: cursor.lon,
-      lat: cursor.lat
-    }
-
-    }, // panorama_getMouseCoords
-
-    // compute mouse normalized coordinates
+    /**
+     * getNormalizedMouseCoords() -- unused
+     * ...
+     *
+     * @return  ...
+     */
+    /*
     getNormalizedMouseCoords: function panorama_getNormalizedMouseCoords(e){
-      var panorama=this;
-      var canvas=panorama.renderer.domElement;
-      var offset=$(canvas).offset();
-      return {
-        x: ((e.clientX-offset.left) / canvas.width) * 2 - 1,
-        y: -((e.clientY-offset.top) / canvas.height) * 2 + 1
-      }
+
+        var panorama = this;
+
+        var canvas = panorama.renderer.domElement;
+        var offset = $(canvas).offset();
+
+        return {
+            x: ((e.clientX-offset.left) / canvas.width) * 2 - 1,
+            y: -((e.clientY-offset.top) / canvas.height) * 2 + 1
+        };
+
     }, // panorama_getNormalizedMouseCoords
+    */
 
+    /**
+     * getMouseCoords() -- unused
+     * ...
+     *
+     * @return  ...
+     */
     /*
-    getMouseCoords2: function panorama_getMouseCoords(event) {
+    getMouseCoords: function panorama_getMouseCoords(event) {
 
-      var panorama=this;
-      var canvas = panorama.renderer.domElement;
+        var panorama = this;
+        var canvas = panorama.renderer.domElement;
 
-      var offset=$(canvas).offset();
-      // get normalized mouse coordinates
-      var vector = new THREE.Vector3(((event.clientX-offset.left) / canvas.width) * 2 - 1, -((event.clientY-offset.top) / canvas.height) * 2 + 1, 0.5);
+        var offset = $(canvas).offset();
 
-      // get mouse coordinates in the camera referential
-      vector.applyMatrix4(new THREE.Matrix4().getInverse(panorama.camera.instance.projectionMatrix));
-      vector.normalize();
+        // get normalized mouse coordinates
+        var vector = new THREE.Vector3(((event.clientX-offset.left) / canvas.width) * 2 - 1, -((event.clientY-offset.top) / canvas.height) * 2 + 1, 0.5);
 
-      // store mouse coordinates in the camera referential
-      var cursor=panorama.cursorCoords= {
-        vector: vector.clone().multiplyScalar(panorama.sphere.radius),
-        phi: Math.acos(vector.y),
-        theta: Math.atan2(vector.z,vector.x)
-      }
-      cursor.lon=THREE.Math.radToDeg(cursor.theta);
-      cursor.lat=THREE.Math.radToDeg(cursor.phi);
+        // get mouse coordinates in the camera referential
+        vector.applyMatrix4(new THREE.Matrix4().getInverse(panorama.camera.instance.projectionMatrix));
+        vector.normalize();
 
-      var info=cursor.vector.clone();
-      info.lat=cursor.lat;
-      info.lon=cursor.lon;
-//      panorama.showMouseDebugInfo(info);
+        // store mouse coordinates in the camera referential
+        var cursor = panorama.cursorCoords= {
+            vector: vector.clone().multiplyScalar(panorama.sphere.radius),
+            phi: Math.acos(vector.y),
+            theta: Math.atan2(vector.z,vector.x)
+        };
 
-      // get mouse coordinates in the sphere referential
-      vector.applyMatrix4(panorama.camera.instance.matrixWorld);
-      vector.applyMatrix4(new THREE.Matrix4().getInverse(panorama.sphere.object3D.matrix));
+        cursor.lon = THREE.Math.radToDeg(cursor.theta);
+        cursor.lat = THREE.Math.radToDeg(cursor.phi);
 
-      // cartesian to spheric coordinates
-      var m=panorama.mouseCoords=vector;
-      var phi = Math.acos(m.y);
-      var theta = Math.atan2(m.z, m.x);
+        var info = cursor.vector.clone();
+        info.lat = cursor.lat;
+        info.lon = cursor.lon;
+        // panorama.showMouseDebugInfo(info);
 
-      // adjust lon/lat
-      m.lon = -(90 - THREE.Math.radToDeg(theta)) - 90;
-      m.lat = 90 - THREE.Math.radToDeg(phi);
-      if (m.lon < 0) m.lon += 360;
+        // get mouse coordinates in the sphere referential
+        vector.applyMatrix4(panorama.camera.instance.matrixWorld);
+        vector.applyMatrix4(new THREE.Matrix4().getInverse(panorama.sphere.object3D.matrix));
 
-      panorama.showMouseDebugInfo(m);
+        // cartesian to spheric coordinates
+        var m = panorama.mouseCoords = vector;
+        var phi = Math.acos(m.y);
+        var theta = Math.atan2(m.z, m.x);
 
-      // store mouse coordinates in the sphere referential
-      m.multiplyScalar(panorama.sphere.radius);
-      this.mouseCoords={
-        lon: m.lon,
-        lat: m.lat,
-        x: m.x,
-        y: m.y,
-        z: m.z
-      };
+        // adjust lon/lat
+        m.lon = -(90 - THREE.Math.radToDeg(theta)) - 90;
+        m.lat = 90 - THREE.Math.radToDeg(phi);
+        if (m.lon < 0)
+            m.lon += 360;
+        // panorama.showMouseDebugInfo(m);
 
-      // return coordinates in the camera referential
-      return {
-        lon: cursor.lon,
-        lat: cursor.lat
-      };
+        // store mouse coordinates in the sphere referential
+        m.multiplyScalar(panorama.sphere.radius);
+        this.mouseCoords = {
+            lon: m.lon,
+            lat: m.lat,
+            x: m.x,
+            y: m.y,
+            z: m.z
+        };
+
+        // return coordinates in the camera referential
+        return {
+            lon: cursor.lon,
+            lat: cursor.lat
+        };
 
     }, // panorama_getMouseCoords
     */
+
+
+
+
+
+
+
+
+
+
+
+
 
     onmousedown: function panorama_mousedown(e){
       if (isLeftButtonDown(e)) {
@@ -862,7 +1142,7 @@ $.extend(true,Panorama.prototype,{
 
       // dont dispatch click after rotation
       // nor after single mouseup
-      
+
       if (!rotating && leftButtonUp) {
         e.type='click';
         this.dispatch(e);
@@ -951,7 +1231,7 @@ $.extend(true,Panorama.prototype,{
         return;
       }
       var panorama=this;
-      panorama.sphere.drawFrustumTiles();
+      panorama.sphere.updateFrustumTiling();
       requestAnimationFrame(function(){
         panorama.renderFrame();
         if (callback) callback();
@@ -1022,7 +1302,9 @@ $.extend(true,Panorama.prototype,{
         panorama.drawScene();
       },0);
     }
-}); // extend Panorama.prototype
+
+}); // Panorama Prototype
+
 
 function isLeftButtonDown(e) {
   return ((e.buttons!==undefined && e.buttons==1) || (e.buttons===undefined && e.which==1));
