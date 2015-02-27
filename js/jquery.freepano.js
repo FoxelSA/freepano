@@ -283,7 +283,7 @@ $.extend(true,Sphere.prototype,{
                 mesh.shown = true;
 
                 // return if material already instantiated
-                if (!mesh.dispose && mesh.material) {
+                if (!mesh.dispose && mesh.material && mesh.material.map) {
                   return;
                 }
 
