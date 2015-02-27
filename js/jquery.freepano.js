@@ -84,6 +84,7 @@ $.extend(true,Texture.prototype,{
             wrapT: THREE.ClampToEdgeWrapping,
             magFilter: THREE.LinearFilter,
             minFilter: THREE.LinearFilter
+            //minFilter: THREE.LinearMipMapNearestFilter
         },
         columns: 2,
         rows: 1,
@@ -328,7 +329,7 @@ $.extend(true,Camera.prototype,{
       nearPlane: 0.1,
       farPlane: Sphere.prototype.defaults.radius*2,
       zoom: {
-        max: 1.5,
+        max: 2.5,
         min: 0.5,
         step: 0.05,
         current: 1
@@ -399,7 +400,7 @@ $.extend(true,Panorama.prototype,{
       postProcessing: undefined,
       renderer: {
         options: {
-          precision: 'lowp',
+          precision: 'highp',
           antialias: false,
           alpha: false
         },
@@ -941,6 +942,7 @@ $.extend(true,Panorama.prototype,{
         return;
       }
       this.camera.zoom.current-=e.deltaY*this.camera.zoom.step;
+      if (this.camera.zoom.current<0) this.camera.zoom.current=0;
       this.zoomUpdate();
     },
 
