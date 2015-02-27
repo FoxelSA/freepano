@@ -887,6 +887,80 @@ $.extend(true,Panorama.prototype,{
     }, // panorama_getMouseCoords
 
     /**
+     * getZoom()
+     * Returns the current zoom factor.
+     *
+     * @return  Float       Current zoom factor.
+     */
+    getZoom: function panorama_getZoom() {
+        var visible = this.sphere.texture.height * this.camera.instance.fov / 180;
+        return this.renderer.domElement.height/visible;
+    }, // panorama_getZoom
+
+    /**
+     * zoomUpdate()
+     * Redraws the scene based on the current zoom camera property and its
+     * projection matrix.
+     *
+     * @return  void
+     */
+    zoomUpdate: function panorama_zoomUpdate() {
+
+        var panorama = this;
+
+        // current fov
+        var fov = panorama.camera.instance.fov;
+
+        // current zoom
+        panorama.camera.zoom.current = 1/Math.min(panorama.camera.zoom.max,Math.max(panorama.camera.zoom.min,1/panorama.camera.zoom.current));
+
+        // update fov depending on the zoom
+        panorama.camera.instance.fov = panorama.getFovOnCurrentZoom();
+
+        // fov's are different
+        if (fov != panorama.camera.instance.fov) {
+
+            // update the projection matrix
+            panorama.camera.instance.updateProjectionMatrix();
+
+            // dispatch zoom event
+            panorama.dispatch('zoom');
+
+            // redraw the scene
+            panorama.drawScene();
+        }
+
+    }, // panorama_zoomUpdate
+
+    /**
+     * getFovOnCurrentZoom()
+     * Returns the field of view (FOV) on current zoom level for the largest
+     * renderer dimension.
+     *
+     * @return  Float       Current field of view.
+     */
+    getFovOnCurrentZoom: function panorama_getFovOnCurrentZoom() {
+
+        var fov = (this.renderer.domElement.width>this.renderer.domElement.height) ?
+            360*((this.renderer.domElement.width*this.camera.zoom.current/4)/this.sphere.texture.height*2) :
+            180*((this.renderer.domElement.height*this.camera.zoom.current/2)/this.sphere.texture.height);
+
+        // clamp
+        if (fov > this.fov.max) {
+            var fovRatio = fov/this.fov.max;
+            fov = this.fov.max;
+            this.camera.zoom.current /= fovRatio;
+        }
+
+        // convert to vertical fov
+        if (this.renderer.domElement.width > this.renderer.domElement.height)
+            fov = fov/this.renderer.domElement.width*this.renderer.domElement.height;
+
+        return fov;
+
+    }, // panorama_getFovOnCurrentZoom
+
+    /**
      * showMouseDebugInfo()
      * Displays mouse information upon the renderer. Debug purposes only.
      *
@@ -1019,7 +1093,6 @@ $.extend(true,Panorama.prototype,{
         var info = cursor.vector.clone();
         info.lat = cursor.lat;
         info.lon = cursor.lon;
-        // panorama.showMouseDebugInfo(info);
 
         // get mouse coordinates in the sphere referential
         vector.applyMatrix4(panorama.camera.instance.matrixWorld);
@@ -1035,7 +1108,6 @@ $.extend(true,Panorama.prototype,{
         m.lat = 90 - THREE.Math.radToDeg(phi);
         if (m.lon < 0)
             m.lon += 360;
-        // panorama.showMouseDebugInfo(m);
 
         // store mouse coordinates in the sphere referential
         m.multiplyScalar(panorama.sphere.radius);
@@ -1056,8 +1128,18 @@ $.extend(true,Panorama.prototype,{
     }, // panorama_getMouseCoords
     */
 
-
-
+    /**
+     * setZoom() -- unused
+     * ...
+     *
+     * @return  ...
+     */
+    /*
+    setZoom: function panorama_setZoom(e,scale) {
+        this.camera.zoom.current = 1/scale;
+        this.zoomUpdate();
+    },
+    */
 
 
 
@@ -1139,55 +1221,11 @@ $.extend(true,Panorama.prototype,{
 
     },
 
-    // return current zoom factor
-    getZoom: function panorama_getZoom() {
-      var visible;
-      visible=this.sphere.texture.height*this.camera.instance.fov/180;
-      return this.renderer.domElement.height/visible;
-    },
 
-    // return current field of view for the largest dimension
-    getFov: function() {
-      return (this.renderer.domElement.width>this.renderer.domElement.height) ?
-        360*((this.renderer.domElement.width*this.camera.zoom.current/4)/this.sphere.texture.height*2) :
-        180*((this.renderer.domElement.height*this.camera.zoom.current/2)/this.sphere.texture.height);
-    },
 
-    updateFov: function() {
 
-      var fov=this.getFov();
 
-      if (fov>this.fov.max) {
-        var fovRatio=fov/this.fov.max;
-        fov=this.fov.max;
-        this.camera.zoom.current/=fovRatio;
-      }
 
-      // convert to vertical fov
-      if (this.renderer.domElement.width>this.renderer.domElement.height) {
-        fov=fov/this.renderer.domElement.width*this.renderer.domElement.height;
-      }
-
-      return fov;
-    },
-
-    zoomUpdate: function panorama_zoomUpdate() {
-      var fov=this.camera.instance.fov;
-      this.camera.zoom.current=1/Math.min(this.camera.zoom.max,Math.max(this.camera.zoom.min,1/this.camera.zoom.current));
-      this.camera.instance.fov=this.updateFov();
-      if (fov!=this.camera.instance.fov) {
-        this.camera.instance.updateProjectionMatrix();
-        this.dispatch('zoom');
-        this.drawScene(function(){
-          $('canvas:first',this.container).trigger('mousemove');
-        });
-      }
-    },
-
-    setZoom: function panorama_setZoom(e,scale) {
-      this.camera.zoom.current=1/scale;
-      this.zoomUpdate();
-    },
 
     onmousewheel: function panorama_mousewheel(e){
       e.preventDefault();
