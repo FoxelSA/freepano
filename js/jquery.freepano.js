@@ -282,11 +282,6 @@ $.extend(true,Sphere.prototype,{
                 // set as show
                 mesh.shown = true;
 
-                // return if material already instantiated
-                if (!mesh.dispose && mesh.material && mesh.material.map) {
-                  return;
-                }
-
                 // load tile
                 var material = new THREE.MeshBasicMaterial({
                     map: sphere.loadTile(mesh.col,mesh.row),
@@ -302,18 +297,23 @@ $.extend(true,Sphere.prototype,{
             // dispose tile if shown, do nothing otherwise
             } else {
 
-                // set as not shown
-                mesh.shown = false;
-
                 // dispose texture/material to free memory
-                if (mesh.dispose && mesh.material && mesh.material.map) {
+                if (mesh.dispose) {
 
-                    // dispose tile
-                    mesh.material.map.dispose();
-                    mesh.material.dispose();
+                    // set as not shown
+                    mesh.shown = false;
 
-                    // default material
-                    mesh.material = sphere.texture.defaultMaterial;
+                    // has material
+                    if (mesh.material && mesh.material.map) {
+
+                        // dispose tile
+                        mesh.material.map.dispose();
+                        mesh.material.dispose();
+
+                        // default material
+                        mesh.material = sphere.texture.defaultMaterial;
+
+                    }
 
                 }
             }
