@@ -533,6 +533,7 @@ $.extend(true,Panorama.prototype,{
         phi: 0,
         theta: 0,
         mouseCoords: new THREE.Vector3(),
+        mousedownPos: {},
         rotation: {
             heading: 0,
             tilt: 0,
