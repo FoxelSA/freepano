@@ -899,8 +899,8 @@ $.extend(true,Panorama.prototype,{
 
     /**
      * zoomUpdate()
-     * Redraws the scene based on the current zoom camera property and its
-     * projection matrix.
+     * Calls a redraw of the scene (if needed) based on the current zoom camera
+     * property and its projection matrix.
      *
      * @return  void
      */
@@ -959,6 +959,97 @@ $.extend(true,Panorama.prototype,{
         return fov;
 
     }, // panorama_getFovOnCurrentZoom
+
+    /**
+     * drawScene()
+     * Calls the renderer to render the scene and trigger the frustum tiling.
+     *
+     * @return  void
+     */
+    drawScene: function panorama_drawScene(callback){
+
+        var panorama = this;
+
+        // sphere is not ready
+        if (!panorama.sphere.done)
+            return;
+
+        // frustum based tiling
+        panorama.sphere.updateFrustumTiling();
+
+        // repaint
+        requestAnimationFrame(function() {
+
+            // render
+            panorama.renderFrame();
+
+            // callback
+            if (callback)
+                callback();
+
+        });
+
+    }, // panorama_drawScene
+
+    /**
+     * renderFrame()
+     * Calls the renderer to render the scene and trigger the frustum tiling.
+     *
+     * @return  void
+     */
+    renderFrame: function panorama_renderFrame() {
+
+        var panorama = this;
+
+        // sphere is not ready
+        if (!panorama.sphere.done)
+            return;
+
+        // clamp latitude
+        panorama.lat = Math.max(panorama.limits.lat.min,Math.min(panorama.limits.lat.max,panorama.lat));
+
+        // update camera rotation
+        panorama.theta = panorama.lon*Math.PI/180;
+        panorama.phi = (90-panorama.lat)*Math.PI/180;
+
+        // compute camera lookat vector
+        panorama.lookAtVec = new THREE.Vector3(
+            Math.sin(panorama.phi)*Math.cos(panorama.theta),
+            Math.cos(panorama.phi),
+            Math.sin(panorama.phi)*Math.sin(panorama.theta)
+        );
+
+        // adjust camera lookat vector by inverse sphere rotation
+        panorama.lookAtVec.applyMatrix4(new THREE.Matrix4().getInverse(panorama.sphere.object3D.matrix));
+
+        // set camera lookat
+        panorama.camera.instance.lookAt(panorama.lookAtVec);
+
+        // dispatch update event
+        panorama.dispatch('update');
+
+        // clear renderer color, depth and stencil drawing buffer
+        panorama.renderer.clear();
+
+        // post-processing
+        // @todo: move post-processing in a separate module
+        if (panorama.postProcessing && panorama.postProcessing.enabled) {
+
+            // render through composer to use post-processing filters
+            panorama.composer.render(panorama.scene,panorama.camera.instance);
+
+        // no post-processing
+        } else {
+
+            // render directly through the renderer
+            panorama.renderer.render(panorama.scene,panorama.camera.instance);
+
+        }
+
+        // dispatch render event
+        panorama.dispatch('render');
+
+    }, // panorama_renderFrame
 
     /**
      * showMouseDebugInfo()
@@ -1221,12 +1312,6 @@ $.extend(true,Panorama.prototype,{
 
     },
 
-
-
-
-
-
-
     onmousewheel: function panorama_mousewheel(e){
       e.preventDefault();
       if (!this.sphere.done) {
@@ -1251,57 +1336,6 @@ $.extend(true,Panorama.prototype,{
       this.camera.zoom.current-=e.deltaY*this.camera.zoom.step;
       if (this.camera.zoom.current<0) this.camera.zoom.current=0;
       this.zoomUpdate();
-    },
-
-    drawScene: function panorama_drawScene(callback){
-      if (!this.sphere.done) {
-        return;
-      }
-      var panorama=this;
-      panorama.sphere.updateFrustumTiling();
-      requestAnimationFrame(function(){
-        panorama.renderFrame();
-        if (callback) callback();
-      });
-    },
-
-    renderFrame: function renderFrame() {
-      var panorama=this;
-
-      if (!panorama.sphere.done) {
-        return;
-      }
-      panorama.lat=Math.max(panorama.limits.lat.min,Math.min(panorama.limits.lat.max,panorama.lat));
-
-      // update camera rotation
-      panorama.theta=panorama.lon*Math.PI/180;
-      panorama.phi=(90-panorama.lat)*Math.PI/180;
-
-      // set camera lookAt vector
-      panorama.lookAtVec=new THREE.Vector3(
-        Math.sin(panorama.phi)*Math.cos(panorama.theta),
-        Math.cos(panorama.phi),
-        Math.sin(panorama.phi)*Math.sin(panorama.theta)
-      );
-
-      // adjust camera lookAt vector by inverse sphere rotation
-      panorama.lookAtVec.applyMatrix4(new THREE.Matrix4().getInverse(panorama.sphere.object3D.matrix));
-
-      panorama.camera.instance.lookAt(panorama.lookAtVec);
-
-      panorama.dispatch('update');
-
-      panorama.renderer.clear();
-      // TODO move post-Processing to jquery.freepano.postprocessing.js
-      if (panorama.postProcessing && panorama.postProcessing.enabled) {
-        // render scene with postProcessing filters
-        panorama.composer.render(panorama.scene,panorama.camera.instance);
-      } else {
-        // render scene
-        panorama.renderer.render(panorama.scene,panorama.camera.instance);
-      }
-
-      panorama.dispatch('render');
     },
 
     onresize: function panorama_resize(e){
