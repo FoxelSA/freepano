@@ -540,6 +540,11 @@ $.extend(true,Sphere.prototype,{
         sphere.tilesToLoad=0;
         panorama.sphere.panoramaReadyDispatched=false;
 
+        // load visible tiles first
+        if (sphere.dynamicTileInit) {
+          sphere.dynamicTileLoading=true;
+        }
+
         // trigger tiles loading
         sphere.updateTiles();
 
@@ -859,6 +864,12 @@ $.extend(true,Panorama.prototype,{
 
     }, // panorama_init
 
+    /**
+     * Panorama.on_sphere_tileload()
+     * Panorama 'sphere_tileload' event handler, is run each time a tile is loaded
+     * @return  undefined
+     *
+     */
     on_sphere_tileload: function panorama_on_sphere_tileload(e) {
       var sphere=this;
       var panorama=this.panorama;
@@ -866,16 +877,32 @@ $.extend(true,Panorama.prototype,{
       sphere.panorama.drawScene();
     }, // panoram_on_sphere_tileload
 
+    /**
+     * Panorama.on_sphere_load()
+     * Panorama 'sphere_load' event handler, is run each time a tile set is loaded
+     *
+     * Trigger loading remaining tiles when sphere.dynamicTileInit is true 
+     * Trigger panorama 'resize' and 'ready' event
+     *
+     * @return undefined
+     */
     on_sphere_load: function panorama_on_sphere_load(e) {
       var sphere=this;
       var panorama=this.panorama;
 
-      // dont trigger panorama ready after each tile update
+      // dont trigger panorama ready after each sphere.updateTiles() call
       if (sphere.panoramaReadyTriggered) {
         return;
       }
 
       if (!sphere.panoramaReadyDispatched) {
+
+        if (sphere.dynamicTileInit) {
+          // trigger loading remaining tiles
+          sphere.dynamicTileLoading=false;
+          sphere.doUpdateTiles();
+        }
+
         panorama.dispatch('resize');
         panorama.dispatch('ready');
         sphere.panoramaReadyDispatched=true;
@@ -883,7 +910,14 @@ $.extend(true,Panorama.prototype,{
 
     }, // panorama_on_sphere_load
 
-    // initial render (no textures loaded yet)
+    /**
+     * Panorama.on_sphere_geometryready()
+     *
+     * Panorama 'sphere_geometryready' event handler.
+     * Initial panorama render (no textures loaded yet)
+     *
+     * @return undefined
+     */
     on_sphere_geometryready: function panorama_on_sphere_geometryready() {
       var panorama=this.panorama;
       panorama.dispatch('resize');
@@ -891,7 +925,7 @@ $.extend(true,Panorama.prototype,{
     },
 
     /**
-     * eventsInit()
+     * Panorama.eventsInit()
      * Initialize Panorama events.
      *
      * @return  undefined
