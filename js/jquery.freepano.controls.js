@@ -43,8 +43,13 @@
  */
 
 
-/**
- * Controls constructor
+// closure
+(function($,Panorama) {
+
+
+/*
+ * Controls
+ * Class Constructor
  */
 function Controls(options) {
 
@@ -54,14 +59,15 @@ function Controls(options) {
     $.extend(true,this,this.defaults,options);
     this.init();
 
-}
+} // Controls Constructor
 
-/**
- * Extends Controls prototype
+
+/*
+ * Controls
+ * Class Prototype
  */
 $.extend(true,Controls.prototype, {
 
-    // default values
     defaults: {
 
         // orientation
@@ -142,15 +148,20 @@ $.extend(true,Controls.prototype, {
             }
         }
 
-    },
+    }, // defaults
 
-    // init() method
-    init: function() {
+    /**
+     * init()
+     * Initializes Controls properties and Device Motion.
+     *
+     * @return  void
+     */
+    init: function controls_init() {
 
         var controls = this;
 
         // orientation
-        this.orientation_detect();
+        this.updateDeviceOrientation();
 
         // window resize event
         $(window).on('resize.controls', function(e) {
@@ -159,7 +170,7 @@ $.extend(true,Controls.prototype, {
             var pos = controls.orientation.portrait;
 
             // detect orientation
-            controls.orientation_detect();
+            controls.updateDeviceOrientation();
 
             // orientation has changed, ask for recalibration
             if (controls.orientation.portrait != pos) {
@@ -170,11 +181,16 @@ $.extend(true,Controls.prototype, {
         });
 
         // devicemotion
-        this._init_devicemotion();
+        this.deviceMotionInit();
 
-    },
+    }, // controls_init
 
-    // on_panorama_init() method
+    /**
+     * on_panorama_init()
+     * Event triggered on panorama init. Instanciates the Control class.
+     *
+     * @return  void
+     */
     on_panorama_init: function controls_on_panorama_init() {
 
         // controls is not defined in freepano options
@@ -185,65 +201,86 @@ $.extend(true,Controls.prototype, {
         if (!(this.controls instanceof Controls))
             this.controls = new Controls($.extend(true,{panorama:this},this.controls)); // options
 
-    },
+    }, // controls_on_panorama_init
 
-    // on_panorama_ready() method
+    /**
+     * on_panorama_ready()
+     * Event triggered on panorama init. Initializes touch and keyboard controls.
+     *
+     * @return  void
+     */
     on_panorama_ready: function controls_on_panorama_ready(panorama_event) {
 
         // touch
-        this.controls._init_touch();
+        this.controls.touchInit();
 
         // keyboard
-        this.controls._init_keyboard();
+        this.controls.keyboardInit();
 
         // devicemotion switch
-        this.controls._init_devicemotion_switch();
+        this.controls.deviceMotionInitSwitch();
 
-    },
+    }, // controls_on_panorama_ready
 
-    // orientation_detect() method
-    orientation_detect: function() {
+    /**
+     * updateDeviceOrientation()
+     * Updates device orientation (portrait or landscape) flags.
+     *
+     * @return  void
+     */
+    updateDeviceOrientation: function controls_updateDeviceOrientation() {
         this.orientation.portrait = ($(window).width() < $(window).height());
         this.orientation.landscape = !this.orientation.portrait;
-    },
+    }, // controls_updateDeviceOrientation
 
-    // [private] _init_touch() method
-    _init_touch: function() {
+    /**
+     * touchInit()
+     * Initializes touch events. Uses watch.js to register/unregister events
+     * dynamically based on their active flags.
+     *
+     * @return  void
+     */
+    touchInit: function controls_touchInit() {
 
         var controls = this;
 
         // touch move
         if (controls.touch.move.active)
-            controls._register_touch_move(controls);
+            controls.touchMoveRegister(controls);
 
         // touch zoom
         if (controls.touch.zoom.active)
-            controls._register_touch_zoom(controls);
+            controls.touchZoomRegister(controls);
 
         // watch touch move properties
         watch(controls.touch.move,['active'], function() {
             if (controls.touch.move.active)
-                controls._register_touch_move(controls);
+                controls.touchMoveRegister(controls);
             else
-                controls._unregister_touch_move(controls);
+                controls.touchMoveUnregister(controls);
         });
 
         // watch touch zoom properties
         watch(controls.touch.zoom,['active'], function() {
             if (controls.touch.zoom.active)
-                controls._register_touch_zoom(controls);
+                controls.touchZoomRegister(controls);
             else
-                controls._unregister_touch_zoom(controls);
+                controls.touchZoomUnregister(controls);
         });
 
         // zoom step
         if (controls.touch.zoom.step == null)
             controls.touch.zoom.step = controls.panorama.camera.zoom.step;
 
-    },
+    }, // controls_touchInit
 
-    // [private] _register_touch() method
-    _register_touch: function(controls) {
+    /**
+     * touchInstance()
+     * Instanciates Hammer.js on the renderer container.
+     *
+     * @return  void
+     */
+    touchInstance: function controls_touchInstance(controls) {
 
         // keep a reference to controls
         window._controls_touch = controls;
@@ -252,176 +289,235 @@ $.extend(true,Controls.prototype, {
         if (controls.touch.internal.hammer == null)
             controls.touch.internal.hammer = new Hammer($('canvas:first',controls.panorama.container).get(0));
 
-    },
+    }, // controls_touchInstance
 
-    // [private] _register_touch_move() method
-    _register_touch_move: function(controls) {
+    /**
+     * touchMoveRegister()
+     * Registers touch moves through Hammer.js pan start/move.
+     *
+     * @return  void
+     */
+    touchMoveRegister: function controls_touchMoveRegister(controls) {
 
-        controls._register_touch(controls);
+        // instance
+        controls.touchInstance(controls);
 
         // activate event
         controls.touch.internal.hammer.get('pan').set({enable:true,direction:Hammer.DIRECTION_ALL});
 
         // register events
-        controls.touch.internal.hammer.on('panstart',controls._touch_move_panstart);
-        controls.touch.internal.hammer.on('panmove',controls._touch_move_panmove);
-    },
+        controls.touch.internal.hammer.on('panstart',controls.onTouchPanStart);
+        controls.touch.internal.hammer.on('panmove',controls.onTouchPanMove);
 
-    // [private] _unregister_touch_move() method
-    _unregister_touch_move: function(controls) {
+    }, // controls_touchMoveRegister
+
+    /**
+     * touchMoveUnregister()
+     * Unregisters touch moves through Hammer.js pan start/move.
+     *
+     * @return  void
+     */
+    touchMoveUnregister: function controls_touchMoveUnregister(controls) {
 
         // unregister events
-        controls.touch.internal.hammer.off('panmove',controls._touch_move_panmove);
-        controls.touch.internal.hammer.off('panstart',controls._touch_move_panstart);
+        controls.touch.internal.hammer.off('panmove',controls.onTouchPanMove);
+        controls.touch.internal.hammer.off('panstart',controls.onTouchPanStart);
 
         // desactivate event
         controls.touch.internal.hammer.get('pan').set({enable:false});
-    },
 
-    // [private] _register_touch_zoom() method
-    _register_touch_zoom: function(controls) {
+    }, // controls_touchMoveUnregister
 
-        controls._register_touch(controls);
+    /**
+     * onTouchPanStart()
+     * Event triggered on touch pan start. Simulates a Panorama mouse down event.
+     *
+     * @return  void
+     */
+    onTouchPanStart: function controls_onTouchPanStart(e) {
+        if (window._controls_touch.touchPanMouseImpersonate(e) != null)
+            window._controls_touch.panorama.onmousedown(e);
+    }, // controls_onTouchPanStart
 
-        // activate event
-        controls.touch.internal.hammer.get('pinch').set({enable:true});
+    /**
+     * onTouchPanMove()
+     * Event triggered on touch pan move. Simulates a Panorama mouse move event.
+     *
+     * @return  void
+     */
+    onTouchPanMove: function controls_onTouchPanMove(e) {
+        if (window._controls_touch.touchPanMouseImpersonate(e) != null)
+            window._controls_touch.panorama.onmousemove(e);
+    }, // controls_onTouchPanMove
 
-        // register events
-        controls.touch.internal.hammer.on('pinchin',controls._touch_zoom_pinchin);
-        controls.touch.internal.hammer.on('pinchout',controls._touch_zoom_pinchout);
+    /**
+     * touchPanMouseImpersonate()
+     * Prepare a touch event for Panorama events by adding mouse impersonation.
+     *
+     * @return  Event       Hammer pan event or null if touch is not active.
+     */
+    touchPanMouseImpersonate: function controls_touchPanMouseImpersonate(e) {
 
-    },
-
-    // [private] _unregister_touch_zoom() method
-    _unregister_touch_zoom: function(controls) {
-
-        // unregister events
-        controls.touch.internal.hammer.off('pinchin',controls._touch_zoom_pinchin);
-        controls.touch.internal.hammer.off('pinchout',controls._touch_zoom_pinchout);
-
-        // desactivate event
-        controls.touch.internal.hammer.get('pinch').set({enable:false});
-
-    },
-
-    // [private] _touch_move_panstart() method
-    _touch_move_panstart: function(e) {
-
-        var controls = window._controls_touch;
-        if (!controls.touch.move.active)
-            return;
-
-        // impersonate mouse properties
-        e.clientX = e.center.x;
-        e.clientY = e.center.y;
-        e.buttons=1;
-
-        return controls.panorama.onmousedown(e);
-
-    },
-
-    // [private] _touch_move_panmove() method
-    _touch_move_panmove: function(e) {
-
-        var controls = window._controls_touch;
-        if (!controls.touch.move.active)
-            return;
+        if (!window._controls_touch.touch.move.active)
+            return null;
 
         // impersonate mouse properties
         e.clientX = e.center.x;
         e.clientY = e.center.y;
         e.buttons = 1;
 
-        return controls.panorama.onmousemove(e);
+        return e;
 
-    },
+    }, // controls_touchPanMouseImpersonate
 
-    // [private] _touch_zoom_pinch() method
-    _touch_zoom_pinch: function(sign) {
+    /**
+     * touchZoomRegister()
+     * Registers touch zoom through Hammer.js pinch in/out.
+     *
+     * @return  void
+     */
+    touchZoomRegister: function controls_touchZoomRegister(controls) {
 
-        var controls = window._controls_touch;
-        if (!controls.touch.zoom.active)
+        // instance
+        controls.touchInstance(controls);
+
+        // activate event
+        controls.touch.internal.hammer.get('pinch').set({enable:true});
+
+        // register events
+        controls.touch.internal.hammer.on('pinchin',controls.onTouchZoomIn);
+        controls.touch.internal.hammer.on('pinchout',controls.onTouchZoomOut);
+
+    }, // controls_touchZoomRegister
+
+    /**
+     * touchZoomUnregister()
+     * Unregisters touch zoom through Hammer.js pinch in/out.
+     *
+     * @return  void
+     */
+    touchZoomUnregister: function controls_touchZoomUnregister(controls) {
+
+        // unregister events
+        controls.touch.internal.hammer.off('pinchin',controls.onTouchZoomIn);
+        controls.touch.internal.hammer.off('pinchout',controls.onTouchZoomOut);
+
+        // desactivate event
+        controls.touch.internal.hammer.get('pinch').set({enable:false});
+
+    }, // controls_touchZoomUnregister
+
+    /**
+     * touchZoomPanorama()
+     * Calls zoom update on the Panorama.
+     *
+     * @return  void
+     */
+    touchZoomPanorama: function controls_touchZoomPanorama(sign) {
+
+        if (!window._controls_touch.touch.move.active)
             return;
 
         // zoom
-        controls.panorama.camera.zoom.current += sign * (controls.touch.zoom.step / 10);
-        controls.panorama.zoomUpdate();
+        window._controls_touch.panorama.camera.zoom.current += sign * (window._controls_touch.touch.zoom.step / 10);
+        window._controls_touch.panorama.zoomUpdate();
 
-    },
+    }, // controls_touchZoomPanorama
 
-    // [private] _touch_zoom_pinchin() method
-    _touch_zoom_pinchin: function(e) {
-        window._controls_touch._touch_zoom_pinch(1);
-    },
+    /**
+     * onTouchZoomIn()
+     * Event triggered on touch zoom in. Calls a Panorama zoom in.
+     *
+     * @return  void
+     */
+    onTouchZoomIn: function controls_onTouchZoomIn(e) {
+        window._controls_touch.touchZoomPanorama(1);
+    }, // controls_onTouchZoomIn
 
-    // [private] _touch_zoom_pinchout() method
-    _touch_zoom_pinchout: function(e) {
-        window._controls_touch._touch_zoom_pinch(-1);
-    },
+    /**
+     * onTouchZoomOut()
+     * Event triggered on touch zoom in. Calls a Panorama zoom in.
+     *
+     * @return  void
+     */
+    onTouchZoomOut: function controls_onTouchZoomOut(e) {
+        window._controls_touch.touchZoomPanorama(-1);
+    }, // controls_onTouchZoomOut
 
-    // [private] _init_keyboard() method
-    _init_keyboard: function() {
+    /**
+     * keyboardInit()
+     * Initializes keyboard events. Uses watch.js to register/unregister events
+     * dynamically based on their active flags.
+     *
+     * @return  void
+     */
+    keyboardInit: function controls_keyboardInit() {
 
         var controls = this;
 
         // keyboard move
         if (controls.keyboard.move.active)
-            controls._register_keyboard_move(controls);
+            controls.keyboardMoveRegister(controls);
 
         // keyboard zoom
         if (controls.keyboard.zoom.active)
-            controls._register_keyboard_zoom(controls);
+            controls.keyboardZoomRegister(controls);
 
         // watch keyboard move properties
         watch(controls.keyboard.move,['active'], function() {
             if (controls.keyboard.move.active)
-                controls._register_keyboard_move(controls);
+                controls.keyboardMoveRegister(controls);
             else
-                controls._unregister_keyboard_move(controls);
+                controls.keyboardMoveUnregister(controls);
         });
 
         // watch keyboard zoom properties
         watch(controls.keyboard.zoom,['active'], function() {
             if (controls.keyboard.zoom.active)
-                controls._register_keyboard_zoom(controls);
+                controls.keyboardZoomRegister(controls);
             else
-                controls._unregister_keyboard_zoom(controls);
+                controls.keyboardZoomUnregister(controls);
         });
 
         // zoom step
         if (controls.keyboard.zoom.step == null)
             controls.keyboard.zoom.step = controls.panorama.camera.zoom.step;
 
-    },
+    }, // controls_keyboardInit
 
-    // [private] _register_keyboard_move() method
-    _register_keyboard_move: function(controls) {
-        $(document).on('keydown.controls',{controls: controls},controls._keyboard_move);
-    },
+    /**
+     * keyboardMoveRegister()
+     * Registers keyboard move events.
+     *
+     * @return  void
+     */
+    keyboardMoveRegister: function controls_keyboardMoveRegister(controls) {
+        $(document).on('keydown.controls',{controls: controls},controls.onKeyboardDownMove);
+    }, // controls_keyboardMoveRegister
 
-    // [private] _unregister_keyboard_move() method
-    _unregister_keyboard_move: function(controls) {
-        $(document).off('keydown.controls',controls._keyboard_move);
-    },
+    /**
+     * keyboardMoveUnregister()
+     * Unregisters keyboard move events.
+     *
+     * @return  void
+     */
+    keyboardMoveUnregister: function controls_keyboardMoveUnregister(controls) {
+        $(document).off('keydown.controls',controls.onKeyboardDownMove);
+    }, // controls_keyboardMoveUnregister
 
-    // [private] _register_keyboard_zoom() method
-    _register_keyboard_zoom: function(controls) {
-        $(document).on('keydown.controls',{controls: controls},controls._keyboard_zoom);
-    },
-
-    // [private] _unregister_keyboard_zoom() method
-    _unregister_keyboard_zoom: function(controls) {
-        $(document).off('keydown.controls',controls._keyboard_zoom);
-    },
-
-    // [private] _keyboard_move() method
-    _keyboard_move: function(e) {
+    /**
+     * onKeyboardDownMove()
+     * Event triggered on keyboard keydown for a move. Calls a Panorama rotation.
+     *
+     * @return  void
+     */
+    onKeyboardDownMove: function controls_onKeyboardDownMove(e) {
 
         var controls = e.data.controls;
         if (!controls.keyboard.move.active)
             return;
 
-        var needDrawScene = true;
+        var redraw = true;
         var moveStep = controls.keyboard.move.step;
 
         // move
@@ -439,25 +535,51 @@ $.extend(true,Controls.prototype, {
                 controls.panorama.lat -= moveStep;
                 break;
             default:
-                needDrawScene = false;
+                redraw = false;
         }
 
         // update
-        if (needDrawScene)
-            controls.panorama.drawScene(function(){
-              $('canvas:first',controls.panorama.container).trigger('mousemove');
+        if (redraw) {
+            controls.panorama.drawScene(function() {
+                $('canvas:first',controls.panorama.container).trigger('mousemove');
             });
+        }
 
-    },
+    }, // controls_onKeyboardDownMove
 
-    // [private] _keyboard_zoom() method
-    _keyboard_zoom: function(e) {
+    /**
+     * keyboardZoomRegister()
+     * Registers keyboard zoom events.
+     *
+     * @return  void
+     */
+    keyboardZoomRegister: function controls_keyboardZoomRegister(controls) {
+        $(document).on('keydown.controls',{controls: controls},controls.onKeyboardDownZoom);
+    }, // controls_keyboardZoomRegister
+
+    /**
+     * keyboardZoomUnregister()
+     * Unregisters keyboard zoom events.
+     *
+     * @return  void
+     */
+    keyboardZoomUnregister: function controls_keyboardZoomUnregister(controls) {
+        $(document).off('keydown.controls',controls.onKeyboardDownZoom);
+    }, // controls_keyboardZoomUnregister
+
+    /**
+     * onKeyboardDownZoom()
+     * Event triggered on keyboard keydown for a zoom. Calls a Panorama zoom.
+     *
+     * @return  void
+     */
+    onKeyboardDownZoom: function controls_onKeyboardDownZoom(e) {
 
         var controls = e.data.controls;
         if (!controls.keyboard.zoom.active)
             return;
 
-        var needZoomUpdate = true;
+        var redraw = true;
 
         // zoom
         switch(e.keyCode) {
@@ -468,36 +590,47 @@ $.extend(true,Controls.prototype, {
                 controls.panorama.camera.zoom.current += controls.keyboard.zoom.step;
                 break;
             default:
-                needZoomUpdate = false;
+                redraw = false;
         }
 
         // update
-        if (needZoomUpdate)
+        if (redraw)
             controls.panorama.zoomUpdate();
 
-    },
+    }, // controls_onKeyboardDownZoom
 
-    // [private] _init_devicemotion() method
-    _init_devicemotion: function() {
+    /**
+     * deviceMotionInit()
+     * Initializes device motion events. Uses watch.js to register/unregister
+     * events dynamically based on their active flags.
+     *
+     * @return  void
+     */
+    deviceMotionInit: function controls_deviceMotionInit() {
 
         var controls = this;
 
         // watch devicemotion move properties
         watch(controls.devicemotion.move,['active'], function() {
             if (controls.devicemotion.move.active)
-                controls._register_devicemotion_move(controls);
+                controls.deviceMotionMoveRegister(controls);
             else
-                controls._unregister_devicemotion_move(controls);
+                controls.deviceMotionMoveUnregister(controls);
         });
 
         // devicemotion move
         if (controls.devicemotion.move.active)
-            controls._register_devicemotion_move(controls);
+            controls.deviceMotionMoveRegister(controls);
 
-    },
+    }, // controls_deviceMotionInit
 
-    // [private] _init_devicemotion_switch() method
-    _init_devicemotion_switch: function() {
+    /**
+     * deviceMotionInit()
+     * Initializes device motion GUI switch.
+     *
+     * @return  void
+     */
+    deviceMotionInitSwitch: function controls_deviceMotionInitSwitch() {
 
         var controls = this;
 
@@ -520,10 +653,15 @@ $.extend(true,Controls.prototype, {
         // append switch
         container.append(gyro.append(button.append(img)));
 
-    },
+    }, // controls_deviceMotionInitSwitch
 
-    // [private] _register_devicemotion_move() method
-    _register_devicemotion_move: function(controls) {
+    /**
+     * deviceMotionMoveRegister()
+     * Registers move events (on HTML5 DeviceMotion compatible devices only).
+     *
+     * @return  void
+     */
+    deviceMotionMoveRegister: function controls_deviceMotionMoveRegister(controls) {
 
         // pass controls
         window._controls_devicemotion = controls;
@@ -538,23 +676,28 @@ $.extend(true,Controls.prototype, {
             }
 
             // register event
-            window.addEventListener('devicemotion',controls._device_move_by_device_motion,false);
+            window.addEventListener('devicemotion',controls.onDeviceMotionMove,false);
 
         // not supported
         } else {
             controls.devicemotion.move.active = false; // unregister
         }
 
-    },
+    }, // controls_deviceMotionMoveRegister
 
-    // [private] _unregister_devicemotion_move() method
-    _unregister_devicemotion_move: function(controls) {
+    /**
+     * deviceMotionMoveUnregister()
+     * Unregisters device motion move events.
+     *
+     * @return  void
+     */
+    deviceMotionMoveUnregister: function controls_deviceMotionMoveUnregister(controls) {
 
         // motion
         if (window.DeviceMotionEvent) {
 
             // unregister event
-            window.removeEventListener('devicemotion',controls._device_move_by_device_motion,false);
+            window.removeEventListener('devicemotion',controls.onDeviceMotionMove,false);
 
             // turn touch move on again if it was initialy requested
             if (controls.touch.internal.movestate) {
@@ -572,27 +715,105 @@ $.extend(true,Controls.prototype, {
         // clear controls
         window._controls_devicemotion = null;
 
-    },
+    }, // controls_deviceMotionMoveUnregister
 
-    // [private] _device_calibration() method
-    _device_calibration: function(e) {
+    /**
+     * onDeviceMotionMove()
+     * Event triggered on devicemotion move. Calls a Panorama rotation.
+     *
+     * @return  void
+     */
+    onDeviceMotionMove: function controls_onDeviceMotionMove(e) {
+
+        var controls = window._controls_devicemotion;
+        if (!controls.devicemotion.move.active && !controls.devicemotion.move.remote)
+            return;
+
+        // check if calibration has been made
+        if (!controls.devicemotion.internal.calibration.done) {
+            controls.deviceMotionWizard(e);
+            return;
+        }
+
+        // time
+        var now = (new Date()).getTime();
+
+        // first tick, keep time
+        if (controls.devicemotion.internal.ticks.time == 0) {
+            controls.devicemotion.internal.ticks.time = now;
+            return;
+        }
+
+        // elapsed time between two ticks
+        var elapsed = (now - controls.devicemotion.internal.ticks.time) / 1000;
+
+        // elapsed time is beyond threshold
+        if (elapsed > controls.devicemotion.internal.ticks.threshold) {
+            controls.resetTicks();
+            return;
+        }
+
+        // keep time
+        controls.devicemotion.internal.ticks.time = now;
+
+        // original orientation
+        var lon = controls.devicemotion.internal.orientation.lon;
+        var lat = controls.devicemotion.internal.orientation.lat;
+
+        // panorama orientation per device orientation
+        lon -= controls.devicemotion.internal.calibration.rotation.sign * e.rotationRate[controls.devicemotion.internal.calibration.rotation.axis] * elapsed;
+        lat -= controls.devicemotion.internal.calibration.tilt.sign * e.rotationRate[controls.devicemotion.internal.calibration.tilt.axis] * elapsed;
+
+        // assign orientation
+        controls.panorama.lon = lon;
+        controls.panorama.lat = lat;
+        controls.devicemotion.internal.orientation.lon = lon;
+        controls.devicemotion.internal.orientation.lat = lat;
+
+        // limit webgl redraw to nth ticks
+        controls.devicemotion.internal.ticks.count++;
+        if (controls.devicemotion.internal.ticks.count <= controls.devicemotion.internal.ticks.nth)
+            return;
+        else
+            controls.devicemotion.internal.ticks.count = 0;
+
+        // webgl redraw as moved beyond rotation threshold
+        if (e.rotationRate[controls.devicemotion.internal.calibration.tilt.axis] > controls.devicemotion.internal.orientation.threshold
+         || e.rotationRate[controls.devicemotion.internal.calibration.rotation.axis] > controls.devicemotion.internal.orientation.threshold) {
+            controls.panorama.drawScene();
+        }
+
+    }, // controls_onDeviceMotionMove
+
+    /**
+     * deviceMotionWizard()
+     * Handles calibration wizard steps if the device is not fully calibrated.
+     *
+     * @return  void
+     */
+    deviceMotionWizard: function controls_deviceMotionWizard(e) {
 
         // step
         if (this.devicemotion.internal.calibration.step == null)
-            this._device_calibration_init(e);
+            this.deviceMotionWizardScreenInit(e);
         else if (this.devicemotion.internal.calibration.step == 'compatibility')
-            this._device_calibration_compatibility(e);
+            this.deviceMotionWizardTestCompatibility(e);
         else if (this.devicemotion.internal.calibration.step == 'rotation.run')
-            this._device_calibration_rotation_run(e);
+            this.deviceMotionWizardCalibrateRotation(e);
         else if (this.devicemotion.internal.calibration.step == 'tilt.run')
-            this._device_calibration_tilt_run(e);
+            this.deviceMotionWizardCalibrateTilting(e);
         else if (this.devicemotion.internal.calibration.step == 'gravity.run')
-            this._device_calibration_gravity_run(e);
+            this.deviceMotionWizardCalibrateGravity(e);
 
-    },
+    }, // controls_deviceMotionWizard
 
-    // [private] _device_calibration_init() method
-    _device_calibration_init: function(e) {
+    /**
+     * deviceMotionWizardScreenInit()
+     * Displays the device calibration wizard screen to the enduser.
+     *
+     * @return  void
+     */
+    deviceMotionWizardScreenInit: function controls_deviceMotionWizardScreenInit(e) {
 
         var controls = this;
 
@@ -635,7 +856,7 @@ $.extend(true,Controls.prototype, {
                 action.remove();
                 $('#calibration .step .title').html('Please wait...');
                 $('#calibration .step .desc').slideUp(400, function() {
-                    controls._device_calibration_reset_ticks();
+                    controls.resetTicks();
                     controls.devicemotion.internal.calibration.step = 'compatibility';
                 });
         });
@@ -651,10 +872,15 @@ $.extend(true,Controls.prototype, {
         // display
         wizard.css('visibility','visible');
 
-    },
+    }, // controls_deviceMotionWizardScreenInit
 
-    // [private] _device_calibration_compatibility() method
-    _device_calibration_compatibility: function(e) {
+    /**
+     * deviceMotionWizardTestCompatibility()
+     * Tests the device compatibility before allowing the user to proceed.
+     *
+     * @return  void
+     */
+    deviceMotionWizardTestCompatibility: function controls_deviceMotionWizardTestCompatibility(e) {
 
         var compatible = true;
         var now = (new Date()).getTime();
@@ -670,7 +896,7 @@ $.extend(true,Controls.prototype, {
 
         // elapsed time is beyond threshold
         if (elapsed > this.devicemotion.internal.ticks.threshold) {
-            this._device_calibration_reset_ticks();
+            this.resetTicks();
             return;
         }
 
@@ -695,14 +921,19 @@ $.extend(true,Controls.prototype, {
 
         // compatibility
         if (compatible)
-            this._device_calibration_rotation();
+            this.deviceMotionWizardScreenRotation();
         else
-            this._device_calibration_incompatibility();
+            this.deviceMotionWizardScreenIncompatibleDevice();
 
-    },
+    }, // controls_deviceMotionWizardTestCompatibility
 
-    // [private] _device_calibration_incompatibility() method
-    _device_calibration_incompatibility: function() {
+    /**
+     * deviceMotionWizardScreenIncompatibleDevice()
+     * Displays the device incompatibility screen to the enduser.
+     *
+     * @return  void
+     */
+    deviceMotionWizardScreenIncompatibleDevice: function controls_deviceMotionWizardScreenIncompatibleDevice() {
 
         var controls = this;
 
@@ -738,10 +969,15 @@ $.extend(true,Controls.prototype, {
         $('#calibration .step').append(action);
         $('#calibration .step .desc').slideDown(400);
 
-    },
+    }, // controls_deviceMotionWizardScreenIncompatibleDevice
 
-    // [private] _device_calibration_rotation() method
-    _device_calibration_rotation: function() {
+    /**
+     * deviceMotionWizardScreenRotation()
+     * Displays the device rotation calibration screen to the enduser.
+     *
+     * @return  void
+     */
+    deviceMotionWizardScreenRotation: function controls_deviceMotionWizardScreenRotation() {
 
         var controls = this;
 
@@ -762,8 +998,8 @@ $.extend(true,Controls.prototype, {
                 action.remove();
                 $('#calibration .step .title').html('Rotate to the right...');
                 $('#calibration .step .desc').slideUp(400, function() {
-                    controls._device_calibration_reset_ticks();
-                    controls._device_calibration_reset_axis('rotation');
+                    controls.resetTicks();
+                    controls.resetMotionAxis('rotation');
                     controls.devicemotion.internal.calibration.step = 'rotation.run';
                 });
         });
@@ -772,10 +1008,15 @@ $.extend(true,Controls.prototype, {
         $('#calibration .step').append(action);
         $('#calibration .step .desc').slideDown(400);
 
-    },
+    }, // controls_deviceMotionWizardScreenRotation
 
-    // [private] _device_calibration_rotation_run() method
-    _device_calibration_rotation_run: function(e) {
+    /**
+     * deviceMotionWizardCalibrateRotation()
+     * Detects the device rotation axis by accumulation until a limit is reached.
+     *
+     * @return  void
+     */
+    deviceMotionWizardCalibrateRotation: function controls_deviceMotionWizardCalibrateRotation(e) {
 
         var controls = this;
         var determined = false;
@@ -792,8 +1033,8 @@ $.extend(true,Controls.prototype, {
 
         // elapsed time is beyond threshold
         if (elapsed > this.devicemotion.internal.ticks.threshold) {
-            this._device_calibration_reset_ticks();
-            this._device_calibration_reset_axis('rotation');
+            this.resetTicks();
+            this.resetMotionAxis('rotation');
             return;
         }
 
@@ -821,14 +1062,19 @@ $.extend(true,Controls.prototype, {
             controls.devicemotion.internal.calibration.rotation.sign = controls.devicemotion.internal.calibration.motion[axe] > 0 ? 1 : -1;
 
             // continue
-            controls._device_calibration_tilt();
+            controls.deviceMotionWizardScreenTilting();
 
         });
 
-    },
+    }, // controls_deviceMotionWizardCalibrateRotation
 
-    // [private] _device_calibration_tilt() method
-    _device_calibration_tilt: function() {
+    /**
+     * deviceMotionWizardScreenTilting()
+     * Displays the device tilting calibration screen to the enduser.
+     *
+     * @return  void
+     */
+    deviceMotionWizardScreenTilting: function controls_deviceMotionWizardScreenTilting() {
 
         var controls = this;
 
@@ -849,8 +1095,8 @@ $.extend(true,Controls.prototype, {
                 action.remove();
                 $('#calibration .step .title').html('Tilt to the ground...');
                 $('#calibration .step .desc').slideUp(400, function() {
-                    controls._device_calibration_reset_ticks();
-                    controls._device_calibration_reset_axis('tilt');
+                    controls.resetTicks();
+                    controls.resetMotionAxis('tilt');
                     controls.devicemotion.internal.calibration.step = 'tilt.run';
                 });
         });
@@ -859,10 +1105,15 @@ $.extend(true,Controls.prototype, {
         $('#calibration .step').append(action);
         $('#calibration .step .desc').slideDown(400);
 
-    },
+    }, // controls_deviceMotionWizardScreenTilting
 
-    // [private] _device_calibration_tilt_run() method
-    _device_calibration_tilt_run: function(e) {
+    /**
+     * deviceMotionWizardCalibrateTilting()
+     * Detects the device tilting axis by accumulation until a limit is reached.
+     *
+     * @return  void
+     */
+    deviceMotionWizardCalibrateTilting: function controls_deviceMotionWizardCalibrateTilting(e) {
 
         var controls = this;
         var determined = false;
@@ -879,8 +1130,8 @@ $.extend(true,Controls.prototype, {
 
         // elapsed time is beyond threshold
         if (elapsed > this.devicemotion.internal.ticks.threshold) {
-            this._device_calibration_reset_ticks();
-            this._device_calibration_reset_axis('tilt');
+            this.resetTicks();
+            this.resetMotionAxis('tilt');
             return;
         }
 
@@ -912,14 +1163,19 @@ $.extend(true,Controls.prototype, {
             controls.devicemotion.internal.calibration.tilt.sign = controls.devicemotion.internal.calibration.motion[axe] > 0 ? 1 : -1;
 
             // continue
-            controls._device_calibration_gravity();
+            controls.deviceMotionWizardScreenGravity();
 
         });
 
-    },
+    }, // controls_deviceMotionWizardCalibrateTilting
 
-    // [private] _device_calibration_gravity() method
-    _device_calibration_gravity: function() {
+    /**
+     * deviceMotionWizardScreenGravity()
+     * Displays the device gravity calibration screen to the enduser.
+     *
+     * @return  void
+     */
+    deviceMotionWizardScreenGravity: function controls_deviceMotionWizardScreenGravity() {
 
         var controls = this;
 
@@ -940,8 +1196,8 @@ $.extend(true,Controls.prototype, {
                 action.remove();
                 $('#calibration .step .title').html('Stand still...');
                 $('#calibration .step .desc').slideUp(400, function() {
-                    controls._device_calibration_reset_ticks();
-                    controls._device_calibration_reset_acceleration();
+                    controls.resetTicks();
+                    controls.resetAcceleration();
                     controls.devicemotion.internal.calibration.step = 'gravity.run';
                 });
         });
@@ -950,10 +1206,15 @@ $.extend(true,Controls.prototype, {
         $('#calibration .step').append(action);
         $('#calibration .step .desc').slideDown(400);
 
-    },
+    }, // controls_deviceMotionWizardScreenGravity
 
-    // [private] _device_calibration_gravity_run() method
-    _device_calibration_gravity_run: function(e) {
+    /**
+     * deviceMotionWizardCalibrateGravity()
+     * Detects the device gravity by accumulation until an events limit is reached.
+     *
+     * @return  void
+     */
+    deviceMotionWizardCalibrateGravity: function controls_deviceMotionWizardCalibrateGravity(e) {
 
         var compatible = true;
         var now = (new Date()).getTime();
@@ -969,8 +1230,8 @@ $.extend(true,Controls.prototype, {
 
         // elapsed time is beyond threshold
         if (elapsed > this.devicemotion.internal.ticks.threshold) {
-            this._device_calibration_reset_ticks();
-            this._device_calibration_reset_acceleration();
+            this.resetTicks();
+            this.resetAcceleration();
             return;
         }
 
@@ -1005,12 +1266,17 @@ $.extend(true,Controls.prototype, {
         this.devicemotion.internal.orientation.lat = Math.asin(this.devicemotion.internal.calibration.acceleration.z / norm) * (180 / Math.PI);
 
         // continue
-        this._device_calibration_done();
+        this.deviceMotionWizardScreenDone();
 
-    },
+    }, // controls_deviceMotionWizardCalibrateGravity
 
-    // [private] _device_calibration_done() method
-    _device_calibration_done: function() {
+    /**
+     * deviceMotionWizardScreenDone()
+     * Displays the device calibration wizard final screen to the enduser.
+     *
+     * @return  void
+     */
+    deviceMotionWizardScreenDone: function controls_deviceMotionWizardScreenDone() {
 
         var controls = this;
 
@@ -1018,7 +1284,7 @@ $.extend(true,Controls.prototype, {
         this.devicemotion.internal.calibration.step = 'done';
 
         // activate
-        this._device_calibration_reset_ticks();
+        this.resetTicks();
         this.devicemotion.internal.calibration.done = true;
         this.devicemotion.internal.calibration.step = null;
 
@@ -1043,92 +1309,54 @@ $.extend(true,Controls.prototype, {
         $('#calibration .step').append(action);
         $('#calibration .step .desc').slideDown(400);
 
-    },
+    }, // controls_deviceMotionWizardScreenDone
 
-    // [private] _device_calibration_reset_ticks() method
-    _device_calibration_reset_ticks: function() {
+    /**
+     * resetTicks()
+     * Resets calibration ticks (internal values).
+     *
+     * @return  void
+     */
+    resetTicks: function controls_resetTicks() {
         this.devicemotion.internal.ticks.count = 0;
         this.devicemotion.internal.ticks.time = 0;
-    },
+    }, // controls_resetTicks
 
-    // [private] _device_calibration_reset_axis() method
-    _device_calibration_reset_axis: function(axis) {
+    /**
+     * resetMotionAxis()
+     * Resets calibration motion axis (internal values).
+     *
+     * @return  void
+     */
+    resetMotionAxis: function controls_resetMotionAxis(axis) {
         this.devicemotion.internal.calibration[axis].axis = null;
         this.devicemotion.internal.calibration[axis].sign = null;
         this.devicemotion.internal.calibration.motion.alpha = 0;
         this.devicemotion.internal.calibration.motion.beta = 0;
         this.devicemotion.internal.calibration.motion.gamma = 0;
-    },
+    }, // controls_resetMotionAxis
 
-    // [private] _device_calibration_reset_acceleration() method
-    _device_calibration_reset_acceleration: function() {
+    /**
+     * resetAcceleration()
+     * Resets calibration acceleration (internal values).
+     *
+     * @return  void
+     */
+    resetAcceleration: function controls_resetAcceleration() {
         this.devicemotion.internal.calibration.acceleration.x = 0;
         this.devicemotion.internal.calibration.acceleration.y = 0;
         this.devicemotion.internal.calibration.acceleration.z = 0;
-    },
+    } // controls_resetAcceleration
 
-    // [private] _device_move_by_device_motion() method
-    _device_move_by_device_motion: function(e) {
+}); // Controls Prototype
 
-        var controls = window._controls_devicemotion;
-        if (!controls.devicemotion.move.active && !controls.devicemotion.move.remote)
-            return;
 
-        // check if calibration has been made
-        if (!controls.devicemotion.internal.calibration.done) {
-            controls._device_calibration(e);
-            return;
-        }
-
-        // time
-        var now = (new Date()).getTime();
-
-        // first tick, keep time
-        if (controls.devicemotion.internal.ticks.time == 0) {
-            controls.devicemotion.internal.ticks.time = now;
-            return;
-        }
-
-        // elapsed time between two ticks
-        var elapsed = (now - controls.devicemotion.internal.ticks.time) / 1000;
-
-        // elapsed time is beyond threshold
-        if (elapsed > controls.devicemotion.internal.ticks.threshold) {
-            controls._device_calibration_reset_ticks();
-            return;
-        }
-
-        // keep time
-        controls.devicemotion.internal.ticks.time = now;
-
-        // original orientation
-        var lon = controls.devicemotion.internal.orientation.lon;
-        var lat = controls.devicemotion.internal.orientation.lat;
-
-        // panorama orientation per device orientation
-        lon -= controls.devicemotion.internal.calibration.rotation.sign * e.rotationRate[controls.devicemotion.internal.calibration.rotation.axis] * elapsed;
-        lat -= controls.devicemotion.internal.calibration.tilt.sign * e.rotationRate[controls.devicemotion.internal.calibration.tilt.axis] * elapsed;
-
-        // assign orientation
-        controls.panorama.lon = lon;
-        controls.panorama.lat = lat;
-        controls.devicemotion.internal.orientation.lon = lon;
-        controls.devicemotion.internal.orientation.lat = lat;
-
-        // limit webgl redraw to nth ticks
-        controls.devicemotion.internal.ticks.count++;
-        if (controls.devicemotion.internal.ticks.count <= controls.devicemotion.internal.ticks.nth)
-            return;
-        else
-            controls.devicemotion.internal.ticks.count = 0;
-
-        // webgl redraw as moved beyond rotation threshold
-        if (e.rotationRate[controls.devicemotion.internal.calibration.tilt.axis] > controls.devicemotion.internal.orientation.threshold
-         || e.rotationRate[controls.devicemotion.internal.calibration.rotation.axis] > controls.devicemotion.internal.orientation.threshold)
-            controls.panorama.drawScene();
-
-    }
-
-});
-
+/*
+ * Controls
+ * Event Dispatcher
+ */
 Panorama.prototype.dispatchEventsTo(Controls.prototype);
+
+
+// closure
+})(jQuery,Panorama);
