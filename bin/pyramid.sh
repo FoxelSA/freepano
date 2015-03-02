@@ -105,11 +105,11 @@ f=$2
       echo -n "- skipped"
     else
       if [ $level -eq $bottom ] ; then
-        convert -crop ${tilesize}x${tilesize} +repage +adjoin $f $QUALITY ${base}_${level}.%05d.jpg || exit
+        convert -crop ${tilesize}x${tilesize} +repage +adjoin $f $QUALITY -interlace Page ${base}_${level}.%05d.jpg || exit
         [ -n "$tempfile" ] && f=$fref
       else
         convert $f -resize ${curwidth}x$(expr $curwidth / 2) -quality 100 ${base}_${level}.jpg || exit
-        convert -crop ${tilesize}x${tilesize} +repage +adjoin ${base}_${level}.jpg $QUALITY ${base}_${level}.%05d.jpg || exit
+        convert -crop ${tilesize}x${tilesize} +repage +adjoin ${base}_${level}.jpg $QUALITY  -interlace Page ${base}_${level}.%05d.jpg || exit
         rm ${base}_${level}.jpg
       fi
 

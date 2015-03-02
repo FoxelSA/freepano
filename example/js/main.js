@@ -67,6 +67,7 @@ $(document).ready(function(){
 
 $(document).on('filesloaded', function(){
 
+  window.eventDispatcherDebug=0;
   $('#pano').panorama({
 
 /*

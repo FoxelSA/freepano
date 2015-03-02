@@ -90,9 +90,8 @@ $.extend(true,Texture.prototype,{
 
         // default material
         this.defaultMaterial = new THREE.MeshBasicMaterial({
-            wireframe: false,
-            color: 0x000000,
-            needsUpdate: true
+           depthTest: false,
+           depthWrite: false
         });
 
     }, // texture_init
@@ -105,7 +104,44 @@ $.extend(true,Texture.prototype,{
      */
     getTileName: function texture_getTileName(col,row) {
         return this.dirName+'/'+this.baseName+'_'+row+'_'+col+'.jpg';
-    } // texture_getTileName
+    }, // texture_getTileName
+
+    progressiveLoad: function texture_progressiveLoad(url,mapping,onload,onprogress,onerror) {
+
+      var loader = new THREE.ImageLoader();
+
+      var canvas=document.createElement('canvas');
+      canvas.width=canvas.height=this.sphere.texture.tileHeight;
+      var ctx=canvas.getContext('2d');
+
+      var texture=new THREE.Texture(canvas);
+
+      // load a image resource
+      loader.load(
+
+        url,
+
+        function _onload( image ) {
+          ctx.drawImage( image, 0, 0 );
+          texture.needsUpdate=true;
+          onload(texture);
+        },
+
+        function _onprogress( xhr ) {
+          ctx.drawImage(this,0,0);
+          texture.needsUpdate=true;
+          console.log( (xhr.loaded / xhr.total * 100) + '% loaded' );
+          onprogress();
+        },
+
+        onerror
+
+      );
+
+       return texture;
+
+    } // texture_progressiveLoad
+
 
 }); // Texture Prototype
 
@@ -131,7 +167,10 @@ function Sphere(options) {
 $.extend(true,Sphere.prototype,{
 
     defaults: {
-        done: false,
+        tilesToLoad: 0,
+        tilesLoaded: 0,
+        dynamicTileLoading: true,
+        dynamicTileDisposal: false,
         radius: 150,
         widthSegments: 16,
         heightSegments: 8,
@@ -149,18 +188,24 @@ $.extend(true,Sphere.prototype,{
     init: function sphere_init(callback) {
 
         var sphere = this;
+        var panorama = sphere.panorama;
+        panorama.sphere=sphere;
 
         // texture
         if (sphere.texture !== undefined) {
             if (!(sphere.texture instanceof Texture)) {
-                sphere.texture = new Texture(sphere.texture);
-                sphere.done = false;
+                sphere.geometryReady = false;
+                sphere.texture = new Texture($.extend(sphere.texture,{
+                  sphere: sphere
+                }));
             }
         }
 
-        // object3d
-        // sphere partial meshes will be grouped in it
+        // sphere segments container
         sphere.object3D = new THREE.Object3D();
+
+        // set initial sphere rotation
+        panorama.updateRotationMatrix();
 
         // build the sphere
         sphere.build(callback);
@@ -205,14 +250,13 @@ $.extend(true,Sphere.prototype,{
                 geometry.applyMatrix(transform);
 
                 // mesh with partial geometry and default material
-                var mesh = new THREE.Mesh(geometry,sphere.texture.defaultMaterial);
+                var mesh = new THREE.Mesh(geometry,sphere.texture.defaultMaterial.clone());
 
                 // mesh properties
                 $.extend(true,mesh, {
                     col: col,
                     row: row,
-                    shown: false,
-                    dispose: false
+                    visible: false
                 });
 
                 // add mesh in object
@@ -221,74 +265,105 @@ $.extend(true,Sphere.prototype,{
             }
         }
 
-        // sphere built
-        // dispatch event and start tiling
-        setTimeout(function() {
+        // mark sphere geometry as done/builded
+        sphere.geometryReady = true;
 
-            // mark sphere as done/builded
-            sphere.done = true;
-
-            // dispatch ready event
-            sphere.dispatch('ready');
-
-            // frustum based tiling
-            setTimeout(function() {
-                sphere.updateFrustumTiling();
-            },0);
-
-        },0);
+        sphere.dispatch('geometryready');
 
     }, // sphere_build
 
     /**
-     * updateFrustumTiling()
-     * Tiling management, displays (or dispose) tiles depending of the camera frustum.
+     * sphere.updateTiles()
+     * Trigger tiles loading
+     * if sphere.dynamicTileLoading is enabled, only visible tiles
+     * if sphere.dynamicTileDisposal is enabled, get rid of hidden tiles
      *
      * @return  void
      */
-    updateFrustumTiling: function sphere_updateFrustumTiling() {
+    updateTiles: function sphere_updateTiles() {
 
         var sphere = this;
 
-        // update camera frustum
-        sphere.panorama.camera.updateFrustum();
+        // do nothing if dynamic tile loading is disabled and tiles are loaded/loading
+        if (!sphere.dynamicTileLoading) {
+          var tilesCount=sphere.texture.columns*sphere.texture.rows;
+          if (sphere.tilesLoaded==tilesCount || sphere.tilesToLoad) {
+            return;
+          }
+          sphere.tilesToLoad=tilesCount;
+        }
+
+        var panorama=sphere.panorama;
+        var canvas=panorama.renderer.domElement;
+
+        // no need to update if the following parameters didnt change
+        if (
+            sphere_updateTiles.lon==panorama.lon &&
+            sphere_updateTiles.lat==panorama.lat &&
+            sphere_updateTiles.fov==panorama.camera.instance.fov &&
+            sphere_updateTiles.canvas_width==canvas.width &&
+            sphere_updateTiles.canvas_height==canvas.height
+        ) {
+          return;
+        }
+
+        // limit update rate
+        if (!sphere.updateTiles.timeout) {
+          sphere.updateTiles.timeout=setTimeout(function(){
+            sphere.doUpdateTiles();
+          },100);
+        }
+
+    }, // sphere_updateTiles
+
+    doUpdateTiles: function _sphere_doUpdateTiles() {
+
+        var sphere=this;
+        var panorama=sphere.panorama;
+
+        console.log('updateTiles');
+
+        // store current values
+        sphere.updateTiles.lon=panorama.lon;
+        sphere.updateTiles.lat=panorama.lat;
+        sphere.updateTiles.fov=panorama.camera.instance.fov;
+        sphere.updateTiles.canvas_widht=panorama.renderer.domElement.width;
+        sphere.updateTiles.canvas_widht=panorama.renderer.domElement.height;
 
         // loop over each mesh of the sphere
         $.each(sphere.object3D.children, function() {
 
             var mesh = this;
 
-            // visible
-            // load tile if not already shown, do nothing otherwise
-            if (sphere.panorama.camera.frustum.intersectsObject(mesh)) {
-
-                // already shown
-                if (mesh.shown)
+            // trigger loading for every tile, or only for visible tiles (according to frustum)
+            // depending on sphere.dynamicTileLoading value
+            if (!sphere.dynamicTileLoading || sphere.panorama.camera.frustum.intersectsObject(mesh)) {
+                // visible
+                if (mesh.visible)
                     return;
 
-                // set as show
-                mesh.shown = true;
+                // set as visible
+                mesh.visible = true;
+
+                // delay the sphere load event
+                if (sphere.dynamicTileLoading) ++sphere.tilesToLoad;
 
                 // load tile
-                var material = new THREE.MeshBasicMaterial({
-                    map: sphere.loadTile(mesh.col,mesh.row),
-                    depthTest: false,
-                    depthWrite: false
-                });
-
-                // set material
-                mesh.material = material;
+                mesh.material.map=sphere.loadTile(mesh.col,mesh.row);
                 mesh.material.needsUpdate = true;
 
-            // not visible
-            // dispose tile if shown, do nothing otherwise
             } else {
 
-                // dispose texture/material to free memory
-                if (mesh.dispose) {
+                // not visible
+                if (!mesh.visible){
+                  return;
+                }
 
-                    // set as not shown
-                    mesh.shown = false;
+                // set invisible
+                mesh.visible = false;
+
+                // dispose hidden tile texture/material depending on sphere.dynamicTileDisposal value
+                if (sphere.dynamicTileDisposal) {
 
                     // has material
                     if (mesh.material && mesh.material.map) {
@@ -298,24 +373,27 @@ $.extend(true,Sphere.prototype,{
                         mesh.material.dispose();
 
                         // default material
-                        mesh.material = sphere.texture.defaultMaterial;
+                        mesh.material = sphere.texture.defaultMaterial.clone();
 
                     }
 
                 }
             }
-
         });
 
-    }, // sphere_updateFrustumTiling
+        sphere.updateTiles.timeout=null;
+
+    }, // sphere_doUpdateTiles
 
     /**
      * loadTile()
-     * Loads a tile image.
+     * Loads a tile image progressively
+     * Trigger sphere 'tileload' when the tile is loaded
+     * Trigger sphere 'load' if all the requested tiles have been loaded
      *
-     * @return  Texture     Loaded texture as a Texture object.
+     * @return  THREE.Texture
      */
-    loadTile: function sphere_loadTile(col,row,callback) {
+    loadTile: function sphere_loadTile(col,row) {
 
         var sphere = this;
 
@@ -323,10 +401,15 @@ $.extend(true,Sphere.prototype,{
         var tileTexture = THREE.ImageUtils.loadTexture(sphere.texture.getTileName(col,row),THREE.UVMapping,
             // success
             function loadTexture_onload(texture) {
-                // panorama redraw
-                setTimeout(function() {
-                    sphere.panorama.drawScene.call(sphere.panorama);
-                },0);
+
+                sphere.dispatch('tileload');
+
+                --sphere.tilesToLoad;
+                if (!sphere.tilesLoaded) sphere.tilesLoaded=0;
+                ++sphere.tilesLoaded;
+                if (!sphere.tilesToLoad) {
+                  sphere.dispatch('load');
+                }
             },
             // error
             function loadTexture_onerror() {
@@ -342,26 +425,77 @@ $.extend(true,Sphere.prototype,{
     }, // sphere_loadTile
 
     /**
+     * loadTile_progressive()
+     * Loads a tile image progressively
+     * Trigger sphere 'tileload' when the tile is loaded or onprogress
+     * Trigger sphere 'load' if all the requested tiles have been loaded
+     *
+     * @return  THREE.Texture
+     */
+    loadTile_progressive: function sphere_loadTile(col,row) {
+
+      var sphere=this;
+
+      var tileTexture = this.texture.progressiveLoad(sphere.texture.getTileName(col,row),THREE.UVMapping,
+
+            // load event handler
+            function loadTexture_onload(texture) {
+
+                sphere.dispatch('tileload');
+
+                if (!sphere.tilesLoaded) {
+                  sphere.tilesLoaded=0;
+                }
+                ++sphere.tilesLoaded;
+
+                --sphere.tilesToLoad;
+                if (!sphere.tilesToLoad) {
+                  sphere.dispatch('load');
+                }
+            },
+
+            // progress event handler
+            function loadTexture_onProgress() {
+              sphere.dispatch('tileload');
+            },
+
+            // error event handler
+            function loadTexture_onerror() {
+                $.notify('Cannot load panorama tiles.');
+            }
+        );
+
+        // texture properties
+        $.extend(tileTexture,sphere.texture.options);
+
+        return tileTexture;
+
+    }, // sphere_loadTile_progressive
+
+    /**
      * updateTexture()
      * Asks the sphere to reload the texture object as it has changed.
      *
      * @return  void
      */
-    updateTexture: function sphere_updateTexture(callback) {
+    updateTexture: function sphere_updateTexture() {
 
         var sphere = this;
+        var panorama=this.panorama;
 
-        // set all mesh as not shown
+        // set all mesh as not visible
         // this will cause the tiles to be reloaded
         $.each(sphere.object3D.children, function() {
-            this.shown = false;
+            this.visible = false;
         });
 
-        // frustum based tiling
-        sphere.updateFrustumTiling();
+        // reset sphere.updateTile() related properties
+        sphere.tilesLoaded=0;
+        sphere.tilesToLoad=0;
+        panorama.sphere.panoramaReadyDispatched=false;
 
-        // dispatch ready event
-        sphere.dispatch('ready');
+        // trigger tiles loading
+        sphere.updateTiles();
 
     } // sphere_updateTexture
 
@@ -403,7 +537,7 @@ $.extend(true,Camera.prototype,{
     }, // defaults
 
     /**
-     * init()
+     * camera_init()
      * Initializes Camera properties.
      *
      * @return  void
@@ -420,14 +554,11 @@ $.extend(true,Camera.prototype,{
             camera.farPlane
         );
 
-        // camera look at initial position
-        camera.target = new THREE.Vector3(0,0,0);
-
     }, // camera_init
 
     /**
-     * updateFrustum()
-     * Updates the frustum object based on camera projection matrix.
+     * camera_updateFrustum()
+     * Updates the camera frustum object according to the camera view projection matrix.
      *
      * @return  void
      */
@@ -435,10 +566,7 @@ $.extend(true,Camera.prototype,{
 
         var camera = this;
 
-        // camera.instance.updateMatrixWorld();
-        // camera.instance.matrixWorldInverse.getInverse(camera.instance.matrixWorld);
-
-        // camera projection matrix
+        // camera view projection matrix
         camera.viewProjectionMatrix.multiplyMatrices(camera.instance.projectionMatrix,camera.instance.matrixWorldInverse);
 
         // set frustum from camera projection matrix
@@ -447,24 +575,29 @@ $.extend(true,Camera.prototype,{
     }, // camera_updateFrustum
 
     /**
-     * on_panorama_resize()
-     * Event triggered on panorama resize. Updates the frustrum object.
+     * camera_on_panorama_resize()
+     * Camera handler for panorama resize. Updates the frustrum object.
      *
-     * @return  void
+     * @return  implicit !false
      */
     on_panorama_resize: function camera_on_panorama_resize(e) {
         this.camera.updateFrustum();
     }, // camera_on_panorama_resize
 
     /**
-     * on_panorama_zoom()
-     * Event triggered on panorama zoom. Updates the frustrum object.
+     * camera_on_panorama_zoom()
+     * Camera handler for panorama zoom event. Updates the frustrum object.
      *
-     * @return  void
+     * @return  implicit !false
      */
     on_panorama_zoom: function camera_on_panorama_zoom(e) {
         this.camera.updateFrustum();
-    } // camera_on_panorama_zoom
+    }, // camera_on_panorama_zoom
+
+    on_panorama_rotate: function camera_on_panorama_rotate(e) {
+        // update frustum
+        this.camera.updateFrustum();
+    },
 
 }); // Camera Prototype
 
@@ -558,45 +691,12 @@ $.extend(true,Panorama.prototype,{
         // dispatch preinit event
         panorama.dispatch('preinit');
 
-        // camera
-        if (!(panorama.camera instanceof Camera)) {
-            panorama.camera = new Camera($.extend(true,{
-                panorama: panorama,
-                fov: panorama.fov.start
-            },panorama.camera));
-        }
-
-        // sphere
-        if (panorama.sphere !== undefined) {
-
-            // instance
-            if (!(panorama.sphere instanceof Sphere)) {
-                panorama.sphere = new Sphere($.extend(true,{
-                    panorama: panorama,
-                    onready: function(){
-
-                        // update the initial rotation matrix
-                        panorama.updateRotationMatrix();
-
-                        // dispatch resize and ready events
-                        panorama.dispatch('resize');
-                        panorama.dispatch('ready');
-
-                    }
-                },panorama.sphere));
-            }
-
-            // add sphere to panorama
-            panorama.scene.add(panorama.sphere.object3D);
-
-        }
-
         // renderer
         if (!(panorama.renderer instanceof THREE.WebGLRenderer)) {
 
             // webgl renderer
             try {
-                panorama.renderer = $.extend(new THREE.WebGLRenderer(panorama.renderer.parameters),panorama.renderer.properties);
+                panorama.renderer=$.extend(new THREE.WebGLRenderer(panorama.renderer.parameters),panorama.renderer.properties);
                 panorama.renderer.setPixelRatio(window.devicePixelRatio);
 
             // canvas 2d fallback
@@ -630,6 +730,14 @@ $.extend(true,Panorama.prototype,{
         // renderer dom element
         panorama.renderer.setSize($(panorama.container).width(),$(panorama.container).height());
         $(panorama.container).append(panorama.renderer.domElement);
+
+        // camera
+        if (!(panorama.camera instanceof Camera)) {
+            panorama.camera = new Camera($.extend(true,{
+                panorama: panorama,
+                fov: panorama.fov.start
+            },panorama.camera));
+        }
 
         // post-processing
         // @todo: move post-processing in a separate module
@@ -675,6 +783,21 @@ $.extend(true,Panorama.prototype,{
             }
         }
 
+        // sphere
+        if (panorama.sphere !== undefined) {
+
+            // instance
+            if (!(panorama.sphere instanceof Sphere)) {
+                panorama.sphere = new Sphere($.extend(true,{
+                    panorama: panorama
+                },panorama.sphere));
+            }
+
+            // add sphere to panorama
+            panorama.scene.add(panorama.sphere.object3D);
+
+        }
+
         // init panorama events
         panorama.eventsInit();
 
@@ -682,6 +805,37 @@ $.extend(true,Panorama.prototype,{
         panorama.dispatch('init');
 
     }, // panorama_init
+
+    on_sphere_tileload: function panorama_on_sphere_tileload(e) {
+      var sphere=this;
+      var panorama=this.panorama;
+      panorama.camera.updateFrustum();
+      sphere.panorama.drawScene();
+    }, // panoram_on_sphere_tileload
+
+    on_sphere_load: function panorama_on_sphere_load(e) {
+      var sphere=this;
+      var panorama=this.panorama;
+
+      // dont trigger panorama ready after each tile update
+      if (sphere.panoramaReadyTriggered) {
+        return;
+      }
+
+      if (!sphere.panoramaReadyDispatched) {
+        panorama.dispatch('resize');
+        panorama.dispatch('ready');
+        sphere.panoramaReadyDispatched=true;
+      }
+
+    }, // panorama_on_sphere_load
+
+    // initial render (no textures loaded yet)
+    on_sphere_geometryready: function panorama_on_sphere_geometryready() {
+      var panorama=this.panorama;
+      panorama.dispatch('resize');
+      panorama.drawScene();
+    },
 
     /**
      * eventsInit()
@@ -694,7 +848,7 @@ $.extend(true,Panorama.prototype,{
         var panorama = this;
 
         // renderer canvas
-        var canvas=$('canvas:first',this.container);
+        var canvas=panorama.renderer.domElement;
 
         // container events
         $(this.container)
@@ -775,8 +929,7 @@ $.extend(true,Panorama.prototype,{
     /**
      * getMouseCoords()
      * Returns the latitude/longitude coordinates relative to the mouse pointer.
-     * This method also sets the mouse coordinates xyz/phi/theta vector and
-     * computed the vertical/horizontal FOV.
+     * This method also sets the mouse coordinates xyz/phi/theta vector
      *
      * @return  Object      Latitude and longitude coordinates as an Object.
      */
@@ -857,13 +1010,17 @@ $.extend(true,Panorama.prototype,{
         m.phi = phi;
         m.theta = lam;
 
-        // set mouse pixel coordinates
+        // set mouse texture coordinates
         m.pixel_x = (lam / (2.0 * Math.PI) ) * texture_w;
         m.pixel_y = ((Math.PI * 0.5 - phi) / Math.PI) * texture_h;
 
         // set mouse lam/phi (lon/lat) degrees
         m.lon = lam * (180/Math.PI);
         m.lat = phi * (180/Math.PI);
+
+        // set mouse canvas coordinates
+        m.pageX = mouseRel.x;
+        m.pageY = mouseRel.y;
 
         // adjust lon/lat
         m.lon = -(90 - m.lon) - 90;
@@ -875,10 +1032,7 @@ $.extend(true,Panorama.prototype,{
         if (panorama.showMouseInfo)
             panorama.showMouseDebugInfo(m);
 
-        return {
-            lon: cursor.lon,
-            lat: cursor.lat
-        };
+        return cursor;
 
     }, // panorama_getMouseCoords
 
@@ -1060,7 +1214,7 @@ $.extend(true,Panorama.prototype,{
         var panorama = this;
 
         // left button
-        if (panorama.isLeftButtonDown(e)) {
+        if (isLeftButtonDown(e)) {
 
             e.preventDefault();
 
@@ -1108,7 +1262,7 @@ $.extend(true,Panorama.prototype,{
         e.done = true;
 
         // left button
-        if (panorama.isLeftButtonDown(e)) {
+        if (isLeftButtonDown(e)) {
 
             // panorama may rotate
             if (panorama.mode.mayrotate) {
@@ -1291,16 +1445,6 @@ $.extend(true,Panorama.prototype,{
     }, // panorama_onresize
 
     /**
-     * isLeftButtonDown()
-     * Detects if the left button is down from a mouse event.
-     *
-     * @return  Boolean     True if the left button is down, false otherwise.
-     */
-    isLeftButtonDown: function panorama_isLeftButtonDown(e) {
-        return ((e.buttons!==undefined && e.buttons==1) || (e.buttons===undefined && e.which==1));
-    }, // panorama_isLeftButtonDown
-
-    /**
      * showMouseDebugInfo()
      * Displays mouse information upon the renderer. Debug purposes only.
      *
@@ -1468,42 +1612,274 @@ $.extend(true,Panorama.prototype,{
     }, // panorama_getMouseCoords
     */
 
-    /**
-     * setZoom() -- unused
-     * ...
-     *
-     * @return  ...
-     */
-    /*
-    setZoom: function panorama_setZoom(e,scale) {
-        this.camera.zoom.current = 1/scale;
-        this.zoomUpdate();
-    }, // panorama_setZoom
-    */
+    onmousedown: function panorama_mousedown(e){
+      if (isLeftButtonDown(e)) {
+        this.mode.leftButtonDown=true;
+        this.mode.mayrotate=true;
+        e.preventDefault();
+        //console.log(this.lon,this.lat);
+        this.mousedownPos={
+          lon: this.lon,
+          lat: this.lat,
+          cursorCoords: this.getMouseCoords(e),
+          textureCoords: this.getTextureCoordinates(this.mouseCoords.lon,this.mouseCoords.lat)
+        };
+      } else {
+        this.mode.leftButtonDown=false;
+      }
+    },
 
-    /**
-     * getVector3FromAngles() -- unused
-     * ...
-     *
-     * @return  ...
-     */
-    /*
-    getVector3FromAngles: function panorama_getVector3FromAngles(lon,lat) {
-        var v = new THREE.Vector3(0,0,-1);
-        v.applyAxisAngle(panorama.Xaxis,lat);
-        v.applyAxisAngle(panorama.Yaxis,lon);
-        return v;
-    }, // panorama_getVector3FromAngles
-    */
+    onmousemove: function panorama_mousemove(e){
+
+      var panorama=this;
+
+      if (!panorama.sphere.geometryReady) {
+        return;
+      }
+
+      if (e.done) {
+        console.log('fixme');
+        return;
+      }
+      e.done=true;
+
+      if (isLeftButtonDown(e)) {
+
+        var cursorCoords=panorama.getMouseCoords(e);
+
+        if (panorama.mode.mayrotate) {
+          // dont enter rotate mode when initial mousemove is less than panorama.rotationMouseThreshold pixels
+          var dx=cursorCoords.pageX-panorama.mousedownPos.cursorCoords.pageX;
+          var dy=cursorCoords.pageY-panorama.mousedownPos.cursorCoords.pageY;
+          if (Math.sqrt(dx*dx+dy*dy)<panorama.rotationMouseThreshold) {
+            return;
+          }
+
+          // enter rotate mode
+          panorama.mode.mayrotate=false;
+          panorama.mode.rotate=true;
+
+        }
+
+        if (panorama.mode.rotate) {
+
+          e.preventDefault();
+
+          // rotate panorama
+          panorama.lon=(panorama.mousedownPos.lon-(cursorCoords.lon-panorama.mousedownPos.cursorCoords.lon))%360;
+          panorama.lat=panorama.mousedownPos.lat+(cursorCoords.lat-panorama.mousedownPos.cursorCoords.lat);
+          if (panorama.lon<0) panorama.lon+=360;
+
+          panorama.dispatch('rotate');
+          panorama.drawScene();
+        }
+
+      } else {
+        // exit rotate mode
+        panorama.mode.mayrotate=false;
+        panorama.mode.rotate=false;
+
+        panorama.mode.leftButtonDown=false;
+      }
+      return false;
+    },
+
+
+    onmouseup: function panorama_mouseup(e){
+
+      var leftButtonUp=this.mode.leftButtonDown;
+      var rotating=this.mode.rotate;
+
+      this.mode.rotate=false;
+      this.mode.mayrotate=false;
+      this.mode.leftButtonDown=false;
+
+      // dont dispatch click after rotation
+      // nor after single mouseup
+
+      if (!rotating && leftButtonUp) {
+        e.type='click';
+        this.dispatch(e);
+      }
+
+    },
+
+    // return current zoom factor
+    getZoom: function panorama_getZoom() {
+      var visible;
+      visible=this.sphere.texture.height*this.camera.instance.fov/180;
+      return this.renderer.domElement.height/visible;
+    },
+
+    // return current field of view for the largest dimension
+    getFov: function() {
+      return (this.renderer.domElement.width>this.renderer.domElement.height) ?
+        360*((this.renderer.domElement.width*this.camera.zoom.current/4)/this.sphere.texture.height*2) :
+        180*((this.renderer.domElement.height*this.camera.zoom.current/2)/this.sphere.texture.height);
+    },
+
+    updateFov: function() {
+
+      var fov=this.getFov();
+
+      if (fov>this.fov.max) {
+        var fovRatio=fov/this.fov.max;
+        fov=this.fov.max;
+        this.camera.zoom.current/=fovRatio;
+      }
+
+      // convert to vertical fov
+      if (this.renderer.domElement.width>this.renderer.domElement.height) {
+        fov=fov/this.renderer.domElement.width*this.renderer.domElement.height;
+      }
+
+      return fov;
+    },
+
+
+    // update camera fov according to camera zoom
+    // redraw panorama, dispatch 'zoom' and 'mousemove' if value changed
+    zoomUpdate: function panorama_zoomUpdate() {
+      var panorama=this;
+      var camera=panorama.camera;
+      var fov=camera.instance.fov;
+
+      camera.zoom.current=1/Math.min(camera.zoom.max,Math.max(camera.zoom.min,1/camera.zoom.current));
+      camera.instance.fov=panorama.updateFov();
+
+      if (fov!=camera.instance.fov) {
+        camera.instance.updateProjectionMatrix();
+        panorama.dispatch('zoom');
+        panorama.drawScene(function(){
+          $(panorama.renderer.domElement).trigger('mousemove');
+        });
+      }
+    },
+
+    // set current zoom
+    setZoom: function panorama_setZoom(scale) {
+      this.camera.zoom.current=1/scale;
+      this.zoomUpdate();
+    },
+
+    onmousewheel: function panorama_mousewheel(e){
+      e.preventDefault();
+      if (!this.sphere.geometryReady) {
+        return;
+      }
+      var needDrawScene = false;
+      if (e.shiftKey) {
+        this.rotation.tilt+=e.deltaX*this.rotation.step;
+        this.updateRotationMatrix();
+        needDrawScene = true;
+      }
+      if (e.altKey) {
+        this.rotation.roll+=e.deltaY*this.rotation.step;
+        this.updateRotationMatrix();
+        needDrawScene = true;
+      }
+      if (needDrawScene) {
+        //console.log('lon ['+this.lon+'] lat ['+this.lat+'] tilt ['+this.rotation.tilt+'] roll ['+this.rotation.roll+']');
+        this.drawScene();
+        return;
+      }
+      this.camera.zoom.current-=e.deltaY*this.camera.zoom.step;
+      if (this.camera.zoom.current<0) this.camera.zoom.current=0;
+      this.zoomUpdate();
+    },
+
+    drawScene: function panorama_drawScene(callback){
+      if (!this.sphere.geometryReady) {
+        return;
+      }
+      var panorama=this;
+      requestAnimationFrame(function(){
+        panorama.renderFrame();
+        if (callback) callback();
+      });
+    },
+
+    renderFrame: function renderFrame() {
+      var panorama=this;
+
+      if (!panorama.sphere.geometryReady) {
+        return;
+      }
+      panorama.lat=Math.max(panorama.limits.lat.min,Math.min(panorama.limits.lat.max,panorama.lat));
+
+      // update camera rotation
+      panorama.theta=panorama.lon*Math.PI/180;
+      panorama.phi=(90-panorama.lat)*Math.PI/180;
+
+      // set camera lookAt vector
+      panorama.lookAtVec=new THREE.Vector3(
+        Math.sin(panorama.phi)*Math.cos(panorama.theta),
+        Math.cos(panorama.phi),
+        Math.sin(panorama.phi)*Math.sin(panorama.theta)
+      );
+
+      // adjust camera lookAt vector by inverse sphere rotation
+      panorama.lookAtVec.applyMatrix4(new THREE.Matrix4().getInverse(panorama.sphere.object3D.matrix));
+
+      // update camera orientation
+      panorama.camera.instance.lookAt(panorama.lookAtVec);
+
+      // allow subscribers to update objects before rendering
+      panorama.dispatch('update');
+
+      // clear framebuffer before rendering
+      panorama.renderer.clear();
+      // TODO move post-Processing to jquery.freepano.postprocessing.js
+      if (panorama.postProcessing && panorama.postProcessing.enabled) {
+        // render scene with postProcessing filters
+        panorama.composer.render(panorama.scene,panorama.camera.instance);
+      } else {
+        // render scene
+        panorama.renderer.render(panorama.scene,panorama.camera.instance);
+      }
+
+      // allow subscribers to render secondary scenes
+      panorama.dispatch('render');
+
+      // trigger tiles loading
+      panorama.sphere.updateTiles();
+    },
+
+    onresize: function panorama_resize(e){
+      var panorama=this;
+      this.camera.instance.aspect=$(this.container).width()/$(this.container).height();
+      this.camera.instance.updateProjectionMatrix();
+      this.renderer.setSize($(this.container).width(),$(this.container).height());
+      if (this.postProcessing) {
+        this.composer.setSize($(this.container).width(),$(this.container).height());
+        $.each(this.postProcessing,function() {
+          var pass=this.pass;
+          if (pass) {
+            $.each(this.uniforms,function(uniform,set){
+              set.call(pass.uniforms[uniform],panorama);
+            });
+          }
+        });
+      }
+
+      setTimeout(function(){
+        if (!panorama.sphere.geometryReady) {
+          return;
+        }
+        panorama.zoomUpdate();
+        panorama.drawScene();
+      },0);
+    }
 
 }); // Panorama Prototype
 
 /*
- * Panorama
- * Bind Contructor to jQuery.prototype.panorama
+ * jQuery panorama plugin
+ *
+ * @return jQuery object
  */
-$.fn.panorama = function(options) {
-    $(this).each(function() {
+$.fn.panorama = function jQuery_panorama(options) {
+    return this.each(function() {
         if ($(this).data('pano')) {
             // void
         } else {
@@ -1512,8 +1888,17 @@ $.fn.panorama = function(options) {
             }));
         }
     });
-    return this;
-}; // Panorama Bind Contructor
+}; // jQuery_panorama
+
+/**
+ * isLeftButtonDown()
+ * Detects if the left button is down from a mouse event.
+ *
+ * @return  Boolean     True if the left button is down, false otherwise.
+ */
+window.isLeftButtonDown=function isLeftButtonDown(e) {
+     return ((e.buttons!==undefined && e.buttons==1) || (e.buttons===undefined && e.which==1));
+ }, // isLeftButtonDown
 
 /*
  * Panorama
@@ -1521,5 +1906,7 @@ $.fn.panorama = function(options) {
  */
 setupEventDispatcher(Panorama.prototype);
 setupEventDispatcher(Sphere.prototype);
+setupEventDispatcher(Texture.prototype);
 setupEventDispatcher(Camera.prototype);
 Panorama.prototype.dispatchEventsTo(Camera.prototype);
+Sphere.prototype.dispatchEventsTo(Panorama.prototype);
