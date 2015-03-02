@@ -44,19 +44,6 @@
  */
 
 
-var Xaxis=new THREE.Vector3(1,0,0);
-var Yaxis=new THREE.Vector3(0,1,0);
-var Zaxis=new THREE.Vector3(0,0,1);
-
-// return THREE.Vector3 from lon/lat in radians
-function getVector3FromAngles(lon,lat) {
-  var v=new THREE.Vector3(0,0,-1);
-  v.applyAxisAngle(Xaxis,lat);
-  v.applyAxisAngle(Yaxis,lon);
-  return v;
-}
-
-
 /*
  * Texture
  * Class Constructor
@@ -319,14 +306,28 @@ $.extend(true,Sphere.prototype,{
           return;
         }
 
+        // limit update rate
+        if (!sphere.updateTiles.timeout) {
+          sphere.updateTiles.timeout=setTimeout(function(){
+            sphere.doUpdateTiles();
+          },100);
+        }
+
+    }, // sphere_updateTiles
+
+    doUpdateTiles: function _sphere_doUpdateTiles() {
+
+        var sphere=this;
+        var panorama=sphere.panorama;
+
         console.log('updateTiles');
 
         // store current values
-        sphere_updateTiles.lon=panorama.lon;
-        sphere_updateTiles.lat=panorama.lat;
-        sphere_updateTiles.fov=panorama.camera.instance.fov;
-        sphere_updateTiles.canvas_widht=panorama.renderer.domElement.width;
-        sphere_updateTiles.canvas_widht=panorama.renderer.domElement.height;
+        sphere.updateTiles.lon=panorama.lon;
+        sphere.updateTiles.lat=panorama.lat;
+        sphere.updateTiles.fov=panorama.camera.instance.fov;
+        sphere.updateTiles.canvas_widht=panorama.renderer.domElement.width;
+        sphere.updateTiles.canvas_widht=panorama.renderer.domElement.height;
 
         // loop over each mesh of the sphere
         $.each(sphere.object3D.children, function() {
@@ -377,10 +378,11 @@ $.extend(true,Sphere.prototype,{
 
                 }
             }
-
         });
 
-    }, // sphere_updateTiles
+        sphere.updateTiles.timeout=null;
+
+    }, // sphere_doUpdateTiles
 
     /**
      * loadTile()
@@ -520,18 +522,18 @@ function Camera(options) {
 $.extend(true,Camera.prototype,{
 
     defaults: {
-      fov: 120,
-      nearPlane: 0.1,
-      farPlane: Sphere.prototype.defaults.radius*2,
-      zoom: {
-        max: 2.5,
-        min: 0.5,
-        step: 0.05,
-        current: 1
-      },
-      frustum: new THREE.Frustum(),
-      viewProjectionMatrix: new THREE.Matrix4()
-    }, // Camera defaults
+        fov: 120,
+        nearPlane: 0.1,
+        farPlane: Sphere.prototype.defaults.radius*2,
+        zoom: {
+            max: 2.5,
+            min: 0.5,
+            step: 0.05,
+            current: 1
+        },
+        frustum: new THREE.Frustum(),
+        viewProjectionMatrix: new THREE.Matrix4()
+    }, // defaults
 
     /**
      * camera_init()
@@ -623,47 +625,51 @@ function Panorama(options) {
 $.extend(true,Panorama.prototype,{
 
     defaults: {
-      mode: {},
-      container: 'body',
-      fov: {
-        start: 120,
-        min: 1,
-        max: 120
-      },
-      camera: undefined,
-      sphere: undefined,
-      postProcessing: undefined,
-      renderer: {
-        options: {
-          precision: 'highp',
-          antialias: false,
-          alpha: false
+        mode: {},
+        container: 'body',
+        fov: {
+            start: 120,
+            min: 1,
+            max: 120
         },
-        properties: {
-          autoClear: false,
-          renderPluginsPre: [],
-          renderPluginsPost: []
-        }
-      },
-      lon: 0,
-      lat: 0,
-      phi: 0,
-      theta: 0,
-      mouseCoords: new THREE.Vector3(),
-      rotation: {
-          heading: 0,
-          tilt: 0,
-          roll: 0,
-          step: 0.1
-      },
-      initialRotation: new THREE.Matrix4(),
-      limits: {
-          lat: {
-              min: -85,
-              max: 85
-          }
-      },
-      rotationMouseThreshold: 3
+        camera: undefined,
+        sphere: undefined,
+        postProcessing: undefined,
+        renderer: {
+            options: {
+                precision: 'highp',
+                antialias: false,
+                alpha: false
+            },
+            properties: {
+                autoClear: false,
+                renderPluginsPre: [],
+                renderPluginsPost: []
+            }
+        },
+        lon: 0,
+        lat: 0,
+        phi: 0,
+        theta: 0,
+        mouseCoords: new THREE.Vector3(),
+        mousedownPos: {},
+        rotation: {
+            heading: 0,
+            tilt: 0,
+            roll: 0,
+            step: 0.1
+        },
+        initialRotation: new THREE.Matrix4(),
+        limits: {
+            lat: {
+                min: -85,
+                max: 85
+            }
+        },
+        showMouseInfo: false,
+        Xaxis: new THREE.Vector3(1,0,0),
+        Yaxis: new THREE.Vector3(0,1,0),
+        Zaxis: new THREE.Vector3(0,0,1)
     }, // defaults
 
     /**
@@ -742,8 +748,8 @@ $.extend(true,Panorama.prototype,{
             // add render pass
             panorama.composer.addPass(new THREE.RenderPass(panorama.scene,panorama.camera.instance));
 
-            // add shader passes
-            $.each(panorama.postProcessing,function() {
+            // shader passes
+            $.each(panorama.postProcessing, function() {
 
                 if (this instanceof Boolean)
                     return true;
@@ -754,7 +760,7 @@ $.extend(true,Panorama.prototype,{
 
                 // uniforms calls
                 var pass = this.pass;
-                $.each(this.uniforms,function(uniform,_set) {
+                $.each(this.uniforms, function(uniform,_set) {
                     _set.call(pass.uniforms[uniform],panorama);
                 });
 
@@ -850,21 +856,21 @@ $.extend(true,Panorama.prototype,{
                 e.target = panorama;panorama.dispatch(e);
             })
             .on('mousemove.panorama'+this.num, canvas, function(e) {
-                e.target=panorama;panorama.dispatch(e);
+                e.target = panorama;panorama.dispatch(e);
             })
             .on('mouseup.panorama'+this.num, canvas, function(e) {
-                e.target=panorama;panorama.dispatch(e);
+                e.target = panorama;panorama.dispatch(e);
             })
             .on('mousewheel.panorama'+this.num, canvas, function(e) {
-                e.target=panorama;panorama.dispatch(e);
+                e.target = panorama;panorama.dispatch(e);
             })
             .on('zoom.panorama'+this.num, canvas, function(e) {
-                e.target=panorama;panorama.dispatch(e);
+                e.target = panorama;panorama.dispatch(e);
             });
 
         // window resize
         $(window).on('resize.panorama'+this.num, function(e) {
-            e.target=panorama;panorama.dispatch(e);
+            e.target = panorama;panorama.dispatch(e);
         });
 
     }, // panorama_eventsInit
@@ -884,9 +890,9 @@ $.extend(true,Panorama.prototype,{
         var R = panorama.initialRotation.clone();
 
         // combine with rotation angles
-        R.multiply((new THREE.Matrix4()).makeRotationAxis(Xaxis,THREE.Math.degToRad(panorama.rotation.tilt)));
-        R.multiply((new THREE.Matrix4()).makeRotationAxis(Yaxis,THREE.Math.degToRad(panorama.rotation.heading)));
-        R.multiply((new THREE.Matrix4()).makeRotationAxis(Zaxis,THREE.Math.degToRad(panorama.rotation.roll)));
+        R.multiply((new THREE.Matrix4()).makeRotationAxis(panorama.Xaxis,THREE.Math.degToRad(panorama.rotation.tilt)));
+        R.multiply((new THREE.Matrix4()).makeRotationAxis(panorama.Yaxis,THREE.Math.degToRad(panorama.rotation.heading)));
+        R.multiply((new THREE.Matrix4()).makeRotationAxis(panorama.Zaxis,THREE.Math.degToRad(panorama.rotation.roll)));
 
         // set sphere rotation from computed matrix
         panorama.sphere.object3D.rotation.setFromRotationMatrix(R);
@@ -1022,13 +1028,420 @@ $.extend(true,Panorama.prototype,{
             m.lon += 360;
 
         // debug
-        if (panorama.showMouseInfo) {
-          panorama.showMouseDebugInfo(m);
-        }
+        if (panorama.showMouseInfo)
+            panorama.showMouseDebugInfo(m);
 
         return cursor;
 
     }, // panorama_getMouseCoords
+
+    /**
+     * getZoom()
+     * Returns the current zoom factor.
+     *
+     * @return  Float       Current zoom factor.
+     */
+    getZoom: function panorama_getZoom() {
+        var visible = this.sphere.texture.height * this.camera.instance.fov / 180;
+        return this.renderer.domElement.height/visible;
+    }, // panorama_getZoom
+
+    /**
+     * zoomUpdate()
+     * Calls a redraw of the scene (if needed) based on the current zoom camera
+     * property and its projection matrix.
+     *
+     * @return  void
+     */
+    zoomUpdate: function panorama_zoomUpdate() {
+
+        var panorama = this;
+
+        // current fov
+        var fov = panorama.camera.instance.fov;
+
+        // current zoom
+        panorama.camera.zoom.current = 1/Math.min(panorama.camera.zoom.max,Math.max(panorama.camera.zoom.min,1/panorama.camera.zoom.current));
+
+        // update fov depending on the zoom
+        panorama.camera.instance.fov = panorama.getFovOnCurrentZoom();
+
+        // fov's are different
+        if (fov != panorama.camera.instance.fov) {
+
+            // update the projection matrix
+            panorama.camera.instance.updateProjectionMatrix();
+
+            // dispatch zoom event
+            panorama.dispatch('zoom');
+
+            // redraw the scene
+            panorama.drawScene();
+        }
+
+    }, // panorama_zoomUpdate
+
+    /**
+     * getFovOnCurrentZoom()
+     * Returns the field of view (FOV) on current zoom level for the largest
+     * renderer dimension.
+     *
+     * @return  Float       Current field of view.
+     */
+    getFovOnCurrentZoom: function panorama_getFovOnCurrentZoom() {
+
+        var fov = (this.renderer.domElement.width>this.renderer.domElement.height) ?
+            360*((this.renderer.domElement.width*this.camera.zoom.current/4)/this.sphere.texture.height*2) :
+            180*((this.renderer.domElement.height*this.camera.zoom.current/2)/this.sphere.texture.height);
+
+        // clamp
+        if (fov > this.fov.max) {
+            var fovRatio = fov/this.fov.max;
+            fov = this.fov.max;
+            this.camera.zoom.current /= fovRatio;
+        }
+
+        // convert to vertical fov
+        if (this.renderer.domElement.width > this.renderer.domElement.height)
+            fov = fov/this.renderer.domElement.width*this.renderer.domElement.height;
+
+        return fov;
+
+    }, // panorama_getFovOnCurrentZoom
+
+    /**
+     * drawScene()
+     * Calls the renderer to render the scene and trigger the frustum tiling.
+     *
+     * @return  void
+     */
+    drawScene: function panorama_drawScene(callback){
+
+        var panorama = this;
+
+        // sphere is not ready
+        if (!panorama.sphere.done)
+            return;
+
+        // frustum based tiling
+        panorama.sphere.updateFrustumTiling();
+
+        // repaint
+        requestAnimationFrame(function() {
+
+            // render
+            panorama.renderFrame();
+
+            // callback
+            if (callback)
+                callback();
+
+        });
+
+    }, // panorama_drawScene
+
+    /**
+     * renderFrame()
+     * Calls the renderer to render the scene and trigger the frustum tiling.
+     *
+     * @return  void
+     */
+    renderFrame: function panorama_renderFrame() {
+
+        var panorama = this;
+
+        // sphere is not ready
+        if (!panorama.sphere.done)
+            return;
+
+        // clamp latitude
+        panorama.lat = Math.max(panorama.limits.lat.min,Math.min(panorama.limits.lat.max,panorama.lat));
+
+        // update camera rotation
+        panorama.theta = panorama.lon*Math.PI/180;
+        panorama.phi = (90-panorama.lat)*Math.PI/180;
+
+        // compute camera lookat vector
+        panorama.lookAtVec = new THREE.Vector3(
+            Math.sin(panorama.phi)*Math.cos(panorama.theta),
+            Math.cos(panorama.phi),
+            Math.sin(panorama.phi)*Math.sin(panorama.theta)
+        );
+
+        // adjust camera lookat vector by inverse sphere rotation
+        panorama.lookAtVec.applyMatrix4(new THREE.Matrix4().getInverse(panorama.sphere.object3D.matrix));
+
+        // set camera lookat
+        panorama.camera.instance.lookAt(panorama.lookAtVec);
+
+        // dispatch update event
+        panorama.dispatch('update');
+
+        // clear renderer color, depth and stencil drawing buffer
+        panorama.renderer.clear();
+
+        // post-processing
+        // @todo: move post-processing in a separate module
+        if (panorama.postProcessing && panorama.postProcessing.enabled) {
+
+            // render through composer to use post-processing filters
+            panorama.composer.render(panorama.scene,panorama.camera.instance);
+
+        // no post-processing
+        } else {
+
+            // render directly through the renderer
+            panorama.renderer.render(panorama.scene,panorama.camera.instance);
+
+        }
+
+        // dispatch render event
+        panorama.dispatch('render');
+
+    }, // panorama_renderFrame
+
+    /**
+     * onmousedown()
+     * Event triggered on mouse button down. Stores information about the
+     * mouse click and position. These informations are used in siblings
+     * mouse events.
+     *
+     * @return  void
+     */
+    onmousedown: function panorama_onmousedown(e) {
+
+        var panorama = this;
+
+        // left button
+        if (isLeftButtonDown(e)) {
+
+            e.preventDefault();
+
+            // flags
+            panorama.mode.leftButtonDown = true;
+            panorama.mode.mayrotate = true;
+
+            // position
+            this.mousedownPos = {
+                lon: panorama.lon,
+                lat: panorama.lat,
+                cursorCoords: panorama.getMouseCoords(e),
+                textureCoords: panorama.getTextureCoordinates(panorama.mouseCoords.lon,panorama.mouseCoords.lat)
+            };
+
+        // another button
+        } else {
+            panorama.mode.leftButtonDown = false;
+        }
+
+    }, // panorama_onmousedown
+
+    /**
+     * onmousemove()
+     * Event triggered on mouse move. Rotates the panorama following the mouse
+     * if the left button is down while moving it. Mouse information has been
+     * intially stored in the onmousedown() event.
+     *
+     * @return  Boolean     Always return false.
+     */
+    onmousemove: function panorama_onmousemove(e) {
+
+        var panorama = this;
+
+        // sphere is not ready
+        if (!panorama.sphere.done)
+            return;
+
+        // event is done
+        // @todo: comment me as this needs additional information
+        if (e.done) {
+            console.log('fixme');
+            return;
+        }
+        e.done = true;
+
+        // left button
+        if (isLeftButtonDown(e)) {
+
+            // panorama may rotate
+            if (panorama.mode.mayrotate) {
+
+                // flags
+                panorama.mode.leftButtonDown = true;
+                panorama.mode.mayrotate = false;
+                panorama.mode.rotate = true;
+
+            }
+
+            // panorama rotate
+            if (panorama.mode.rotate) {
+
+                e.preventDefault();
+
+                // mouse coordinates
+                var cursorCoords = panorama.getMouseCoords(e);
+
+                // compute latitude/longitude
+                panorama.lon = (panorama.mousedownPos.lon-(cursorCoords.lon-panorama.mousedownPos.cursorCoords.lon))%360;
+                panorama.lat = panorama.mousedownPos.lat+(cursorCoords.lat-panorama.mousedownPos.cursorCoords.lat);
+                if (panorama.lon<0)
+                    panorama.lon+=360;
+
+                // dispatch rotate event
+                panorama.dispatch('rotate');
+
+                // redraw the scene
+                panorama.drawScene();
+
+            }
+
+        // another button
+        } else {
+            panorama.mode.mayrotate = false;
+            panorama.mode.rotate = false;
+            panorama.mode.leftButtonDown = false;
+        }
+
+        return false;
+
+    }, // panorama_onmousemove
+
+    /**
+     * onmouseup()
+     * Event triggered on mouse up. Resets mouse information used in siblings
+     * mouse events and dispatch a click event if the sphere was not rotated
+     * between the onmousedown() event and this one.
+     *
+     * @return  void
+     */
+    onmouseup: function panorama_onmouseup(e) {
+
+        var panorama = this;
+
+        // keep
+        var leftButtonUp = panorama.mode.leftButtonDown;
+        var rotating = panorama.mode.rotate;
+
+        // flags
+        panorama.mode.rotate = false;
+        panorama.mode.mayrotate = false;
+        panorama.mode.leftButtonDown = false;
+
+        // don't dispatch click after rotation nor after a single mouseup
+        if (!rotating && leftButtonUp) {
+
+            e.type = 'click';
+
+            // dispatch click event
+            panorama.dispatch(e);
+
+        }
+
+    }, // panorama_onmouseup
+
+    /**
+     * onmousewheel()
+     * Event triggered on mouse wheel scroll. By default, this will zoom the
+     * panorama up and down. Having the shift key pressed affects the panorama
+     * tilting while the alt key affects the panorama rolling.
+     *
+     * @return  void
+     */
+    onmousewheel: function panorama_onmousewheel(e) {
+
+        e.preventDefault();
+
+        var panorama = this;
+        var redraw = false;
+
+        // sphere is not ready
+        if (!panorama.sphere.done)
+            return;
+
+        // alternative key pressed while using the mouse wheel
+        if (e.shiftKey || e.altKey) {
+
+            // shift key affects the tilting
+            if (e.shiftKey)
+                panorama.rotation.tilt += e.deltaX*panorama.rotation.step;
+
+            // alt key affects the rolling
+            if (e.altKey)
+                panorama.rotation.roll += e.deltaY*panorama.rotation.step;
+
+            // apply by updating the rotation matrix
+            panorama.updateRotationMatrix();
+
+            // redraw the scene
+            panorama.drawScene();
+            return;
+
+        }
+
+        // updates the zoom value
+        panorama.camera.zoom.current -= e.deltaY * panorama.camera.zoom.step;
+        if (panorama.camera.zoom.current < 0)
+            panorama.camera.zoom.current = 0;
+
+        // redraw the scene using new zoom values
+        panorama.zoomUpdate();
+
+    }, // panorama_onmousewheel
+
+    /**
+     * onresize()
+     * Event triggered on panorama resize. Updates the renderer area.
+     *
+     * @return  void
+     */
+    onresize: function panorama_onresize(e) {
+
+        var panorama = this;
+
+        // camera
+        panorama.camera.instance.aspect = $(panorama.container).width()/$(panorama.container).height();
+        panorama.camera.instance.updateProjectionMatrix();
+
+        // renderer
+        panorama.renderer.setSize($(panorama.container).width(),$(panorama.container).height());
+
+        // post-processing
+        // @todo: move post-processing in a separate module
+        if (panorama.postProcessing) {
+
+            // composer
+            panorama.composer.setSize($(panorama.container).width(),$(panorama.container).height());
+
+            // shader passes
+            $.each(panorama.postProcessing, function() {
+
+                var pass = this.pass;
+
+                // shader pass
+                if (pass) {
+                    // uniforms calls
+                    $.each(this.uniforms, function(uniform,_set) {
+                        _set.call(pass.uniforms[uniform],panorama);
+                    });
+                }
+
+            });
+        }
+
+        // scene
+        setTimeout(function() {
+
+            // sphere is not ready
+            if (!panorama.sphere.done)
+                return;
+
+            // redraw the scene
+            panorama.zoomUpdate();
+            panorama.drawScene();
+
+        },0);
+
+    }, // panorama_onresize
 
     /**
      * showMouseDebugInfo()
@@ -1036,7 +1449,7 @@ $.extend(true,Panorama.prototype,{
      *
      * @return  void
      */
-    showMouseDebugInfo: function panorama_showMouseDebugInfo(vector){
+    showMouseDebugInfo: function panorama_showMouseDebugInfo(vector) {
 
         var div = $('#mouseDebugInfo');
 
@@ -1163,7 +1576,6 @@ $.extend(true,Panorama.prototype,{
         var info = cursor.vector.clone();
         info.lat = cursor.lat;
         info.lon = cursor.lon;
-        // panorama.showMouseDebugInfo(info);
 
         // get mouse coordinates in the sphere referential
         vector.applyMatrix4(panorama.camera.instance.matrixWorld);
@@ -1179,7 +1591,6 @@ $.extend(true,Panorama.prototype,{
         m.lat = 90 - THREE.Math.radToDeg(phi);
         if (m.lon < 0)
             m.lon += 360;
-        // panorama.showMouseDebugInfo(m);
 
         // store mouse coordinates in the sphere referential
         m.multiplyScalar(panorama.sphere.radius);
@@ -1455,24 +1866,37 @@ $.extend(true,Panorama.prototype,{
 
 }); // Panorama Prototype
 
+/*
+ * Panorama
+ * Bind Contructor to jQuery.prototype.panorama
+ */
+$.fn.panorama = function(options) {
+    $(this).each(function() {
+        if ($(this).data('pano')) {
+            // void
+        } else {
+            var panorama = new Panorama($.extend(true,{},options,{
+                container: this
+            }));
+        }
+    });
+    return this;
+}; // Panorama Bind Contructor
 
-function isLeftButtonDown(e) {
-  return ((e.buttons!==undefined && e.buttons==1) || (e.buttons===undefined && e.which==1));
-}
+/**
+ * isLeftButtonDown()
+ * Detects if the left button is down from a mouse event.
+ *
+ * @return  Boolean     True if the left button is down, false otherwise.
+ */
+window.isLeftButtonDown=function isLeftButtonDown(e) {
+     return ((e.buttons!==undefined && e.buttons==1) || (e.buttons===undefined && e.which==1));
+ }, // isLeftButtonDown
 
-// bind Panorama constructor to jQuery.prototype.panorama
-$.fn.panorama=function(options){
-  $(this).each(function(){
-    if ($(this).data('pano')) {
-    } else {
-      var panorama=new Panorama($.extend(true,{},options,{
-        container: this
-      }));
-    }
-  });
-  return this;
-}
-
+/*
+ * Panorama
+ * Event Dispatcher
+ */
 setupEventDispatcher(Panorama.prototype);
 setupEventDispatcher(Sphere.prototype);
 setupEventDispatcher(Texture.prototype);

@@ -444,6 +444,7 @@ $.extend(true,Controls.prototype, {
 
         // update
         if (needDrawScene)
+            controls.panorama.dispatch('rotate');
             controls.panorama.drawScene(function(){
               $('canvas:first',controls.panorama.container).trigger('mousemove');
             });
@@ -1124,8 +1125,10 @@ $.extend(true,Controls.prototype, {
 
         // webgl redraw as moved beyond rotation threshold
         if (e.rotationRate[controls.devicemotion.internal.calibration.tilt.axis] > controls.devicemotion.internal.orientation.threshold
-         || e.rotationRate[controls.devicemotion.internal.calibration.rotation.axis] > controls.devicemotion.internal.orientation.threshold)
+         || e.rotationRate[controls.devicemotion.internal.calibration.rotation.axis] > controls.devicemotion.internal.orientation.threshold) {
+            controls.panorama.dispatch('rotate');
             controls.panorama.drawScene();
+         }
 
     }
 
