@@ -44,19 +44,6 @@
  */
 
 
-var Xaxis=new THREE.Vector3(1,0,0);
-var Yaxis=new THREE.Vector3(0,1,0);
-var Zaxis=new THREE.Vector3(0,0,1);
-
-// return THREE.Vector3 from lon/lat in radians
-function getVector3FromAngles(lon,lat) {
-  var v=new THREE.Vector3(0,0,-1);
-  v.applyAxisAngle(Xaxis,lat);
-  v.applyAxisAngle(Yaxis,lon);
-  return v;
-}
-
-
 /*
  * Texture
  * Class Constructor
@@ -547,7 +534,10 @@ $.extend(true,Panorama.prototype,{
                 max: 85
             }
         },
-        showMouseInfo: false
+        showMouseInfo: false,
+        Xaxis: new THREE.Vector3(1,0,0),
+        Yaxis: new THREE.Vector3(0,1,0),
+        Zaxis: new THREE.Vector3(0,0,1)
     }, // defaults
 
     /**
@@ -747,9 +737,9 @@ $.extend(true,Panorama.prototype,{
         var R = panorama.initialRotation.clone();
 
         // combine with rotation angles
-        R.multiply((new THREE.Matrix4()).makeRotationAxis(Xaxis,THREE.Math.degToRad(panorama.rotation.tilt)));
-        R.multiply((new THREE.Matrix4()).makeRotationAxis(Yaxis,THREE.Math.degToRad(panorama.rotation.heading)));
-        R.multiply((new THREE.Matrix4()).makeRotationAxis(Zaxis,THREE.Math.degToRad(panorama.rotation.roll)));
+        R.multiply((new THREE.Matrix4()).makeRotationAxis(panorama.Xaxis,THREE.Math.degToRad(panorama.rotation.tilt)));
+        R.multiply((new THREE.Matrix4()).makeRotationAxis(panorama.Yaxis,THREE.Math.degToRad(panorama.rotation.heading)));
+        R.multiply((new THREE.Matrix4()).makeRotationAxis(panorama.Zaxis,THREE.Math.degToRad(panorama.rotation.roll)));
 
         // set sphere rotation from computed matrix
         panorama.sphere.object3D.rotation.setFromRotationMatrix(R);
@@ -1070,7 +1060,7 @@ $.extend(true,Panorama.prototype,{
         var panorama = this;
 
         // left button
-        if (isLeftButtonDown(e)) {
+        if (panorama.isLeftButtonDown(e)) {
 
             e.preventDefault();
 
@@ -1118,7 +1108,7 @@ $.extend(true,Panorama.prototype,{
         e.done = true;
 
         // left button
-        if (isLeftButtonDown(e)) {
+        if (panorama.isLeftButtonDown(e)) {
 
             // panorama may rotate
             if (panorama.mode.mayrotate) {
@@ -1301,12 +1291,22 @@ $.extend(true,Panorama.prototype,{
     }, // panorama_onresize
 
     /**
+     * isLeftButtonDown()
+     * Detects if the left button is down from a mouse event.
+     *
+     * @return  Boolean     True if the left button is down, false otherwise.
+     */
+    isLeftButtonDown: function panorama_isLeftButtonDown(e) {
+        return ((e.buttons!==undefined && e.buttons==1) || (e.buttons===undefined && e.which==1));
+    }, // panorama_isLeftButtonDown
+
+    /**
      * showMouseDebugInfo()
      * Displays mouse information upon the renderer. Debug purposes only.
      *
      * @return  void
      */
-    showMouseDebugInfo: function panorama_showMouseDebugInfo(vector){
+    showMouseDebugInfo: function panorama_showMouseDebugInfo(vector) {
 
         var div = $('#mouseDebugInfo');
 
@@ -1478,29 +1478,47 @@ $.extend(true,Panorama.prototype,{
     setZoom: function panorama_setZoom(e,scale) {
         this.camera.zoom.current = 1/scale;
         this.zoomUpdate();
-    },
+    }, // panorama_setZoom
+    */
+
+    /**
+     * getVector3FromAngles() -- unused
+     * ...
+     *
+     * @return  ...
+     */
+    /*
+    getVector3FromAngles: function panorama_getVector3FromAngles(lon,lat) {
+        var v = new THREE.Vector3(0,0,-1);
+        v.applyAxisAngle(panorama.Xaxis,lat);
+        v.applyAxisAngle(panorama.Yaxis,lon);
+        return v;
+    }, // panorama_getVector3FromAngles
     */
 
 }); // Panorama Prototype
 
+/*
+ * Panorama
+ * Bind Contructor to jQuery.prototype.panorama
+ */
+$.fn.panorama = function(options) {
+    $(this).each(function() {
+        if ($(this).data('pano')) {
+            // void
+        } else {
+            var panorama = new Panorama($.extend(true,{},options,{
+                container: this
+            }));
+        }
+    });
+    return this;
+}; // Panorama Bind Contructor
 
-function isLeftButtonDown(e) {
-  return ((e.buttons!==undefined && e.buttons==1) || (e.buttons===undefined && e.which==1));
-}
-
-// bind Panorama constructor to jQuery.prototype.panorama
-$.fn.panorama=function(options){
-  $(this).each(function(){
-    if ($(this).data('pano')) {
-    } else {
-      var panorama=new Panorama($.extend(true,{},options,{
-        container: this
-      }));
-    }
-  });
-  return this;
-}
-
+/*
+ * Panorama
+ * Event Dispatcher
+ */
 setupEventDispatcher(Panorama.prototype);
 setupEventDispatcher(Sphere.prototype);
 setupEventDispatcher(Camera.prototype);
