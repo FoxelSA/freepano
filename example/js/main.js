@@ -155,9 +155,21 @@ $(document).on('filesloaded', function(){
     // panorama.sphere: sphere object defaults
     // normally you dont need to modify this
 
+*/
     sphere: {
 
-      radius: 15,
+      // load visible tiles first, then trigger other tiles loading
+      dynamicTileInit: true,
+
+      // load only visible tiles
+      dynamicTileLoading: false,
+
+      // dispose invisible tiles
+      dynamicTileDisposal: false,
+
+
+/*
+      radius: 150,
 
       widthSegments: 36,
 
@@ -180,7 +192,7 @@ $(document).on('filesloaded', function(){
         rows: 8
 
       } // texture
-
+*/
     }, // sphere
 /*
    // panorama.sound: sounds bound to panorama

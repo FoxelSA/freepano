@@ -79,7 +79,7 @@ $.extend(true,Example.prototype, {
     // init() method
     // the overridable part of the object constructor
     init: function example_init() {
-        console.log('init() called on example module');
+      console.log('Example.init()');
     },
 
     // on_panorama_preinit() method
@@ -100,7 +100,7 @@ $.extend(true,Example.prototype, {
     // check eventDispatcher.js for more details
     //
     on_panorama_preinit: function example_on_panorama_preinit() {
-        console.log('on_panorama_preinit() called on Example Module');
+        console.log('Example.on_panorama_preinit()');
     },
 
     // on_panorama_init() method
@@ -108,7 +108,7 @@ $.extend(true,Example.prototype, {
 
         var panorama=this;
 
-        console.log('on_panorama_init() called on Example Module');
+        console.log('Example.on_panorama_init()');
 
         // default values override
         //
@@ -131,7 +131,7 @@ $.extend(true,Example.prototype, {
 
     // on_panorama_ready() method
     on_panorama_ready: function example_on_panorama_ready() {
-        console.log('on_panorama_ready() called on Example Module');
+        console.log('Example.on_panorama_ready()');
     }
 
 });
