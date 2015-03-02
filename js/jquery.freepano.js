@@ -274,7 +274,8 @@ $.extend(true,Sphere.prototype,{
 
     /**
      * sphere.updateTiles()
-     * if sphere.dynamicTileLoading is enabled, trigger visible tiles loading
+     * Trigger tiles loading
+     * if sphere.dynamicTileLoading is enabled, only visible tiles
      * if sphere.dynamicTileDisposal is enabled, get rid of hidden tiles
      *
      * @return  void
@@ -1755,7 +1756,8 @@ $.extend(true,Panorama.prototype,{
       }
     },
 
-    setZoom: function panorama_setZoom(e,scale) {
+    // set current zoom
+    setZoom: function panorama_setZoom(scale) {
       this.camera.zoom.current=1/scale;
       this.zoomUpdate();
     },
@@ -1819,10 +1821,13 @@ $.extend(true,Panorama.prototype,{
       // adjust camera lookAt vector by inverse sphere rotation
       panorama.lookAtVec.applyMatrix4(new THREE.Matrix4().getInverse(panorama.sphere.object3D.matrix));
 
+      // update camera orientation
       panorama.camera.instance.lookAt(panorama.lookAtVec);
 
+      // allow subscribers to update objects before rendering
       panorama.dispatch('update');
 
+      // clear framebuffer before rendering
       panorama.renderer.clear();
       // TODO move post-Processing to jquery.freepano.postprocessing.js
       if (panorama.postProcessing && panorama.postProcessing.enabled) {
@@ -1833,8 +1838,10 @@ $.extend(true,Panorama.prototype,{
         panorama.renderer.render(panorama.scene,panorama.camera.instance);
       }
 
+      // allow subscribers to render secondary scenes
       panorama.dispatch('render');
 
+      // trigger tiles loading
       panorama.sphere.updateTiles();
     },
 
@@ -1867,11 +1874,12 @@ $.extend(true,Panorama.prototype,{
 }); // Panorama Prototype
 
 /*
- * Panorama
- * Bind Contructor to jQuery.prototype.panorama
+ * jQuery panorama plugin
+ *
+ * @return jQuery object
  */
-$.fn.panorama = function(options) {
-    $(this).each(function() {
+$.fn.panorama = function jQuery_panorama(options) {
+    return this.each(function() {
         if ($(this).data('pano')) {
             // void
         } else {
@@ -1880,8 +1888,7 @@ $.fn.panorama = function(options) {
             }));
         }
     });
-    return this;
-}; // Panorama Bind Contructor
+}; // jQuery_panorama
 
 /**
  * isLeftButtonDown()
