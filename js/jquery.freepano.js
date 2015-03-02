@@ -236,7 +236,7 @@ $.extend(true,Sphere.prototype,{
 
         // sphere built
         // dispatch event and start tiling
-        setTimeout(function(){
+        setTimeout(function() {
 
             // mark sphere as done/builded
             sphere.done = true;
@@ -337,7 +337,7 @@ $.extend(true,Sphere.prototype,{
             // success
             function loadTexture_onload(texture) {
                 // panorama redraw
-                setTimeout(function(){
+                setTimeout(function() {
                     sphere.panorama.drawScene.call(sphere.panorama);
                 },0);
             },
@@ -584,9 +584,14 @@ $.extend(true,Panorama.prototype,{
                 panorama.sphere = new Sphere($.extend(true,{
                     panorama: panorama,
                     onready: function(){
+
+                        // update the initial rotation matrix
                         panorama.updateRotationMatrix();
+
+                        // dispatch resize and ready events
                         panorama.dispatch('resize');
                         panorama.dispatch('ready');
+
                     }
                 },panorama.sphere));
             }
@@ -646,8 +651,8 @@ $.extend(true,Panorama.prototype,{
             // add render pass
             panorama.composer.addPass(new THREE.RenderPass(panorama.scene,panorama.camera.instance));
 
-            // add shader passes
-            $.each(panorama.postProcessing,function() {
+            // shader passes
+            $.each(panorama.postProcessing, function() {
 
                 if (this instanceof Boolean)
                     return true;
@@ -658,7 +663,7 @@ $.extend(true,Panorama.prototype,{
 
                 // uniforms calls
                 var pass = this.pass;
-                $.each(this.uniforms,function(uniform,_set) {
+                $.each(this.uniforms, function(uniform,_set) {
                     _set.call(pass.uniforms[uniform],panorama);
                 });
 
@@ -1053,6 +1058,249 @@ $.extend(true,Panorama.prototype,{
     }, // panorama_renderFrame
 
     /**
+     * onmousedown()
+     * Event triggered on mouse button down. Stores information about the
+     * mouse click and position. These informations are used in siblings
+     * mouse events.
+     *
+     * @return  void
+     */
+    onmousedown: function panorama_onmousedown(e) {
+
+        var panorama = this;
+
+        // left button
+        if (isLeftButtonDown(e)) {
+
+            e.preventDefault();
+
+            // flags
+            panorama.mode.leftButtonDown = true;
+            panorama.mode.mayrotate = true;
+
+            // position
+            this.mousedownPos = {
+                lon: panorama.lon,
+                lat: panorama.lat,
+                cursorCoords: panorama.getMouseCoords(e),
+                textureCoords: panorama.getTextureCoordinates(panorama.mouseCoords.lon,panorama.mouseCoords.lat)
+            };
+
+        // another button
+        } else {
+            panorama.mode.leftButtonDown = false;
+        }
+
+    }, // panorama_onmousedown
+
+    /**
+     * onmousemove()
+     * Event triggered on mouse move. Rotates the panorama following the mouse
+     * if the left button is down while moving it. Mouse information has been
+     * intially stored in the onmousedown() event.
+     *
+     * @return  Boolean     Always return false.
+     */
+    onmousemove: function panorama_onmousemove(e) {
+
+        var panorama = this;
+
+        // sphere is not ready
+        if (!panorama.sphere.done)
+            return;
+
+        // event is done
+        // @todo: comment me as this needs additional information
+        if (e.done) {
+            console.log('fixme');
+            return;
+        }
+        e.done = true;
+
+        // left button
+        if (isLeftButtonDown(e)) {
+
+            // panorama may rotate
+            if (panorama.mode.mayrotate) {
+
+                // flags
+                panorama.mode.leftButtonDown = true;
+                panorama.mode.mayrotate = false;
+                panorama.mode.rotate = true;
+
+            }
+
+            // panorama rotate
+            if (panorama.mode.rotate) {
+
+                e.preventDefault();
+
+                // mouse coordinates
+                var cursorCoords = panorama.getMouseCoords(e);
+
+                // compute latitude/longitude
+                panorama.lon = (panorama.mousedownPos.lon-(cursorCoords.lon-panorama.mousedownPos.cursorCoords.lon))%360;
+                panorama.lat = panorama.mousedownPos.lat+(cursorCoords.lat-panorama.mousedownPos.cursorCoords.lat);
+                if (panorama.lon<0)
+                    panorama.lon+=360;
+
+                // dispatch rotate event
+                panorama.dispatch('rotate');
+
+                // redraw the scene
+                panorama.drawScene();
+
+            }
+
+        // another button
+        } else {
+            panorama.mode.mayrotate = false;
+            panorama.mode.rotate = false;
+            panorama.mode.leftButtonDown = false;
+        }
+
+        return false;
+
+    }, // panorama_onmousemove
+
+    /**
+     * onmouseup()
+     * Event triggered on mouse up. Resets mouse information used in siblings
+     * mouse events and dispatch a click event if the sphere was not rotated
+     * between the onmousedown() event and this one.
+     *
+     * @return  void
+     */
+    onmouseup: function panorama_onmouseup(e) {
+
+        var panorama = this;
+
+        // keep
+        var leftButtonUp = panorama.mode.leftButtonDown;
+        var rotating = panorama.mode.rotate;
+
+        // flags
+        panorama.mode.rotate = false;
+        panorama.mode.mayrotate = false;
+        panorama.mode.leftButtonDown = false;
+
+        // don't dispatch click after rotation nor after a single mouseup
+        if (!rotating && leftButtonUp) {
+
+            e.type = 'click';
+
+            // dispatch click event
+            panorama.dispatch(e);
+
+        }
+
+    }, // panorama_onmouseup
+
+    /**
+     * onmousewheel()
+     * Event triggered on mouse wheel scroll. By default, this will zoom the
+     * panorama up and down. Having the shift key pressed affects the panorama
+     * tilting while the alt key affects the panorama rolling.
+     *
+     * @return  void
+     */
+    onmousewheel: function panorama_onmousewheel(e) {
+
+        e.preventDefault();
+
+        var panorama = this;
+        var redraw = false;
+
+        // sphere is not ready
+        if (!panorama.sphere.done)
+            return;
+
+        // alternative key pressed while using the mouse wheel
+        if (e.shiftKey || e.altKey) {
+
+            // shift key affects the tilting
+            if (e.shiftKey)
+                panorama.rotation.tilt += e.deltaX*panorama.rotation.step;
+
+            // alt key affects the rolling
+            if (e.altKey)
+                panorama.rotation.roll += e.deltaY*panorama.rotation.step;
+
+            // apply by updating the rotation matrix
+            panorama.updateRotationMatrix();
+
+            // redraw the scene
+            panorama.drawScene();
+            return;
+
+        }
+
+        // updates the zoom value
+        panorama.camera.zoom.current -= e.deltaY * panorama.camera.zoom.step;
+        if (panorama.camera.zoom.current < 0)
+            panorama.camera.zoom.current = 0;
+
+        // redraw the scene using new zoom values
+        panorama.zoomUpdate();
+
+    }, // panorama_onmousewheel
+
+    /**
+     * onresize()
+     * Event triggered on panorama resize. Updates the renderer area.
+     *
+     * @return  void
+     */
+    onresize: function panorama_onresize(e) {
+
+        var panorama = this;
+
+        // camera
+        panorama.camera.instance.aspect = $(panorama.container).width()/$(panorama.container).height();
+        panorama.camera.instance.updateProjectionMatrix();
+
+        // renderer
+        panorama.renderer.setSize($(panorama.container).width(),$(panorama.container).height());
+
+        // post-processing
+        // @todo: move post-processing in a separate module
+        if (panorama.postProcessing) {
+
+            // composer
+            panorama.composer.setSize($(panorama.container).width(),$(panorama.container).height());
+
+            // shader passes
+            $.each(panorama.postProcessing, function() {
+
+                var pass = this.pass;
+
+                // shader pass
+                if (pass) {
+                    // uniforms calls
+                    $.each(this.uniforms, function(uniform,_set) {
+                        _set.call(pass.uniforms[uniform],panorama);
+                    });
+                }
+
+            });
+        }
+
+        // scene
+        setTimeout(function() {
+
+            // sphere is not ready
+            if (!panorama.sphere.done)
+                return;
+
+            // redraw the scene
+            panorama.zoomUpdate();
+            panorama.drawScene();
+
+        },0);
+
+    }, // panorama_onresize
+
+    /**
      * showMouseDebugInfo()
      * Displays mouse information upon the renderer. Debug purposes only.
      *
@@ -1232,155 +1480,6 @@ $.extend(true,Panorama.prototype,{
         this.zoomUpdate();
     },
     */
-
-
-
-
-
-
-
-
-    /**
-     * onmousedown()
-     * Event triggered on mouse button down. Stores information about the
-     * mouse click and position. These informations are used in siblings
-     * mouse events.
-     *
-     * @return  void
-     */
-    onmousedown: function panorama_onmousedown(e) {
-
-        // left button
-        if (isLeftButtonDown(e)) {
-
-            e.preventDefault();
-
-            // flags
-            this.mode.leftButtonDown = true;
-            this.mode.mayrotate = true;
-
-            // position
-            this.mousedownPos = {
-                lon: this.lon,
-                lat: this.lat,
-                cursorCoords: this.getMouseCoords(e),
-                textureCoords: this.getTextureCoordinates(this.mouseCoords.lon,this.mouseCoords.lat)
-            };
-
-        // another button
-        } else {
-            this.mode.leftButtonDown = false;
-        }
-
-    }, // panorama_onmousedown
-
-
-
-    onmousemove: function panorama_mousemove(e){
-      if (!this.sphere.done) {
-        return;
-      }
-
-      if (e.done) {
-        console.log('fixme');
-        return;
-      }
-      e.done=true;
-
-      if (isLeftButtonDown(e)) {
-        if (this.mode.mayrotate) {
-          this.mode.mayrotate=false;
-          this.mode.rotate=true;
-        }
-        if (this.mode.rotate) {
-          e.preventDefault();
-          var cursorCoords=this.getMouseCoords(e);
-          this.lon=(this.mousedownPos.lon-(cursorCoords.lon-this.mousedownPos.cursorCoords.lon))%360;
-          this.lat=this.mousedownPos.lat+(cursorCoords.lat-this.mousedownPos.cursorCoords.lat);
-          if (this.lon<0) this.lon+=360;
-          //console.log(this.lon,this.lat);
-          this.dispatch('rotate');
-          this.drawScene();
-        }
-      } else {
-        this.mode.mayrotate=false;
-        this.mode.rotate=false;
-        this.mode.leftButtonDown=false;
-      }
-      return false;
-    },
-
-
-    onmouseup: function panorama_mouseup(e){
-
-      var leftButtonUp=this.mode.leftButtonDown;
-      var rotating=this.mode.rotate;
-
-      this.mode.rotate=false;
-      this.mode.mayrotate=false;
-      this.mode.leftButtonDown=false;
-
-      // dont dispatch click after rotation
-      // nor after single mouseup
-
-      if (!rotating && leftButtonUp) {
-        e.type='click';
-        this.dispatch(e);
-      }
-
-    },
-
-    onmousewheel: function panorama_mousewheel(e){
-      e.preventDefault();
-      if (!this.sphere.done) {
-        return;
-      }
-      var needDrawScene = false;
-      if (e.shiftKey) {
-        this.rotation.tilt+=e.deltaX*this.rotation.step;
-        this.updateRotationMatrix();
-        needDrawScene = true;
-      }
-      if (e.altKey) {
-        this.rotation.roll+=e.deltaY*this.rotation.step;
-        this.updateRotationMatrix();
-        needDrawScene = true;
-      }
-      if (needDrawScene) {
-        //console.log('lon ['+this.lon+'] lat ['+this.lat+'] tilt ['+this.rotation.tilt+'] roll ['+this.rotation.roll+']');
-        this.drawScene();
-        return;
-      }
-      this.camera.zoom.current-=e.deltaY*this.camera.zoom.step;
-      if (this.camera.zoom.current<0) this.camera.zoom.current=0;
-      this.zoomUpdate();
-    },
-
-    onresize: function panorama_resize(e){
-      var panorama=this;
-      this.camera.instance.aspect=$(this.container).width()/$(this.container).height();
-      this.camera.instance.updateProjectionMatrix();
-      this.renderer.setSize($(this.container).width(),$(this.container).height());
-      if (this.postProcessing) {
-        this.composer.setSize($(this.container).width(),$(this.container).height());
-        $.each(this.postProcessing,function() {
-          var pass=this.pass;
-          if (pass) {
-            $.each(this.uniforms,function(uniform,set){
-              set.call(pass.uniforms[uniform],panorama);
-            });
-          }
-        });
-      }
-
-      setTimeout(function(){
-        if (!panorama.sphere.done) {
-          return;
-        }
-        panorama.zoomUpdate();
-        panorama.drawScene();
-      },0);
-    }
 
 }); // Panorama Prototype
 
