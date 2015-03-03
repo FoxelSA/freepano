@@ -202,17 +202,29 @@ function WidgetFactory(options) {
           widgetList._hover=null;
         }
 
+        // remove widget meshes from hover list
         $.each(widgetList.hover,function(index){
           if (this.object && this.object.parent.name==widget.name) {
             widgetList.hover.splice(index,1);
           }
         });
-
+ 
         if (widgetList.list[widget.name]) {
+
+          // delete widget class mesh list
+          if (widget.camera && widget.camera.meshes) { 
+             delete(widget.camera.meshes[Widget.name.toLowerCase()]);
+          }
+
+          // give instance to garbage collector
           widgetList.list[widget.name].instance=null;
+   
+          // remove widget from list
           delete(widgetList.list[widget.name]);
+   
         }
 
+        // rebuild mesh list       
         widgetList.mesh_list_update();
 
         if (widget.object3D) {
