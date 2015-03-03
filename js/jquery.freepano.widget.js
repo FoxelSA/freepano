@@ -99,6 +99,7 @@ function WidgetFactory(options) {
         size: Sphere.prototype.defaults.radius/30,
         handleTransparency: true,
         handleMouseEvents: true,
+        selectable: false,
         color: { // to disable colors, set to null when instantiating
             normal: 'black',
             selected: 'black',
@@ -242,6 +243,12 @@ function WidgetFactory(options) {
 
       }, // widget_remove
 
+      // allow event subscribers to cancel removal triggered by 'remove' event
+      onremove: function widget_onremove(widget_event) {
+        var widget=this;
+        this.remove();
+      }, // widget_onremove
+
       onready: function widget_ready(widget_event) {
         var widget=this;
         widget.object3D.name=widget.name;
@@ -296,7 +303,7 @@ function WidgetFactory(options) {
         var widget=this;
         var widgetList=widget.panorama[this.constructor.name.toLowerCase()];
         // todo: handle multiple selection, with shift and ctrl modifiers
-        if (!widget.selected){
+        if (!widget.selected &&  widget.selectable){
           widget.selected=true;
           widget.setColor('selected');
           $.each(widgetList.list,function(name){
@@ -949,7 +956,7 @@ function WidgetFactory(options) {
         var ret=WidgetList.prototype.panorama_prototype_onmousedown.apply(panorama,[e]);
 
         // unset panorama.mode.mayrotate when mousedown activated a widget
-        if (panorama[Widget.name.toLowerCase()] && panorama[Widget.name.toLowerCase()]._active){
+        if (panorama[Widget.name.toLowerCase()] && panorama[Widget.name.toLowerCase()]._active && !panorama[Widget.name.toLowerCase()]._active.dragging){
           panorama.mode.mayrotate=false;
         }
 
