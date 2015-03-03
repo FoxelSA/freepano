@@ -79,8 +79,6 @@ $.extend(true,PointCloud.prototype,{
       var positions = new Float32Array(json.points.length * 3);
 
       var v=new THREE.Vector3();
-      var Xaxis=new THREE.Vector3(1,0,0);
-      var Yaxis=new THREE.Vector3(0,1,0);
 
       console.log('parsing cloud... ('+json.points.length+' points)');
       var i=0;
@@ -93,8 +91,8 @@ $.extend(true,PointCloud.prototype,{
         v.z=1;
 
         // apply rotations
-        v.applyAxisAngle(Xaxis,point[1]);
-        v.applyAxisAngle(Yaxis,point[0]);
+        v.applyAxisAngle(panorama.Xaxis,point[1]);
+        v.applyAxisAngle(panorama.Yaxis,point[0]);
 
         // store position
         positions[i]=-v.x*point[2];
@@ -419,14 +417,15 @@ $.extend(true,PointCloud.prototype,{
   // return particle world coordinates
   getParticlePosition: function pointCloud_getParticlePosition(index) {
     var pointCloud=this;
+    var panorama=pointCloud.panorama;
     var point=pointCloud.json.points[index];
 
     // initialize vector
     var v=new THREE.Vector3(0,0,1);
 
     // apply rotations
-    v.applyAxisAngle(Xaxis,point[1]);
-    v.applyAxisAngle(Yaxis,point[0]);
+    v.applyAxisAngle(panorama.Xaxis,point[1]);
+    v.applyAxisAngle(panorama.Yaxis,point[0]);
 
     // return positions
     return {
