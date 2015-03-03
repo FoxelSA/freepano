@@ -306,26 +306,38 @@ $.extend(true,ParticleSequence.prototype,{
 
     on_pointcloud_render: function particleSequence_on_pointcloud_render(e) {
       var pointCloud=this;
-      var seq=pointCloud.sequence;
+      var seq_list=pointCloud.sequence;
+      var panorama=pointCloud.panorama;
 
-      if (!seq || seq.particleIndex_list.length<2) {
-        return;
-      }
-      var panorama=this.panorama;
+      $.each(seq_list,function(){
 
-      // render line segments
-      panorama.renderer.clearDepth();
-      panorama.renderer.render(seq.line.scene,panorama.camera.instance);
+        var seq=this;
+     
+        if (!seq || seq.particleIndex_list.length<2) {
+          return;
+        }
 
-      // render segment labels
-      panorama.renderer.clearDepth();
-      panorama.renderer.render(seq.label.scene,panorama.camera.instance);
+        // render line segments
+        panorama.renderer.clearDepth();
+        panorama.renderer.render(seq.line.scene,panorama.camera.instance);
+
+        // render segment labels
+        panorama.renderer.clearDepth();
+        panorama.renderer.render(seq.label.scene,panorama.camera.instance);
+
+      });
 
     }, // particleSequence_on_pointcloud_render
 
     on_pointcloud_particleclick: function particleSequence_on_pointcloud_particleclick(e) {
+      
       var pointCloud=this;
-      var seq=pointCloud.sequence;
+      
+      if (!pointCloud.sequence || !pointCloud.sequence.length) {
+          return;
+      }
+
+      var seq=pointCloud.sequence[pointCloud.sequence.length-1];
       var panorama=pointCloud.panorama;
 
       if (!seq) {
@@ -345,7 +357,12 @@ $.extend(true,ParticleSequence.prototype,{
 
     on_pointcloud_particlemousein: function particleSequence_on_pointcloud_particlemousein(e) {
       var pointCloud=this;
-      var seq=pointCloud.sequence;
+
+      if (!pointCloud.sequence || !pointCloud.sequence.length) {
+          return;
+      }
+
+      var seq=pointCloud.sequence[pointCloud.sequence.length-1];
       var panorama=pointCloud.panorama;
 
       if (!seq) {
@@ -367,7 +384,12 @@ $.extend(true,ParticleSequence.prototype,{
 
     on_pointcloud_particlemouseout: function particleSequence_on_pointcloud_particlemouseout(e) {
       var pointCloud=this;
-      var seq=pointCloud.sequence;
+
+      if (!pointCloud.sequence || !pointCloud.sequence.length) {
+          return;
+      }
+      
+      var seq=pointCloud.sequence[pointCloud.sequence.length-1];
       var panorama=pointCloud.panorama;
 
       if (!seq) {
@@ -395,9 +417,9 @@ $.extend(true,ParticleSequence.prototype,{
     on_pointcloud_ready: function particleSequence_on_pointcloud_ready(e) {
       var pointCloud=this;
 
-      pointCloud.sequence=new ParticleSequence({
+      pointCloud.sequence=[new ParticleSequence({
         pointCloud: pointCloud
-      });
+      })];
 
     }, // particleSequence_on_pointcloud_ready
 
@@ -419,4 +441,5 @@ PointCloud.prototype.dispatchEventsTo(ParticleSequence.prototype);
 setupEventDispatcher(ParticleSequence.prototype);
 
 })(window);
+
 
