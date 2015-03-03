@@ -48,6 +48,10 @@ $.extend(true,PointCloud.prototype,{
 
   defaults: {
 
+    enableParticleEvents: true,
+
+    showParticleCursor: true,
+
     overlay: true,
 
     // paramaeters for converting panorama url to pointcloud json url
@@ -258,6 +262,10 @@ $.extend(true,PointCloud.prototype,{
     var panorama=this;
     var pointCloud=panorama.pointCloud;
 
+    if (!pointCloud.instance || !pointCloud.instance.enableParticleEvents) {
+      return;
+    }
+
     if (
       !pointCloud ||
       !pointCloud.instance ||
@@ -345,7 +353,6 @@ $.extend(true,PointCloud.prototype,{
           map: THREE.ImageUtils.loadTexture('img/dot_hover.png'),
           depthTest: false,
           depthWrite: false
-
         }),
         geometry: new THREE.Geometry()
       }
@@ -353,6 +360,8 @@ $.extend(true,PointCloud.prototype,{
       pointCloud.scene.add(cursor.sprite);
     }
 
+    cursor.sprite.visible=pointCloud.showParticleCursor;
+      
     cursor.sprite.position.copy(new THREE.Vector3().copy(pointCloud.getParticlePosition(hover.index)).normalize().multiplyScalar(10));
 
     pointCloud.panorama.drawScene();
