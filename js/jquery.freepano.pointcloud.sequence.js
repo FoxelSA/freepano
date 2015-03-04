@@ -88,6 +88,8 @@ $.extend(true,ParticleSequence.prototype,{
       }
     },
 
+    // Init particle sequence with its scene, line geometry and material, and label scene
+    // If particleIndex_list is not empty, initialize particle sequence.
     init: function particleSequence_init(){
 
       var seq=this;
@@ -132,10 +134,20 @@ $.extend(true,ParticleSequence.prototype,{
 
       }
 
+      // add particles to sequence, if any specified
+      if (seq.particleIndex_list.length){
+        var particleIndex_list=seq.particleIndex_list;
+        seq.particleIndex_list=[];
+        $.each(particleIndex_list,function(){
+          var index=this;
+          seq.add(index);
+        });
+      }
+
     }, // particleSequence_init
 
-    // add a particle
-    add: function particleSequence_add(index) {
+    // add a particle to the sequence, update line geometry and segment label list accordingly
+    add: function particleSequence_add(index,flags) {
 
       var seq=this;
       var line=seq.line;
@@ -150,7 +162,38 @@ $.extend(true,ParticleSequence.prototype,{
 
       // dont add the same particle twice in a row
       if (seq.particleIndex_list[prevcount-1]==index) {
+
+        // detect double click
+        if (flags && flags.isclick) {
+
+          if (seq.doubleClick && seq.doubleClick.index==index) {
+             seq.doubleClick={
+               bool: true,
+               index: index,
+               t: Date.now()-seq.doubleClick.t
+             }
+
+          } else {
+            seq.doubleClick={
+              bool: false,
+              index: index,
+              t: Date.now()
+            };
+          }
+        }
+
         return;
+
+      } else {
+
+        if (flags && flags.isclick) {
+          seq.doubleClick={
+            bool: false,
+            index: index,
+            t: Date.now()
+          };
+        }
+
       }
 
       // register particle index
@@ -211,6 +254,7 @@ $.extend(true,ParticleSequence.prototype,{
 
     }, // particleSequence_add
 
+    // remove last particle from sequence 
     pop: function particleSequence_pop(particleIndex) {
 
       var seq=this;
@@ -260,7 +304,7 @@ $.extend(true,ParticleSequence.prototype,{
           ctx.quadraticCurveTo(x, y, x+r, y);
           ctx.closePath();
           ctx.fill();
-          ctx.stroke();   
+          ctx.stroke();
       }
 
       var options=$.extend(true,{
@@ -304,6 +348,7 @@ $.extend(true,ParticleSequence.prototype,{
 
     }, // particleSequence_labelText2Canvas
 
+    // render lines and labels
     on_pointcloud_render: function particleSequence_on_pointcloud_render(e) {
       var pointCloud=this;
       var seq_list=pointCloud.sequence;
@@ -312,7 +357,7 @@ $.extend(true,ParticleSequence.prototype,{
       $.each(seq_list,function(){
 
         var seq=this;
-     
+
         if (!seq || seq.particleIndex_list.length<2) {
           return;
         }
@@ -329,10 +374,11 @@ $.extend(true,ParticleSequence.prototype,{
 
     }, // particleSequence_on_pointcloud_render
 
+    // add particle to sequence on click
     on_pointcloud_particleclick: function particleSequence_on_pointcloud_particleclick(e) {
-      
+
       var pointCloud=this;
-      
+
       if (!pointCloud.sequence || !pointCloud.sequence.length) {
           return;
       }
@@ -348,13 +394,14 @@ $.extend(true,ParticleSequence.prototype,{
         return;
       }
 
-      seq.add(e.target);
+      seq.add(e.target,{isclick:true});
       seq.lastclicked=e.target;
 
       panorama.drawScene();
 
-    }, // particleSequence_on_panorama_click
+    }, // particleSequence_on_pointcloud_particleclick
 
+    // add particle onmousein if it's not the first one and 'wheredowegofromhere' mode is enabled
     on_pointcloud_particlemousein: function particleSequence_on_pointcloud_particlemousein(e) {
       var pointCloud=this;
 
@@ -382,13 +429,14 @@ $.extend(true,ParticleSequence.prototype,{
 
     }, // on_pointcloud_particlemousein
 
+    // remove last particle added onmousein
     on_pointcloud_particlemouseout: function particleSequence_on_pointcloud_particlemouseout(e) {
       var pointCloud=this;
 
       if (!pointCloud.sequence || !pointCloud.sequence.length) {
           return;
       }
-      
+
       var seq=pointCloud.sequence[pointCloud.sequence.length-1];
       var panorama=pointCloud.panorama;
 
@@ -404,7 +452,7 @@ $.extend(true,ParticleSequence.prototype,{
         return;
       }
 
-      // dont remove the particle we just added
+      // dont remove the particle we just added on click
       if  (seq.mode.add && seq.lastclicked==e.target) {
         return;
       }
@@ -424,7 +472,20 @@ $.extend(true,ParticleSequence.prototype,{
     }, // particleSequence_on_pointcloud_ready
 
     on_pointcloud_dispose: function particleSequence_on_pointcloud_dispose(e) {
-    } // particleSequence_on_pointcloud_dispose
+    }, // particleSequence_on_pointcloud_dispose
+
+    /** ParticleSequence.ondispose()
+    * @todo
+    */
+    ondispose: function particleSequence_ondispose() {
+        this.dispose();
+    }, // particleSequence_ondispose
+
+    /** ParticleSequence.ondispose()
+    * @todo
+    */
+    dispose: function particleSequence_dispose() {
+    }
 
 }); // extend ParticleSequence prototype
 
