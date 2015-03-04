@@ -56,7 +56,8 @@ $.extend(ParticleSequence_loader.prototype,{
     },
 
     on_pointcloud_init: function ParticleSequence_on_pointcloud_init(e) {
-      var panorama=this;
+      var pointCloud=this;
+      var panorama=pointCloud.panorama;
       panorama.particleSequenceLoader=new ParticleSequence_loader({panorama: panorama});
 
     }, // particleSequenceLoader_on_pointcloud_init
@@ -65,6 +66,10 @@ $.extend(ParticleSequence_loader.prototype,{
       var pointCloud=this;
       var panorama=pointCloud.panorama;
       var seq_loader=panorama.particleSequenceLoader;
+
+      if (!seq_loader) {
+          return;
+      }
 
       // make sure this handler is not run twice for the same event instance
       if (e.particleSequenceLoader_was_here){
@@ -94,7 +99,7 @@ $.extend(ParticleSequence_loader.prototype,{
             }
 
             // propagate pointCloud 'ready' event
-            pointCloud.dispatch(e);
+   //         pointCloud.dispatch(e);
 
           },
 
@@ -113,26 +118,26 @@ $.extend(ParticleSequence_loader.prototype,{
               var particleIndex_list=this;
               sequence.push(new pointCloud.Sequence({
                     pointCloud: pointCloud,
-                    particleIncex_list: particleIndex_list
-              });
+                    particleIndex_list: particleIndex_list
+              }));
             });
 
             // append an empty sequence
             sequence.push(new pointCloud.Sequence({
               pointCloud: pointCloud
-            });
+            }));
 
             // assign sequence list to pointCloud
-            panorama.pointCloud.sequence=sequence;
+            panorama.pointCloud.instance.sequence=sequence; 
 
             // propagate pointCloud 'ready' event
-            pointCloud.dispatch(e);
+      //      pointCloud.dispatch(e);
             panorama.drawScene();
           }
       });
 
       // delay pointCloud 'ready' propagation (wait for ajax completion)
-      return false;
+    //  return false;
 
     } // particleSequenceLoader_on_pointcloud_ready
 
