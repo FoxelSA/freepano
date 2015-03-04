@@ -146,6 +146,9 @@ $.extend(true,PointCloud.prototype,{
       pointCloud.fromJSON(pointCloud.json);
     }
 
+    // trigger pointCloud 'init' event
+    pointCloud.dispatch('init');
+
   }, // pointCloud_init
 
   // load point cloud json from url
