@@ -228,7 +228,7 @@ $.extend(true,PointCloud.prototype,{
 
   // pointcloud 'loaderror' event handler
   onloaderror: function pointCloud_onloaderror(e) {
-    throw e;
+    console.log(e);
   }, // onloaderror
 
   // render pointcloud overlay on "panorama render" event
@@ -378,12 +378,16 @@ $.extend(true,PointCloud.prototype,{
 
   onparticlemousein: function pointCloud_onparticlemousein(e) {
     var pointCloud=this;
-    pointCloud.showParticleInfo(pointCloud.hover.index);
+    if (pointCloud.showDebugInfo) {
+      pointCloud.showParticleInfo(pointCloud.hover.index);
+    }
   }, // pointCloud_onparticlemousein
 
   onparticlemouseout: function pointCloud_onparticlemouseout(e) {
     var pointCloud=this;
-    pointCloud.hideParticleInfo();
+    if (pointCloud.showDebugInfo) {
+      pointCloud.hideParticleInfo();
+    }
   }, // pointCloud_onparticlemousein
 
   // return particle with least square distance from coords in radians
@@ -439,7 +443,7 @@ $.extend(true,PointCloud.prototype,{
     v.applyAxisAngle(panorama.Xaxis,point[1]);
     v.applyAxisAngle(panorama.Yaxis,point[0]);
 
-    // return positions
+    // return position
     return {
       x: -v.x*point[2],
       y: v.y*point[2],
@@ -479,11 +483,13 @@ $.extend(true,PointCloud.prototype,{
     $('#particleInfo').hide(0);
   }, // pointCloud_hideParticleInfo
 
+  // dispatch particle click on panorama click
   on_panorama_click: function pointCloud_on_panorama_click(e) {
     var panorama=this;
     var pointCloud=panorama.pointCloud.instance;
 
-    if (!pointCloud.hover) {
+    // only when a particle is hovered by mouse
+    if (!pointCloud || !pointCloud.hover) {
       return;
     }
 
@@ -499,9 +505,10 @@ $.extend(true,PointCloud.prototype,{
 
     var panorama=this;
 
+    // only if the pointcloud is defined and active
     if (panorama.pointCloud && panorama.pointCloud.active!==false) {
 
-      // get panorama url to pointcloud url conversion details
+      // get panorama to pointcloud url conversion parameters
       var urlReplace=panorama.pointCloud.urlReplace||PointCloud.prototype.defaults.urlReplace;
       var replaceThis=urlReplace.replaceThis;
       var replaceWithThis=urlReplace.replaceWithThis;
@@ -520,8 +527,12 @@ $.extend(true,PointCloud.prototype,{
   on_panorama_dispose: function pointCloud_on_panorama_dispose(e) {
     var panorama=this;
     if (panorama.pointCloud && panorama.pointCloud.instance) {
+      
+      // remove pointcloud from scene
       var scene=(panorama.pointCloud.instance.overlay)?panorama.pointCloud.instance.scene:panorama.scene;
       scene.remove(panorama.pointCloud.instance.object3D);
+
+      // delete object
       delete panorama.pointCloud.instance;
     }
   } // pointCloud_on_panorama_dispose

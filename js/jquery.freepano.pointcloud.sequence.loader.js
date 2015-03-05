@@ -36,7 +36,7 @@
  *      Attribution" section of <http://foxel.ch/license>.
  */
 
-// this file must be loaded after jquery.freepano.poi.js
+// this file must be loaded after jquery.freepano.pointcloud.js
 
 function ParticleSequence_loader(options) {
   if (!this instanceof ParticleSequence_loader) {

@@ -45,6 +45,14 @@ if (typeof(PanoList)!="undefined") {
   alert("jquery.freepano.list.js must be loaded after jquery.freepano.widget.js !");
 }
 
+/**
+* WidgetFactory()
+*
+* Create a new widget class and its associated widget list class
+*
+* See jquery.freepano.poi.js or jquery.freepano.arrow.js as examples
+*
+*/
 function WidgetFactory(options) {
 
   var root=window;         // root element, default is window
@@ -169,8 +177,8 @@ function WidgetFactory(options) {
         var phi=-widget.coords.lon*Math.PI/180;
         var theta=widget.coords.lat*Math.PI/180;
         var pos=new THREE.Vector3(0,0,-1);
-        pos.applyAxisAngle(new THREE.Vector3(1,0,0),theta);
-        pos.applyAxisAngle(new THREE.Vector3(0,1,0),phi);
+        pos.applyAxisAngle(widget.panorama.Xaxis,theta);
+        pos.applyAxisAngle(widget.panorama.Yaxis,phi);
         pos.multiplyScalar(widget.radius);
 
         // set widget position
@@ -257,7 +265,7 @@ function WidgetFactory(options) {
         });
       }, // widget_ready
 
-      // create default mesh
+      // return default mesh
       defaultMesh: function widget_defaultMesh() {
         var widget=this;
         var circle=new THREE.Mesh(new THREE.CircleGeometry(widget.size,100), new THREE.MeshBasicMaterial({
@@ -270,7 +278,6 @@ function WidgetFactory(options) {
       }, // widget_defaultMesh
 
       // update widget display properties and coordinates
-
       update: function widget_update() {
         var widget=this;
 
@@ -868,7 +875,6 @@ function WidgetFactory(options) {
 
           });
         }
-
         return mouseover_list;
 
       }, // widgetList_get_mouseover_list

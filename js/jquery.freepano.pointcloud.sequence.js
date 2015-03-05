@@ -352,8 +352,13 @@ $.extend(true,ParticleSequence.prototype,{
     on_pointcloud_render: function particleSequence_on_pointcloud_render(e) {
       var pointCloud=this;
       var seq_list=pointCloud.sequence;
-      var panorama=pointCloud.panorama;
 
+      if (!seq_list) {
+          return;
+      }
+
+      var panorama=pointCloud.panorama;
+      
       $.each(seq_list,function(){
 
         var seq=this;
