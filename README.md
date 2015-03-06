@@ -1,8 +1,7 @@
 
 ## freepano<br />WebGL panorama viewer
 
-WebGL panorama viewer based on [three.js](http://threejs.org) and [other
-dependencies](COPYRIGHT.md).
+WebGL panorama viewer based on [three.js](http://threejs.org).
 
 
 ### Copyright
@@ -10,6 +9,7 @@ dependencies](COPYRIGHT.md).
 Copyright (c) 2014-2015 FOXEL SA - [http://foxel.ch](http://foxel.ch)<br />
 This program is part of the FOXEL project <[http://foxel.ch](http://foxel.ch)>.
 
+This program includes works distributed under other copyright notice(s).<br />
 Please read the [COPYRIGHT.md](COPYRIGHT.md) file for more information.
 
 
@@ -24,3 +24,6 @@ of the
 
 You must read <[http://foxel.ch/license](http://foxel.ch/license)> for more
 information about our Licensing terms and our Usage and Attribution guidelines.
+
+This program includes works distributed under the terms of another license(s).<br />
+Please read the [COPYRIGHT.md](COPYRIGHT.md) file for more information.
