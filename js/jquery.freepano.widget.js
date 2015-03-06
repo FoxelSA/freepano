@@ -605,11 +605,34 @@ function WidgetFactory(options) {
 
         }, // widgetList_on_panorama_render
 
-        // dispose widgets and empty widget list on panorama dispose
+        // dispatch widgetList dispose on panorama dispose
         on_panorama_dispose: function widgetList_on_panorama_dispose(e) {
+           var panorama=this;
+           var widgetList=panorama[Widget.name.toLowerCase()];
+           widgetList.dispatch('dispose');
 
-          var panorama=this;
-          var widgetList=panorama[Widget.name.toLowerCase()];
+          // delete camera_list and picking stuff
+          if (widgetList._cameraList) {
+            $.each(widgetList._cameraList,function(){
+              var camera=this;
+              camera._id=null;
+              camera.meshes=null;
+              camera.raycaster=null;
+            });
+          }
+          widgetList._cameraList=null;
+          widgetList.camera=null;
+          widgetList.scene=null;
+
+          // empty list
+          panorama[Widget.name.toLowerCase()]=null;
+
+        }, // widgetList_on_panorama_dispose
+
+        // dispose widgets and empty widget list on widgetList dispose
+        ondispose: function widgetList_ondispose(e) {
+          var widgetList=this;
+          var panorama=widgetList.panorama;
 
           if (!(widgetList instanceof WidgetList)) {
             return;
@@ -624,21 +647,8 @@ function WidgetFactory(options) {
             }
           });
 
-          if (widgetList._cameraList) {
-            $.each(widgetList._cameraList,function(){
-              var camera=this;
-              camera._id=null;
-              camera.meshes=null;
-              camera.raycaster=null;
-            });
-          }
-          widgetList._cameraList=null;
-          widgetList.camera=null;
-          widgetList.scene=null;
 
-          panorama[Widget.name.toLowerCase()]=null;
-
-      }, // widgetList_on_panorama_dispose
+      }, // widgetList_ondispose
 
       // instantiate or re-initialize widget list
       on_panorama_ready: function widgetList_on_panorama_ready(e) {
