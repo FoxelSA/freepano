@@ -103,7 +103,7 @@ function setupEventDispatcher(obj) {
     }
 
     // forward also additional arguments, if any
-    var args=Array.prototype.slice(arguments);
+    var args=Array.prototype.slice.apply(arguments,[1]);
 
     // run suscribers handler for this event type, if any
     var method='on_'+obj.constructor.name.toLowerCase()+'_'+e.type;
