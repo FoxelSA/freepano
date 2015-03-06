@@ -305,7 +305,8 @@ $.extend(true,PointCloud.prototype,{
       if (pointCloud.instance.hover){
         pointCloud.instance.dispatch({
             type: 'particlemouseout',
-            target: pointCloud.instance.hover.index
+            target: pointCloud.instance.hover.index,
+            originalEvent: e
         });
       }
     }
@@ -506,7 +507,8 @@ $.extend(true,PointCloud.prototype,{
 
     pointCloud.dispatch({
         type: 'particleclick',
-        target: pointCloud.hover.index
+        target: pointCloud.hover.index,
+        originalEvent: e
     });
 
   }, // pointCloud_on_panorama_click
