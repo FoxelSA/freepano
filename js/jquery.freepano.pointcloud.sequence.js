@@ -136,9 +136,9 @@ $.extend(true,ParticleSequence.prototype,{
 
       // add particles to sequence, if any specified
       if (seq.particleIndex_list.length){
-        var particleIndex_list=seq.particleIndex_list;
+        var particles_to_be_added=seq.particleIndex_list;
         seq.particleIndex_list=[];
-        $.each(particleIndex_list,function(){
+        $.each(particles_to_be_added,function(){
           var index=this;
           seq.add(index);
         });
@@ -252,6 +252,8 @@ $.extend(true,ParticleSequence.prototype,{
         seq.label.scene.add(object3D);
       }
 
+      seq.dispatch('add',index);
+
     }, // particleSequence_add
 
     // remove last particle from sequence 
@@ -272,7 +274,7 @@ $.extend(true,ParticleSequence.prototype,{
       }
 
       // remove particle from list
-      seq.particleIndex_list.pop();
+      var particleIndex=seq.particleIndex_list.pop();
 
       // remove particle from Line
       var geometry=line.instance.geometry;
@@ -286,6 +288,8 @@ $.extend(true,ParticleSequence.prototype,{
         seq.label.scene.remove(seq.label.object3D_list[index]);
         seq.label.object3D_list.pop();
       }
+
+      seq.dispatch('pop',particleIndex);
 
     }, // particleSequence_pop
 
@@ -429,6 +433,11 @@ $.extend(true,ParticleSequence.prototype,{
         return;
       }
 
+      if (seq.lastmouseout!==undefined) {
+          seq.pop(seq.lastmouseout);
+          seq.lastmouseout=undefined;
+      }
+
       seq.add(e.target);
       panorama.drawScene();
 
@@ -462,8 +471,7 @@ $.extend(true,ParticleSequence.prototype,{
         return;
       }
 
-      seq.pop(e.target);
-      panorama.drawScene();
+      seq.lastmouseout=e.target;
 
     }, // on_pointcloud_particlemouseout
 
