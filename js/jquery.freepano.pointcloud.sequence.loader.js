@@ -130,8 +130,9 @@ $.extend(ParticleSequence_loader.prototype,{
             // assign sequence list to pointCloud
             panorama.pointCloud.instance.sequence=sequence; 
 
-            // propagate pointCloud 'ready' event
-      //      pointCloud.dispatch(e);
+            // trigger particlesequence 'ready' event
+            pointCloud.dispatch('sequenceload');
+
             panorama.drawScene();
           }
       });
