@@ -383,10 +383,34 @@ $.extend(true,ParticleSequence.prototype,{
 
     }, // particleSequence_on_pointcloud_render
 
+    // when no particle hovered, trigger particleclick for last mouseout index if any
+    on_panorama_click: function particleSequence_on_panorama_click(e) {
+        var panorama=this;
+        if (!panorama.pointCloud || !panorama.pointCloud.instance || !panorama.pointCloud.instance.sequence) {
+            return;
+        }
+
+        var seq=panorama.pointCloud.instance.sequence[panorama.pointCloud.instance.sequence.length-1];
+        if (seq) {
+          if (seq.lastmouseout!==undefined) {
+              seq.pointCloud.dispatch({
+                  type: 'particleclick',
+                  target: seq.lastmouseout,
+                  originalEvent: e
+              });
+          }
+        }
+    },
+
     // add particle to sequence on click
     on_pointcloud_particleclick: function particleSequence_on_pointcloud_particleclick(e) {
 
       var pointCloud=this;
+
+      if (e.originalEvent.particleSequence_on_pointcloud_particleclick_was_here) {
+          return;
+      }
+      e.originalEvent.particleSequence_on_pointcloud_particleclick_was_here=true;
 
       if (!pointCloud.sequence || !pointCloud.sequence.length) {
           return;
@@ -405,6 +429,7 @@ $.extend(true,ParticleSequence.prototype,{
 
       seq.add(e.target,{isclick:true});
       seq.lastclicked=e.target;
+      seq.lastmouseout=undefined;
 
       panorama.drawScene();
 
