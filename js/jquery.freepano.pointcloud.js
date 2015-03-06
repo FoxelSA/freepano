@@ -430,7 +430,18 @@ $.extend(true,PointCloud.prototype,{
 
   }, // pointCloud_nearestParticle
 
-  // return particle world coordinates
+  // return spherical particle world coordinates
+  getParticleSphericalCoords: function pointCloud_getParticleSphericalCoords(index) {
+    var pointCloud=this;
+    var point=pointCloud.json.points[index];
+    return {
+      lon: point[0]*180/Math.PI-180,
+      lat: -point[1]*180/Math.PI,
+      radius: point[2]
+    }
+  }, // pointCloud_getParticleSphericalCoords
+
+  // return cartesian particle world coordinates
   getParticlePosition: function pointCloud_getParticlePosition(index) {
     var pointCloud=this;
     var panorama=pointCloud.panorama;
