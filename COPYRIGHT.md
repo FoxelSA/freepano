@@ -32,9 +32,8 @@ information about our Licensing terms and our Usage and Attribution guidelines.
 
 ## Included Content
 
-This program includes works distributed under the terms of a Creative Commons
-Attribution-ShareAlike license and/or a compatible license and other copyright
-notices.
+This program includes works distributed under the terms of the Creative Commons
+Attribution-ShareAlike license and other copyright notice.
 
 *   __Music__<br />
     Copyright (c) 2013-2014 Don L. Harper - http://donharper.com<br />
@@ -44,8 +43,7 @@ notices.
 
 ## Included Software and Libraries
 
-This program includes works distributed under the terms of the GNU General
-Public License and/or a compatible license and other copyright notices.
+This program includes works distributed under the terms of another license(s) and other copyright notice(s).
 
 
 *   __three.js r70__<br />
