@@ -61,8 +61,8 @@ $.extend(true,ParticleSequence.prototype,{
 
       mode: {},
 
-      // point cloud particle index list
-      particleIndex_list: [],
+      // point cloud particle list
+      particle_list: [],
 
       // line segments
       line: {
@@ -89,7 +89,7 @@ $.extend(true,ParticleSequence.prototype,{
     },
 
     // Init particle sequence with its scene, line geometry and material, and label scene
-    // If particleIndex_list is not empty, initialize particle sequence.
+    // If particle_list is not empty, initialize particle sequence.
     init: function particleSequence_init(){
 
       var seq=this;
@@ -135,48 +135,48 @@ $.extend(true,ParticleSequence.prototype,{
       }
 
       // add particles to sequence, if any specified
-      if (seq.particleIndex_list.length){
-        var particles_to_be_added=seq.particleIndex_list;
-        seq.particleIndex_list=[];
+      if (seq.particle_list.length){
+        var particles_to_be_added=seq.particle_list;
+        seq.particle_list=[];
         $.each(particles_to_be_added,function(){
-          var index=this;
-          seq.add(index);
+          var particle=this;
+          seq.add(particle);
         });
       }
 
     }, // particleSequence_init
 
     // add a particle to the sequence, update line geometry and segment label list accordingly
-    add: function particleSequence_add(index,flags) {
+    add: function particleSequence_add(particle,flags) {
 
       var seq=this;
       var line=seq.line;
       var pointCloud=seq.pointCloud;
       var panorama=pointCloud.panorama;
 
-      var prevcount=seq.particleIndex_list.length;
+      var prevcount=seq.particle_list.length;
       if (prevcount>=line.geometry.maxPoints) {
         $.notify('Maximum number of segments reached');
         return;
       }
 
       // dont add the same particle twice in a row
-      if (seq.particleIndex_list[prevcount-1]==index) {
+      if (seq.particle_list[prevcount-1].index==particle.index) {
 
         // detect double click
         if (flags && flags.isclick) {
 
-          if (seq.doubleClick && seq.doubleClick.index==index) {
+          if (seq.doubleClick && seq.doubleClick.index==particle.index) {
              seq.doubleClick={
                bool: true,
-               index: index,
+               index: particle.index,
                t: Date.now()-seq.doubleClick.t
              }
 
           } else {
             seq.doubleClick={
               bool: false,
-              index: index,
+              index: particle.index,
               t: Date.now()
             };
           }
@@ -189,7 +189,7 @@ $.extend(true,ParticleSequence.prototype,{
         if (flags && flags.isclick) {
           seq.doubleClick={
             bool: false,
-            index: index,
+            index: particle.index,
             t: Date.now()
           };
         }
@@ -197,10 +197,10 @@ $.extend(true,ParticleSequence.prototype,{
       }
 
       // register particle index
-      seq.particleIndex_list.push(index);
+      seq.particle_list.push({index:index});
 
       // get particle world coordinates
-      var vw=new THREE.Vector3().copy(pointCloud.getParticlePosition(index));
+      var vw=new THREE.Vector3().copy(pointCloud.getParticlePosition(particle.index));
 
       // convert to sphere coordinates
       var vs=new THREE.Vector3().copy(vw).normalize().multiplyScalar(panorama.sphere.radius);
@@ -219,7 +219,7 @@ $.extend(true,ParticleSequence.prototype,{
       if (prevcount) {
 
         // get particles world coordinates
-        var v1=new THREE.Vector3().copy(pointCloud.getParticlePosition(seq.particleIndex_list[prevcount-1]));
+        var v1=new THREE.Vector3().copy(pointCloud.getParticlePosition(seq.particle_list[prevcount-1].index));
         var v2=vw;
 
         // compute segment length, rounded to cm
@@ -252,29 +252,29 @@ $.extend(true,ParticleSequence.prototype,{
         seq.label.scene.add(object3D);
       }
 
-      seq.dispatch('add',index);
+      seq.dispatch('add',particle);
 
     }, // particleSequence_add
 
     // remove last particle from sequence 
-    pop: function particleSequence_pop(particleIndex) {
+    pop: function particleSequence_pop(particle) {
 
       var seq=this;
       var line=seq.line;
       var pointCloud=seq.pointCloud;
       var panorama=pointCloud.panorama;
-      var prevcount=seq.particleIndex_list.length;
+      var prevcount=seq.particle_list.length;
 
       if (!prevcount) {
         return;
       }
 
-      if (seq.particleIndex_list[prevcount-1]!=particleIndex) {
+      if (seq.particle_list[prevcount-1].index!=particle.index) {
         return;
       }
 
       // remove particle from list
-      var particleIndex=seq.particleIndex_list.pop();
+      particle=seq.particle_list.pop();
 
       // remove particle from Line
       var geometry=line.instance.geometry;
@@ -283,13 +283,13 @@ $.extend(true,ParticleSequence.prototype,{
       geometry.computeLineDistances();
 
       // remove label
-      var index=seq.label.object3D_list.length-1;
-      if (index>=0) {
-        seq.label.scene.remove(seq.label.object3D_list[index]);
+      var labelIndex=seq.label.object3D_list.length-1;
+      if (labelIndex>=0) {
+        seq.label.scene.remove(seq.label.object3D_list[labelIndex]);
         seq.label.object3D_list.pop();
       }
 
-      seq.dispatch('pop',particleIndex);
+      seq.dispatch('pop',particle);
 
     }, // particleSequence_pop
 
@@ -367,7 +367,7 @@ $.extend(true,ParticleSequence.prototype,{
 
         var seq=this;
 
-        if (!seq || seq.particleIndex_list.length<2) {
+        if (!seq || seq.particle_list.length<2) {
           return;
         }
 
@@ -454,7 +454,7 @@ $.extend(true,ParticleSequence.prototype,{
         return;
       }
 
-      if (!seq.particleIndex_list.length) {
+      if (!seq.particle_list.length) {
         return;
       }
 
@@ -487,7 +487,7 @@ $.extend(true,ParticleSequence.prototype,{
         return;
       }
 
-      if (seq.particleIndex_list.length<2) {
+      if (seq.particle_list.length<2) {
         return;
       }
 
