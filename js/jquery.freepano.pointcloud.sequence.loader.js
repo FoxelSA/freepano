@@ -115,10 +115,10 @@ $.extend(ParticleSequence_loader.prototype,{
             // initialize sequence lists
             var sequence=[];
             $.each(json.list,function(){
-              var particleIndex_list=this;
+              var particle_list=this;
               sequence.push(new pointCloud.Sequence({
                     pointCloud: pointCloud,
-                    particleIndex_list: particleIndex_list
+                    particle_list: particle_list
               }));
             });
 

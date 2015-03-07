@@ -139,15 +139,15 @@ $.extend(true,ParticleSequence.prototype,{
         var particles_to_be_added=seq.particle_list;
         seq.particle_list=[];
         $.each(particles_to_be_added,function(){
-          var particle=this;
-          seq.add(particle);
+          var particle_index=this;
+          seq.add(particle_index);
         });
       }
 
     }, // particleSequence_init
 
     // add a particle to the sequence, update line geometry and segment label list accordingly
-    add: function particleSequence_add(particle,flags) {
+    add: function particleSequence_add(particle_index,flags) {
 
       var seq=this;
       var line=seq.line;
@@ -161,22 +161,22 @@ $.extend(true,ParticleSequence.prototype,{
       }
 
       // dont add the same particle twice in a row
-      if (seq.particle_list[prevcount-1].index==particle.index) {
+      if (prevcount && seq.particle_list[prevcount-1].index==particle_index) {
 
         // detect double click
         if (flags && flags.isclick) {
 
-          if (seq.doubleClick && seq.doubleClick.index==particle.index) {
+          if (seq.doubleClick && seq.doubleClick.index==particle_index) {
              seq.doubleClick={
                bool: true,
-               index: particle.index,
+               index: particle_index,
                t: Date.now()-seq.doubleClick.t
              }
 
           } else {
             seq.doubleClick={
               bool: false,
-              index: particle.index,
+              index: particle_index,
               t: Date.now()
             };
           }
@@ -189,18 +189,20 @@ $.extend(true,ParticleSequence.prototype,{
         if (flags && flags.isclick) {
           seq.doubleClick={
             bool: false,
-            index: particle.index,
+            index: particle_index,
             t: Date.now()
           };
         }
 
       }
 
+      var particle={index:particle_index};
+      
       // register particle index
-      seq.particle_list.push({index:index});
+      seq.particle_list.push(particle);
 
       // get particle world coordinates
-      var vw=new THREE.Vector3().copy(pointCloud.getParticlePosition(particle.index));
+      var vw=new THREE.Vector3().copy(pointCloud.getParticlePosition(particle_index));
 
       // convert to sphere coordinates
       var vs=new THREE.Vector3().copy(vw).normalize().multiplyScalar(panorama.sphere.radius);
@@ -458,8 +460,10 @@ $.extend(true,ParticleSequence.prototype,{
         return;
       }
 
-      if (seq.lastmouseout!==undefined) {
-          seq.pop(seq.lastmouseout);
+      var particle=seq.particle_list[seq.particle_list.length-1];
+
+      if (seq.lastmouseout==particle.index) {
+          seq.pop(particle);
           seq.lastmouseout=undefined;
       }
 
