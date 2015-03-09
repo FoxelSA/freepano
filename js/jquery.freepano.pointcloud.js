@@ -420,7 +420,7 @@ $.extend(true,PointCloud.prototype,{
 
       // select nearest point on z axis when equidistant from cursor
       } else if (dsquare==d2min) {
-        if (point_list[candidate].point[2]>point[2]) {
+        if (point_list[candidate][2]>point[2]) {
           candidate=i;
         }
       }
