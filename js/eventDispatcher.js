@@ -40,54 +40,119 @@
  *  Usage example: 
  *
  *  1. Setup the event dispatcher for the object prototype from which
- *  you want to trigger events, eg:
+ *  you want to trigger events (the emitter), eg:
  *
- *        setupEventDispatcher(Panorama.prototype);
+ *        setupEventDispatcher(myobject.prototype);
  *
  *  Events can now be triggered with the dispatch() method, eg:
  *
- *       p=new Panorama({...}); p.dispatch('myevent',...);
+ *       myobject=new MyObject({...});
+ *       myobject.dispatch('myevent', ...);
  *
+ *  Now when an event is triggered with "myobject.dispatch('myevent')",
+ *  the method MyObject.prototype.onmyevent() will be called, if existing.
  *
- *  2. Request dispatching events to another object prototype, eg:
+ *  The value of 'this' will be equal to the emitter object prototype or
+ *  instance.
  *
- *        Panorama.prototype.dispatchEventsTo(MyModule.prototype);
+ *  Additional arguments added to the dispatch() call, will be passed to the
+ *  event handler after the event object.
  *
- *  Now when an event is triggered with dispatch,
- *  for each subscriber (in order of addition),
- *  the "on_panorama_<event>" method will be called, if any.
- *  And finally the method Panorama.on<event>() for the "source" prototype
+ *  2. You can now request dispatching events to another object prototype, eg:
+ *
+ *        MyObject.prototype.dispatchEventsTo(OtherObject.prototype);
+ *
+ *  Now when an event is triggered with:
+ *       myobject.dispatch('myevent', ...);
+ *
+ * or with
+ *        myobject.dispatch({type: 'myevent', ...}, ...);
+ *        
+ *  the "otherobject.on_myobject_myevent(event, ...)" method will be called,
+ *  if existing. (for otherobject and for each other receiver in order of
+ *  addition.
+ *  
+ *  And finally the method eg MyObject.prototype.onmyevent(), if any.
  *
  *  If any handler return value is strictly equal to false, then
- *  event propagation will be stopped.
+ *  event propagation will be stopped. You can use this mechanism eg
+ *  to cancel a 'close' or 'delete' event.:
  *
- *  3. Define handlers for required events in in MyModule.prototype,
- *     eg "preinit", "ready", "update", "render" or "dispose",
- *     (in the case of Panorama events)
+ *       MyObject.prototype.close=function(){ this.dispatch('close'); }
+ *       MyObject.prototype.onclose=function() {
+ *          console.log('close event has not been canceled');
+ *       }
  *
- *        MyModule.prototype.on_panorama_preinit: function myModule_on_panorama_preinit() {}
+ *  As resulting rule, every method name begining with 'on' must be considered
+ *  an event handler, and if the term 'on' is followed by an underscore, then
+ *  the second term is the object constructor name (in lowercase) from which the
+ *  event is dispatched, and the third term is the event type.
+ *
+ *  The value of the global variable 'this' will be equal to the emmiter
+ *  object prototype or instance.
+ *
+ *  Additional arguments added to the dispatch() call, will be passed to the
+ *  event handler after the event object.
  *
  */
 
 var eventDispatcherDebug=false;
+
+// unique serial for events
 window.eventDispatcherSerial=0;
 
-// setup specified prototype or instance to dispatch events among subscribers
-function setupEventDispatcher(obj) {
+/**
+ * setupEventDispatcher(obj)
+ *
+ * Setup specified prototype or instance (obj) to dispatch 'obj' events among
+ * receivers
+ * 
+ * @param obj   the emitter prototype or instance that will dispatch events
+ *
+ * @return undefined
+ *
+ */
+function setupEventDispatcher(emitter) {
 
-  obj.subscribers=[];
+  emitter.receivers=[];
 
-  // allow other prototypes or instances to subscribe to obj events
-  obj.dispatchEventsTo=function eventDispatcher_dispatchEventsTo(obj){
-    var instance=this;
-    if (instance.subscribers.indexOf(obj)<0) {
-      instance.subscribers.push(obj);
+  /**
+   * emitter.dispatchEventsTo(receiver_obj)
+   *
+   * Add 'receiver_obj' to the list of instances/prototypes for which we
+   * must dispatch events triggered by/for 'emitter' 
+   *
+   * @param receiver_obj  the object instance or prototype for which we must
+   *                      dispatch 'emitter' events
+   *
+   * @return undefined
+   *
+   */
+  emitter.dispatchEventsTo=function eventDispatcher_dispatchEventsTo(receiver_obj){
+    var emitter=this;
+    // dont add receiver_obj twice
+    if (emitter.receivers.indexOf(receiver_obj)<0) {
+      emitter.receivers.push(receiver_obj);
     }
   } // eventDispatcher_dispatchEventsTo
 
-  // dispatch event among subscribers and self
-  obj.dispatch=function eventDispatcher_dispatch(e){
-    var obj=this;
+  /** 
+   * emitter.dispatch(event, ...)
+   *
+   * Dispatch event among receivers and self
+   *
+   * If any receiver returns false, abort propagation.
+   * If any extra arguments are specified, forward them.
+   * Run self (emitter) event handler last.
+   *
+   * @param event  the event object or string (that will be converted to)
+   * @param ...    optional parameters
+   *
+   * @return Boolean
+   *
+   */
+  emitter.dispatch=function eventDispatcher_dispatch(e){
+    var emitter=this;
 
     // convert event to object, if needed
     if (typeof(e)=='string') {
@@ -99,58 +164,78 @@ function setupEventDispatcher(obj) {
 
     if (eventDispatcherDebug) {
       var serial=window.eventDispatcherSerial++;
-      console.log(serial+' dispatching '+obj.constructor.name+' "'+e.type+'"');
+      console.log(serial+' dispatching '+emitter.constructor.name+' "'+e.type+'"');
     }
 
     // forward also additional arguments, if any
     var args=Array.prototype.slice.apply(arguments,[1]);
 
     // run suscribers handler for this event type, if any
-    var method='on_'+obj.constructor.name.toLowerCase()+'_'+e.type;
+    var method='on_'+emitter.constructor.name.toLowerCase()+'_'+e.type;
     var stopPropagation=false;
-    $.each(obj.subscribers,function(i,subscriber){
-      if (subscriber[method] && typeof(subscriber[method]=="function")) {
+
+    $.each(emitter.receivers,function(i,receiver){
+
+      // if suscriber event handler exists for this event type
+      if (receiver[method] && typeof(receiver[method]=="function")) {
+
         if (eventDispatcherDebug) {
-          console.log(serial+' '+method+' -> '+subscriber.constructor.name);
+          console.log(serial+' '+method+' -> '+receiver.constructor.name);
         }
-        if (subscriber[method].apply(obj,[e].concat(args||[]))===false) {
-          // stop propagation if any subscriber handler return false
+
+        // run receiver event handler
+        if (receiver[method].apply(emitter,[e].concat(args||[]))===false) {
+
+          // stop propagation if any receiver handler return false
           stopPropagation=true;
+
           if (eventDispatcherDebug) {
-            console.log(serial+' '+method+' -> '+'propagation stopped by: '+subscriber.constructor.name);
+            console.log(serial+' '+method+' -> '+'propagation stopped by: '+receiver.constructor.name);
           }
+
           return false;
         }
+
       } else {
+        // receiver event handler doesnt exist for this event type
         if (eventDispatcherDebug>1){
-          console.log(serial+' '+method+' -> '+'warning: '+subscriber.constructor.name+'.'+method+' is undefined');
+          console.log(serial+' '+method+' -> '+'warning: '+receiver.constructor.name+'.'+method+' is undefined');
         }
       }
     });
 
+    // stop event propagation
     if (stopPropagation) {
       return false;
     }
 
     // run self handler if any
     method='on'+e.type;
-    if (obj[method] && typeof(obj[method]=="function")) {
+    if (emitter[method] && typeof(emitter[method]=="function")) {
+
       if (eventDispatcherDebug) {
-        console.log(serial+' '+method+' -> '+obj.constructor.name);
+        console.log(serial+' '+method+' -> '+emitter.constructor.name);
       }
-      if (obj[method].apply(obj,[e].concat(args||[]))===false) {
+
+      // run self handler
+      if (emitter[method].apply(emitter,[e].concat(args||[]))===false) {
+
+        // stop propagation if any receiver handler return false
+        //
         if (eventDispatcherDebug) {
-          console.log(serial+' '+method+' -> '+'propagation stopped by: '+obj.constructor.name);
+          console.log(serial+' '+method+' -> '+'propagation stopped by: '+emitter.constructor.name);
         }
+
         return false;
       }
+
     } else {
       if (eventDispatcherDebug>1){
-        console.log(serial+' '+method+' -> '+'warning: '+obj.constructor.name+'.'+method+' is undefined');
+        console.log(serial+' '+method+' -> '+'warning: '+emitter.constructor.name+'.'+method+' is undefined');
       }
     }
 
-  } // eventDispatcher_trigger
+  } // eventDispatcher_dispatch
 
 } // setupEventDispatcher
 
