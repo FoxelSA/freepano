@@ -876,7 +876,9 @@ function WidgetFactory(options) {
             camera.raycaster.ray.set(camera.instance.position, wc.sub(camera.instance.position).normalize());
 
             // find meshes intersecting with this ray
-            var meshes=camera.raycaster.intersectObjects(camera.meshes[Widget.name.toLowerCase()]);
+            var objects=camera.meshes[Widget.name.toLowerCase()];
+            if (!objects) return;
+            var meshes=camera.raycaster.intersectObjects(objects);
 
             // and append them to mouseover_list
             if (meshes.length) {

@@ -725,7 +725,8 @@ $.extend(true,Panorama.prototype,{
         showMouseInfo: false,
         Xaxis: new THREE.Vector3(1,0,0),
         Yaxis: new THREE.Vector3(0,1,0),
-        Zaxis: new THREE.Vector3(0,0,1)
+        Zaxis: new THREE.Vector3(0,0,1),
+        rotationMouseThreshold: 10
     }, // defaults
 
     /**
