@@ -1072,6 +1072,10 @@ $.extend(true,Panorama.prototype,{
         };
         cursor.lon = THREE.Math.radToDeg(cursor.theta);
         cursor.lat = THREE.Math.radToDeg(cursor.phi);
+       
+        // set mouse canvas coordinates
+        cursor.pageX = mouseRel.x;
+        cursor.pageY = mouseRel.y;
 
         // remove linear transformation
         var posf = Array(3);
@@ -1105,10 +1109,6 @@ $.extend(true,Panorama.prototype,{
         // set mouse lam/phi (lon/lat) degrees
         m.lon = lam * (180/Math.PI);
         m.lat = phi * (180/Math.PI);
-
-        // set mouse canvas coordinates
-        m.pageX = mouseRel.x;
-        m.pageY = mouseRel.y;
 
         // adjust lon/lat
         m.lon = -(90 - m.lon) - 90;
