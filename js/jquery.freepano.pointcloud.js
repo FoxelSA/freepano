@@ -386,7 +386,7 @@ $.extend(true,PointCloud.prototype,{
 
   onparticlemouseout: function pointCloud_onparticlemouseout(e) {
     var pointCloud=this;
-    if (pointCloud.showDebugInfo) {
+    if (pointCloud.hideDebugInfo) {
       pointCloud.hideParticleInfo();
     }
   }, // pointCloud_onparticlemousein

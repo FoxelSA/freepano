@@ -70,7 +70,7 @@ $.extend(true,ParticleSequence.prototype,{
         instance: {},
         material: {
           options: {
-            color: 'black',
+            color: 'red',
             lineWidth: 2
           }
         },
@@ -539,6 +539,8 @@ $.extend(true,ParticleSequence.prototype,{
     * @todo
     */
     dispose: function particleSequence_dispose() {
+        var seq=this;
+        
     }
 
 }); // extend ParticleSequence prototype
