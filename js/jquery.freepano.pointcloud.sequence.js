@@ -198,7 +198,7 @@ $.extend(true,ParticleSequence.prototype,{
 
       var particle={index:particle_index};
       
-      // register particle index
+      // register particle
       seq.particle_list.push(particle);
 
       // get particle world coordinates
@@ -237,11 +237,23 @@ $.extend(true,ParticleSequence.prototype,{
            depthTest: false,
            depthWrite: false
         }));
-        sprite.scale.set(canvas.width/20,canvas.height/20,1.0);
+
+        // set label scale factor
+        if (seq.fixedLabelScale==true) {
+            // fixed label scale
+            sprite._scaleFactor=1/20;
+
+        } else {
+            // distance between line midpoint in world coords and camera
+            var labelDistance=new THREE.Vector3((v1.x+v2.x)/2,(v1.y+v2.y)/2,(v1.z+v2.z)/2).length();
+            sprite._scaleFactor=1/(10+labelDistance);
+        }
+        
+        sprite.scale.set(canvas.width*sprite._scaleFactor,canvas.height*sprite._scaleFactor,1.0);
 
         var object3D=new THREE.Object3D();
         object3D.add(sprite);
-
+       
         // get particles sphere coordinates
         v1=geometry.vertices[line.geometry.maxPoints-2];
         v2=vs;
