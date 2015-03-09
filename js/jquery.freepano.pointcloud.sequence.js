@@ -540,7 +540,6 @@ $.extend(true,ParticleSequence.prototype,{
     */
     dispose: function particleSequence_dispose() {
         var seq=this;
-        
     }
 
 }); // extend ParticleSequence prototype
