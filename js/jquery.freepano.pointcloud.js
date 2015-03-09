@@ -60,7 +60,7 @@ $.extend(true,PointCloud.prototype,{
       replaceWithThis: '/pointcloud/',
       suffix: '-freepano.json'
     },
-
+/*
     // point cloud dot material
     dotMaterial: new THREE.PointCloudMaterial({
         map: THREE.ImageUtils.loadTexture('img/dot.png'),
@@ -73,7 +73,7 @@ $.extend(true,PointCloud.prototype,{
         depthTest: false,
         depthWrite: false
     }), // pointCloud.defaults.dotMaterial
-   
+  */ 
    // generate particle positions array from json 
     parseJSON: function parseJSON(json) {
 
@@ -486,7 +486,14 @@ $.extend(true,PointCloud.prototype,{
     html += 'phi: ' + point[1].toPrecision(6) + '<br />';
     html += 'distance: ' + point[2].toPrecision(6) + '<br />';
     html += 'index: ' + point[3] + '<br />';
-    div.html(html);
+
+    var e={
+      type: 'updateparticleinfo',
+      html: html
+    }
+    pointCloud.dispatch(e);
+    
+    div.html(e.html);
     div.show(0);
 
   }, // pointCloud_showParticleInfo
