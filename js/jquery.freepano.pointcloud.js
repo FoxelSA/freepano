@@ -58,7 +58,7 @@ $.extend(true,PointCloud.prototype,{
     urlReplace: {
       replaceThis: new RegExp(/\/pyramid\/.*/),
       replaceWithThis: '/pointcloud/',
-      suffix: '-freepano.json'
+      suffix: [ '-freepano.json', '-dense.json' ]
     },
 /*
     // point cloud dot material
@@ -112,7 +112,7 @@ $.extend(true,PointCloud.prototype,{
     }, // pointCloud.defaults.parseJSON
 
     // sort point cloud particles by depth
-    sortParticles: true,
+    sortParticles: false,
 
     // raycaster options
     raycaster: {
@@ -418,7 +418,7 @@ $.extend(true,PointCloud.prototype,{
         d2min=dsquare;
         candidate=i;
 
-      // select nearest point on z axis when equidistant from cursor
+      // select nearest point depth when equidistant from cursor
       } else if (dsquare==d2min) {
         if (point_list[candidate][2]>point[2]) {
           candidate=i;
@@ -464,13 +464,18 @@ $.extend(true,PointCloud.prototype,{
   }, // pointCloud_getParticlePosition
 
   showParticleInfo: function pointCloud_showParticleInfo(index) {
+ 
     var pointCloud=this;
     var point=pointCloud.json.points[index];
     var panorama=pointCloud.panorama;
 
-    var div = $('#particleInfo');
+    var div = $('#info');
     if (!div.length) {
-        div = $('<div id="particleInfo">').appendTo(panorama.container).css({
+
+        // create #info div 
+        div = $('<div id="info"><div id="particle"></div></div>')
+
+        div.appendTo(panorama.container).css({
             position: 'absolute',
             top: 0,
             left: 0,
@@ -478,22 +483,26 @@ $.extend(true,PointCloud.prototype,{
             backgroundColor: "rgba(0,0,0,.4)",
             color: 'white'
         });
+
     }
 
-    var html = '<div style="width: 100%; position: relative; margin-left: 10px;">';
-    html += '<strong>Particle info</strong><br />';
-    html += 'theta: ' + point[0].toPrecision(6) + '<br />';
-    html += 'phi: ' + point[1].toPrecision(6) + '<br />';
-    html += 'distance: ' + point[2].toPrecision(6) + '<br />';
-    html += 'index: ' + point[3] + '<br />';
-
+    // particle info
+    var html = '<div style="width: 100%; position: relative; margin-left: 10px;">'
+    + '<strong>Particle info</strong><br />'
+    + 'theta: ' + point[0].toPrecision(6) + '<br />'
+    + 'phi: ' + point[1].toPrecision(6) + '<br />'
+    + 'distance: ' + point[2].toPrecision(6) + '<br />'
+    + 'index: ' + point[3] + '<br />';
+  
+    $('#particle',div).html(html);
+  
+    // trigger pointcloud_updateinfo
     var e={
-      type: 'updateparticleinfo',
-      html: html
+      type: 'showParticleInfo',
+      div: div
     }
     pointCloud.dispatch(e);
-    
-    div.html(e.html);
+
     div.show(0);
 
   }, // pointCloud_showParticleInfo
@@ -532,13 +541,67 @@ $.extend(true,PointCloud.prototype,{
       var urlReplace=panorama.pointCloud.urlReplace||PointCloud.prototype.defaults.urlReplace;
       var replaceThis=urlReplace.replaceThis;
       var replaceWithThis=urlReplace.replaceWithThis;
-      var suffix=urlReplace.suffix;
+      
+      // validate every possible URL according to urlReplace.suffix[] and use the first available one
 
-      // instantiate pointcloud
-      var pointCloud=panorama.pointCloud.instance=new PointCloud($.extend(true,{},panorama.pointCloud,{
-        panorama: panorama,
-        url: panorama.sphere.texture.dirName.replace(replaceThis,replaceWithThis)+p.list.currentImage+suffix
-      }));
+      var validatedURL=[];
+      var repliesExpected=urlReplace.suffix.length;
+
+      // ajax HEAD callback 
+      var callback=function pointcloud_ajax_head_callback(result,url,i) {
+
+        validatedURL[i]=(result=='success')?url:null;
+
+        // last ajax reply expected ?
+        --repliesExpected;
+        if (!repliesExpected) {
+
+          // use the first URL available
+          $.each(validatedURL,function(type){
+
+            if (validatedURL[type]) {
+
+              // instantiate pointcloud
+              var pointCloud=panorama.pointCloud.instance=new PointCloud($.extend(true,{},panorama.pointCloud,{
+                    panorama: panorama,
+                    url: validatedURL[type],
+                    type: type 
+              }));
+
+              // exit loop
+              return false;
+
+            }
+
+          });
+        } 
+      } // pointcloud_ajax_head_callback
+
+
+      // validate urls
+      $.each(urlReplace.suffix,function(i,suffix){
+      
+        var pointcloud_json_url=panorama.sphere.texture.dirName.replace(replaceThis,replaceWithThis)+p.list.currentImage+suffix;
+
+        // javascript loop closure 
+        (function(pointcloud_json_url,i,callback){
+
+          // validate url
+          $.ajax({
+            url: pointcloud_json_url,
+            type:'HEAD',
+            error: function() {
+              callback('error');
+
+            },
+            success: function() {
+              callback('success',pointcloud_json_url,i);
+            }
+          });
+          
+        })(pointcloud_json_url,i,callback);
+      });
+
     }
 
   }, // pointCloud_on_panorama_ready
