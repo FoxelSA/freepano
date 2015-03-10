@@ -58,7 +58,7 @@ $.extend(true,PointCloud.prototype,{
     urlReplace: {
       replaceThis: new RegExp(/\/pyramid\/.*/),
       replaceWithThis: '/pointcloud/',
-      suffix: [ '-freepano.json', '-dense.json' ]
+      suffix: [ '.json' ]
     },
 /*
     // point cloud dot material
@@ -84,27 +84,41 @@ $.extend(true,PointCloud.prototype,{
 
       var v=new THREE.Vector3();
 
-      console.log('parsing cloud... ('+json.points.length+' points)');
       var i=0;
 
-      // for each point defined in the json
-      json.points.forEach(function(point,index) {
-        // initialize vector at z = sphere radius
-        v.x=0;
-        v.y=0;
-        v.z=1;
+      switch(pointCloud.urlReplace.suffix[pointCloud.type]) {
+        case '.json':
 
-        // apply rotations
-        v.applyAxisAngle(panorama.Xaxis,point[1]);
-        v.applyAxisAngle(panorama.Yaxis,point[0]);
+          var field_count=json.points_format.length;
+          console.log('parsing cloud... ('+(json.points.length/field_count)+' points)');
+          
+          // set pointcloud field offset
+          pointCloud.offset={};
+          $.each(json.points_format,function(i,value){
+            pointCloud.offset[value]=i;
+          });
+          var offset=pointCloud.offset;
 
-        // store position
-        positions[i]=-v.x*point[2];
-        positions[i+1]=v.y*point[2];
-        positions[i+2]=v.z*point[2];
-        i+=3;
+          var points=json.points;
+          for (var k=0; k<json.points.length; k+=field_count) {
+            // unit vector
+            v.x=0;
+            v.y=0;
+            v.z=1;
 
-      });
+            // apply rotations
+            v.applyAxisAngle(panorama.Xaxis,points[k+offset.phi]);
+            v.applyAxisAngle(panorama.Yaxis,points[k+offset.theta]);
+
+            // store position
+            positions[i]=-v.x*points[k+offset.depth];
+            positions[i+1]=v.y*points[k+offset.depth];
+            positions[i+2]=v.z*points[k+offset.depth];
+            i+=3;
+          }
+          break;
+
+      }
       console.log('parsing cloud... done');
 
       return positions;
@@ -398,14 +412,15 @@ $.extend(true,PointCloud.prototype,{
     var candidate=0;
     var d2min=999;
     var point_list=pointCloud.json.points;
-
+    var offset=pointCloud.offset;
+  
     $.each(particle_list,function(i){
 
-      var point=point_list[this.index];
+      var index=this.index*pointCloud.json.points_format.length;
 
       // compute absolute angle difference
-      var dthe=Math.abs(point[0]-panorama.mouseCoords.theta);
-      var dphi=Math.abs(point[1]+panorama.mouseCoords.phi);
+      var dthe=Math.abs(point_list[index+offset.theta]-panorama.mouseCoords.theta);
+      var dphi=Math.abs(point_list[index+offset.phi]+panorama.mouseCoords.phi);
 
       // adjust delta when crossing boundaries
       // (assume distance is less than half image)
@@ -420,7 +435,7 @@ $.extend(true,PointCloud.prototype,{
 
       // select nearest point depth when equidistant from cursor
       } else if (dsquare==d2min) {
-        if (point_list[candidate][2]>point[2]) {
+        if (point_list[candidate*pointCloud.json.points_format.length+offset.depth]>point_list[index+offset.depth]) {
           candidate=i;
         }
       }
@@ -434,11 +449,13 @@ $.extend(true,PointCloud.prototype,{
   // return spherical particle world coordinates
   getParticleSphericalCoords: function pointCloud_getParticleSphericalCoords(index) {
     var pointCloud=this;
-    var point=pointCloud.json.points[index];
+    var points=pointCloud.json.points;
+    var offset=pointCloud.offset;
+    index*=pointCloud.json.points_format.length;
     return {
-      lon: point[0]*180/Math.PI-180,
-      lat: -point[1]*180/Math.PI,
-      radius: point[2]
+      lon: points[index+offset.theta]*180/Math.PI-180,
+      lat: -points[index+offset.phi]*180/Math.PI,
+      radius: points[index+offset.depth]
     }
   }, // pointCloud_getParticleSphericalCoords
 
@@ -446,29 +463,34 @@ $.extend(true,PointCloud.prototype,{
   getParticlePosition: function pointCloud_getParticlePosition(index) {
     var pointCloud=this;
     var panorama=pointCloud.panorama;
-    var point=pointCloud.json.points[index];
+    var points=pointCloud.json.points;
+    var offset=pointCloud.offset;
 
+    index*=pointCloud.json.points_format.length;
+  
     // initialize vector
     var v=new THREE.Vector3(0,0,1);
 
     // apply rotations
-    v.applyAxisAngle(panorama.Xaxis,point[1]);
-    v.applyAxisAngle(panorama.Yaxis,point[0]);
+    v.applyAxisAngle(panorama.Xaxis,points[index+offset.phi]);
+    v.applyAxisAngle(panorama.Yaxis,points[index+offset.theta]);
 
     // return position
+    var depth=points[index+offset.depth];
     return {
-      x: -v.x*point[2],
-      y: v.y*point[2],
-      z: v.z*point[2]
+      x: -v.x*depth,
+      y: v.y*depth,
+      z: v.z*depth
     }
   }, // pointCloud_getParticlePosition
 
   showParticleInfo: function pointCloud_showParticleInfo(index) {
  
     var pointCloud=this;
-    var point=pointCloud.json.points[index];
+    var points=pointCloud.json.points[index*pointCloud.json.points_format.length];
     var panorama=pointCloud.panorama;
-
+    index*=pointCloud.json.points_format.length;
+  
     var div = $('#info');
     if (!div.length) {
 
@@ -489,10 +511,10 @@ $.extend(true,PointCloud.prototype,{
     // particle info
     var html = '<div style="width: 100%; position: relative; margin-left: 10px;">'
     + '<strong>Particle info</strong><br />'
-    + 'theta: ' + point[0].toPrecision(6) + '<br />'
-    + 'phi: ' + point[1].toPrecision(6) + '<br />'
-    + 'distance: ' + point[2].toPrecision(6) + '<br />'
-    + 'index: ' + point[3] + '<br />';
+    + 'theta: ' + points[index+offset.theta].toPrecision(6) + '<br />'
+    + 'phi: ' + points[index+offset.phi].toPrecision(6) + '<br />'
+    + 'distance: ' + points[index+offset.depth].toPrecision(6) + '<br />'
+    + 'index: ' + points[index+offset.index] + '<br />';
   
     $('#particle',div).html(html);
   
@@ -545,7 +567,7 @@ $.extend(true,PointCloud.prototype,{
       // validate every possible URL according to urlReplace.suffix[] and use the first available one
 
       var validatedURL=[];
-      var repliesExpected=urlReplace.suffix.length;
+      var numRepliesExpected=urlReplace.suffix.length;
 
       // ajax HEAD callback 
       var callback=function pointcloud_ajax_head_callback(result,url,i) {
@@ -553,8 +575,8 @@ $.extend(true,PointCloud.prototype,{
         validatedURL[i]=(result=='success')?url:null;
 
         // last ajax reply expected ?
-        --repliesExpected;
-        if (!repliesExpected) {
+        --numRepliesExpected;
+        if (!numRepliesExpected) {
 
           // use the first URL available
           $.each(validatedURL,function(type){
@@ -598,7 +620,7 @@ $.extend(true,PointCloud.prototype,{
               callback('success',pointcloud_json_url,i);
             }
           });
-          
+
         })(pointcloud_json_url,i,callback);
       });
 
