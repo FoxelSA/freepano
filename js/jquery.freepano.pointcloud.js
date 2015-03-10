@@ -84,6 +84,16 @@ $.extend(true,PointCloud.prototype,{
 
       var v=new THREE.Vector3();
 
+      // create empty sections
+      var section=pointCloud.section=[];
+      for(var x=0; x<360; ++x) {
+        section[x]=[];
+        for(var y=0; y<180; ++y) {
+          section[x][y]=[];
+        }
+      }
+      var step=Math.PI/180;
+
       var i=0;
 
       switch(pointCloud.urlReplace.suffix[pointCloud.type]) {
@@ -106,15 +116,34 @@ $.extend(true,PointCloud.prototype,{
             v.y=0;
             v.z=1;
 
+            var phi=points[k+offset.phi];
+            var theta=points[k+offset.theta];
+            var depth=points[k+offset.depth];
+
             // apply rotations
-            v.applyAxisAngle(panorama.Xaxis,points[k+offset.phi]);
-            v.applyAxisAngle(panorama.Yaxis,points[k+offset.theta]);
+            v.applyAxisAngle(panorama.Xaxis,phi);
+            v.applyAxisAngle(panorama.Yaxis,theta);
 
             // store position
-            positions[i]=-v.x*points[k+offset.depth];
-            positions[i+1]=v.y*points[k+offset.depth];
-            positions[i+2]=v.z*points[k+offset.depth];
+            positions[i]=-v.x*depth;
+            positions[i+1]=v.y*depth;
+            positions[i+2]=v.z*depth;
             i+=3;
+
+            // store particle index where it belongs
+            var x=Math.round(theta/step)%360;
+            var y=Math.round(phi/step);
+
+            if (y<0) {
+              y+=180;
+            }
+
+            try {
+              section[x][y].push(k/field_count);
+            } catch(e) {
+              console.log(x,y);
+            }
+
           }
           break;
 
@@ -301,6 +330,7 @@ $.extend(true,PointCloud.prototype,{
       y: -((e.clientY-offset.top) / canvas.height) * 2 + 1
     }
 
+/*
     // setup raycaster
     var raycaster=pointCloud.instance.raycaster;
     raycaster.instance.setFromCamera(mouse,panorama.camera.instance);
@@ -308,6 +338,14 @@ $.extend(true,PointCloud.prototype,{
     // get intersection list
     var intersections=raycaster.instance.intersectObject(pointCloud.instance.object3D);
 
+*/
+
+    panorama.getMouseCoords(e);
+    var lon=Math.round(panorama.mouseCoords.lon)-180;
+    var lat=-Math.round(panorama.mouseCoords.lat);
+    if (lat<0) lat+=180;
+    if (lon<0) lon+=360;
+    var intersections=pointCloud.instance.section[lon][lat];
     // trigger pointcloud mouseover event
     if (intersections.length) {
       pointCloud.instance.dispatch({
@@ -333,14 +371,15 @@ $.extend(true,PointCloud.prototype,{
     var pointCloud=this;
     var panorama=pointCloud.panorama;
 
-    var particle_list=e.target;
+    var particle_indexList=e.target;
 
     // get nearest point index
     panorama.getMouseCoords(e.originalEvent);
-    var hover=pointCloud.nearestParticle(panorama.mouseCoords,particle_list);
+    var hover={index: pointCloud.nearestParticle(panorama.mouseCoords,particle_indexList)};
 
     // if we were already hovering
     if (pointCloud.hover) {
+
       // and it was another point
       if (hover.index != pointCloud.hover.index){
         // then trigger 'particlemouseout'
@@ -406,7 +445,7 @@ $.extend(true,PointCloud.prototype,{
   }, // pointCloud_onparticlemousein
 
   // return particle with least square distance from coords in radians
-  nearestParticle: function pointCloud_nearestParticle(coords,particle_list) {
+  nearestParticle: function pointCloud_nearestParticle(coords,particle_indexList) {
     var pointCloud=this;
     var panorama=pointCloud.panorama;
     var candidate=0;
@@ -414,9 +453,9 @@ $.extend(true,PointCloud.prototype,{
     var point_list=pointCloud.json.points;
     var offset=pointCloud.offset;
   
-    $.each(particle_list,function(i){
+    $.each(particle_indexList,function(i,index){
 
-      var index=this.index*pointCloud.json.points_format.length;
+      index*=pointCloud.json.points_format.length;
 
       // compute absolute angle difference
       var dthe=Math.abs(point_list[index+offset.theta]-panorama.mouseCoords.theta);
@@ -442,7 +481,7 @@ $.extend(true,PointCloud.prototype,{
 
     });
 
-    return particle_list[candidate];
+    return particle_indexList[candidate];
 
   }, // pointCloud_nearestParticle
 
