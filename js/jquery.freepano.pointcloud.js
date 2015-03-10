@@ -487,8 +487,9 @@ $.extend(true,PointCloud.prototype,{
   showParticleInfo: function pointCloud_showParticleInfo(index) {
  
     var pointCloud=this;
-    var points=pointCloud.json.points[index*pointCloud.json.points_format.length];
+    var points=pointCloud.json.points;
     var panorama=pointCloud.panorama;
+    var offset=pointCloud.offset;
     index*=pointCloud.json.points_format.length;
   
     var div = $('#info');
@@ -509,6 +510,9 @@ $.extend(true,PointCloud.prototype,{
     }
 
     // particle info
+    if (points[index+offset.theta]==undefined) {
+      return;
+    }
     var html = '<div style="width: 100%; position: relative; margin-left: 10px;">'
     + '<strong>Particle info</strong><br />'
     + 'theta: ' + points[index+offset.theta].toPrecision(6) + '<br />'
