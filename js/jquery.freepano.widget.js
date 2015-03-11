@@ -891,6 +891,7 @@ function WidgetFactory(options) {
 
       }, // widgetList_get_mouseover_list
 
+      // @TODO: should call Widget.prototype.show() from here to do the actual rotation.
       show: function widgetList_show(options,callback) {
 
         var widgetList=this;
@@ -936,9 +937,9 @@ function WidgetFactory(options) {
           else {
             panorama.mode.show=false;
             widget.instance.dispatch('show');
-            if (typeof(options.callback=="function")){
+            if (typeof options.callback=="function"){
               setTimeout(function(){
-                callback(widget);
+                options.callback(widget);
               },150);
             }
           }

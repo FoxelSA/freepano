@@ -542,6 +542,7 @@ $.extend(true,PointCloud.prototype,{
             top: 0,
             left: 0,
             width: 128,
+            padding: 10,
             backgroundColor: "rgba(0,0,0,.4)",
             color: 'white'
         });
@@ -553,9 +554,9 @@ $.extend(true,PointCloud.prototype,{
       return;
     }
     var html = '<div style="width: 100%; position: relative; margin-left: 10px;">'
-    + '<strong>Particle info</strong><br />'
-    + 'theta: ' + points[index+offset.theta].toPrecision(6) + '<br />'
-    + 'phi: ' + points[index+offset.phi].toPrecision(6) + '<br />'
+    + '<b>Particle info</b><br />'
+//    + 'theta: ' + points[index+offset.theta].toPrecision(6) + '<br />'
+//    + 'phi: ' + points[index+offset.phi].toPrecision(6) + '<br />'
     + 'distance: ' + points[index+offset.depth].toPrecision(6) + '<br />'
     + 'index: ' + points[index+offset.index] + '<br />';
   
