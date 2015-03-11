@@ -539,8 +539,8 @@ $.extend(true,PointCloud.prototype,{
 
         div.appendTo(panorama.container).css({
             position: 'absolute',
-            top: 0,
-            left: 0,
+            top: 10,
+            left: 10,
             width: 128,
             padding: 10,
             backgroundColor: "rgba(0,0,0,.4)",
