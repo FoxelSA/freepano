@@ -136,6 +136,10 @@ $.extend(true,ParticleSequence.prototype,{
 
       // add particles to sequence, if any specified
       if (seq.particle_list.length){
+        // restore line color 
+        line.instance.material.color.set('#'+seq.color);
+        line.instance.material.needsUpdate=true;
+
         var particles_to_be_added=seq.particle_list;
         seq.particle_list=[];
         $.each(particles_to_be_added,function(){

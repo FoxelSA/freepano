@@ -554,7 +554,7 @@ $.extend(true,PointCloud.prototype,{
       return;
     }
     var html = '<div style="width: 100%; position: relative; margin-left: 10px;">'
-    + '<b>Particle info</b><br />'
+    + '<b>Particle info:</b><br />'
 //    + 'theta: ' + points[index+offset.theta].toPrecision(6) + '<br />'
 //    + 'phi: ' + points[index+offset.phi].toPrecision(6) + '<br />'
     + 'distance: ' + points[index+offset.depth].toPrecision(6) + '<br />'
