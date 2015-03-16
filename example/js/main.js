@@ -607,7 +607,7 @@ $(document).on('filesloaded', function(){
         devicemotion: {
             move: {
                 active: false,
-                remote: true
+                remote: false
             }
         }
     },
