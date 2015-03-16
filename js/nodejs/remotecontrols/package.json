@@ -1,0 +1,10 @@
+{
+  "name": "node-freepano-remotecontrols",
+  "version": "0.1.0",
+  "description": "Freepano Remote Controls",
+  "dependencies": {
+    "express": "^4.12.2",
+    "jade": "^1.9.2",
+    "socket.io": "^1.3.5"
+  }
+}
