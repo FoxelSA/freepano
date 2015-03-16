@@ -606,7 +606,8 @@ $(document).on('filesloaded', function(){
         },
         devicemotion: {
             move: {
-                active: false
+                active: false,
+                remote: true
             }
         }
     },

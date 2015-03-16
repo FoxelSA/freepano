@@ -97,3 +97,8 @@ This program includes works distributed under the terms of another license(s) an
     <[http://howlerjs.com](http://howlerjs.com)><br />
     Copyright (c) 2013-2014, James Simpson of GoldFire Studios, goldfirestudios.com<br />
     howler.js is licensed under the [MIT license](http://opensource.org/licenses/MIT).
+
+*   __Socket.IO Client 1.3.5__<br />
+    <[http://socket.io](http://socket.io)><br />
+    Copyright (c) 2014 Guillermo Rauch<br />
+    Socket.IO Client is licensed under the [MIT license](http://opensource.org/licenses/MIT).
