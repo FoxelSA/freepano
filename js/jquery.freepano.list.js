@@ -53,7 +53,7 @@ function PanoList(options) {
 
 $.extend(true,PanoList.prototype,{
   defaults: {
-    texture: {
+    tileSet: {
     },
     prefix: '',
     suffix: '',
@@ -81,15 +81,15 @@ $.extend(true,PanoList.prototype,{
     }
     $.extend(true, panorama.sphere, {
         panorama: panorama,
-        texture: {}
+        tileSet: {}
       }
     );
 
-    // set initial sphere texture options
+    // set initial sphere tileSet options
     if (pano_list.initialImage) {
       $.extend(true, panorama, pano_list.images[pano_list.initialImage], {
           sphere: {
-            texture: pano_list.getTextureOptions(pano_list.initialImage)
+            tileSet: pano_list.getTileSetOptions(pano_list.initialImage)
           }
       });
       pano_list.overrideSettings(pano_list.initialImage);
@@ -100,8 +100,8 @@ $.extend(true,PanoList.prototype,{
 
   },
 
-  // get panorama image options
-  getTextureOptions: function panoList_getTextureOptions(imageId) {
+  // get panorama image tileSet options
+  getTileSetOptions: function panoList_getTileSetOptions(imageId) {
     var pano_list=this;
     if (!pano_list.images || !pano_list.images[imageId]) {
       return {}
@@ -192,9 +192,9 @@ $.extend(true,PanoList.prototype,{
 
     pano_list.currentImage=imageId;
     $.extend(true, panorama, pano_list.images[imageId]);
-    $.extend(true, panorama.sphere.texture, pano_list.getTextureOptions(imageId));
+    $.extend(true, panorama.sphere.tileSet, pano_list.getTileSetOptions(imageId));
     pano_list.overrideSettings(imageId);
-    panorama.sphere.updateTexture(callback);
+    panorama.sphere.tileSetChanged(callback);
   },
 
   getPathTo: function panoList_getPathTo(imageId) {

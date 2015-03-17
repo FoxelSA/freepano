@@ -73,93 +73,14 @@ $.extend(true,PointCloud.prototype,{
         depthTest: false,
         depthWrite: false
     }), // pointCloud.defaults.dotMaterial
-  */ 
-   // generate particle positions array from json 
-    parseJSON: function parseJSON(json) {
-
-      var pointCloud=this;
-      var panorama=pointCloud.panorama;
-
-      var positions = new Float32Array(json.points.length * 3);
-
-      var v=new THREE.Vector3();
-
-      // create empty sections
-      var section=pointCloud.section=[];
-      for(var x=0; x<360; ++x) {
-        section[x]=[];
-        for(var y=0; y<180; ++y) {
-          section[x][y]=[];
-        }
-      }
-      var step=Math.PI/180;
-
-      var i=0;
-
-      switch(pointCloud.urlReplace.suffix[pointCloud.type]) {
-        case '.json':
-
-          var field_count=json.points_format.length;
-          console.log('parsing cloud... ('+(json.points.length/field_count)+' points)');
-          
-          // set pointcloud field offset
-          pointCloud.offset={};
-          $.each(json.points_format,function(i,value){
-            pointCloud.offset[value]=i;
-          });
-          var offset=pointCloud.offset;
-
-          var points=json.points;
-          for (var k=0; k<json.points.length; k+=field_count) {
-            // unit vector
-            v.x=0;
-            v.y=0;
-            v.z=1;
-
-            var phi=points[k+offset.phi];
-            var theta=points[k+offset.theta];
-            var depth=points[k+offset.depth];
-
-            // apply rotations
-            v.applyAxisAngle(panorama.Xaxis,phi);
-            v.applyAxisAngle(panorama.Yaxis,theta);
-
-            // store position
-            positions[i]=-v.x*depth;
-            positions[i+1]=v.y*depth;
-            positions[i+2]=v.z*depth;
-            i+=3;
-
-            // store particle index where it belongs
-            var x=Math.round(theta/step)%360;
-            var y=Math.round(phi/step);
-
-            if (y<0) {
-              y+=180;
-            }
-
-            try {
-              section[x][y].push(k/field_count);
-            } catch(e) {
-              console.log(x,y);
-            }
-
-          }
-          break;
-
-      }
-      console.log('parsing cloud... done');
-
-      return positions;
-
-    }, // pointCloud.defaults.parseJSON
+  */
 
     // sort point cloud particles by depth
     sortParticles: false,
 
     // raycaster options
     raycaster: {
-      threshold: 0.5 
+      threshold: 0.5
     }
 
   }, // pointCloud.prototype.defaults
@@ -227,7 +148,7 @@ $.extend(true,PointCloud.prototype,{
       } // success
 
     });  // ajax
-    
+
   }, // pointCloud_fromURL
 
   // load point cloud from json
@@ -240,24 +161,493 @@ $.extend(true,PointCloud.prototype,{
 
     // instantiate point cloud geometry
     pointCloud.geometry=new THREE.BufferGeometry();
-    
-    // extract particles positions from JSON 
+
+    // extract particles positions from JSON
     var positions=pointCloud.parseJSON(json);
 
     // add particles to geometry
-    pointCloud.geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3)); 
-    
-    // instantiate object3D 
+    pointCloud.geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+    // instantiate object3D
     pointCloud.object3D=new THREE.PointCloud(pointCloud.geometry,pointCloud.dotMaterial);
     pointCloud.object3D.sortParticles=pointCloud.sortParticles;
 
   }, // pointCloud_fromJSON
+
+ // generate particle positions array from json
+  parseJSON: function parseJSON(json) {
+
+    var pointCloud=this;
+    var panorama=pointCloud.panorama;
+
+    // create empty sections
+    var section=pointCloud.section=[];
+    for(var x=0; x<360; ++x) {
+      section[x]=[];
+      for(var y=0; y<180; ++y) {
+        section[x][y]=[];
+      }
+    }
+    var step=Math.PI/180;
+
+    var i=0;
+
+    switch(pointCloud.urlReplace.suffix[pointCloud.type]) {
+      case '.json':
+
+        var field_count=json.points_format.length;
+        console.log('building cloud sections... ('+(json.points.length/field_count)+' points)');
+
+        // set pointcloud field offset
+        pointCloud.offset={};
+        $.each(json.points_format,function(i,value){
+          pointCloud.offset[value]=i;
+        });
+        var offset=pointCloud.offset;
+        var points=json.points;
+        for (var k=0; k<json.points.length; k+=field_count) {
+
+          var phi=points[k+offset.phi];
+          var theta=points[k+offset.theta];
+          var depth=points[k+offset.depth];
+
+          // store particle index where it belongs
+          var x=Math.round(theta/step)%360;
+          var y=Math.round(phi/step);
+
+          if (y<0) {
+            y+=180;
+          }
+
+          section[x][y].push(k/field_count);
+        }
+        break;
+
+    }
+    console.log('building cloud sections... done');
+
+  }, // pointCloud.parseJSON
+/*
+  // rebuild the pointcloud positions array (visible points only)
+  update: function pointCloud_update() {
+
+      var pointCloud=this;
+      var section=pointCloud.section;
+      var panorama=pointCloud.panorama;
+      var json=pointCloud.json;
+      var points=json.points;
+
+      // allocate new array
+      var positions = new Float32Array(json.points.length * 3);
+
+      var field_count=json.points_format.length;
+      console.log('updating cloud...');
+
+      // set pointcloud field offsets
+      pointCloud.offset={};
+      $.each(json.points_format,function(i,value){
+        pointCloud.offset[value]=i;
+      });
+      var offset=pointCloud.offset;
+
+      // compute field of view boundaries
+      var halfov=panorama.camera.instance.fov/2;
+      var aspect=panorama.camera.instance.aspect;
+
+      var fov={
+        theta: {
+           min: (panorama.lon-halfov*aspect)+180,
+           max: (panorama.lon+halfov*aspect)+180
+        },
+        phi: {
+           min: ((panorama.lat+90-halfov)),
+           max: ((panorama.lat+90+halfov))
+        }
+      }
+
+      function _clamp(value,max) {
+        if (value<0) return value+max;
+        if (value>=max) return value-max;
+        return value;
+      }
+
+      fov.theta.min=Math.round(_clamp(fov.theta.min,360));
+      fov.theta.max=Math.round(_clamp(fov.theta.max,360));
+      fov.phi.min=Math.round(_clamp(fov.phi.min,180)-90);
+      fov.phi.max=Math.round(_clamp(fov.phi.max,180)-90);
+
+      if (fov.theta.min>fov.theta.max) {
+        fov.theta.max+=360;
+      }
+
+      if (fov.phi.min>fov.phi.max) {
+        fov.phi.max+=180;
+      }
+
+      // rebuild positions array using particles indexes from visible
+      // pointCloud.sections
+      var v=new THREE.Vector3();
+      var i=0;
+      for (var iphi=fov.phi.min; iphi<fov.phi.max; ++iphi) {
+
+        var _iphi = (iphi>=180) ? iphi-180 : (iphi<0) ? iphi+180 : iphi;
+
+        for (var itheta=fov.theta.min; itheta<fov.theta.max; ++itheta) {
+
+          $.each(section[(itheta<360)?itheta:itheta-360][_iphi],function(){
+            var k=this*field_count;
+
+            var phi=points[k+offset.phi];
+            var theta=points[k+offset.theta];
+            var depth=points[k+offset.depth];
+
+            // unit vector
+            v.x=0;
+            v.y=0;
+            v.z=1;
+
+            // apply rotations
+            v.applyAxisAngle(panorama.Xaxis,phi);
+            v.applyAxisAngle(panorama.Yaxis,theta);
+
+            // store position
+            positions[i]=-v.x*depth;
+            positions[i+1]=v.y*depth;
+            positions[i+2]=v.z*depth;
+            i+=3.0;
+
+          });
+        }
+      }
+
+      console.log('updating cloud... done ('+(i/3)+' particles)');
+
+
+/*
+    pointCloud.scene.remove(pointCloud.object3D);
+
+
+    pointCloud.geometry=new THREE.BufferGeometry();
+    pointCloud.geometry.addAttribute('position', new THREE.BufferAttribute(positions.subarray(0,i), 3));
+
+
+    // instantiate object3D
+    pointCloud.object3D=new THREE.PointCloud(pointCloud.geometry,pointCloud.dotMaterial);
+    pointCloud.scene.add(pointCloud.object3D);
+*/
+/*
+  pointCloud.geometry.attributes.position.array=positions.subarray(0,i);
+  pointCloud.geometry.attributes.position.needsUpdate=true;
+
+      pointCloud.panorama.drawScene();
+
+  }, // pointCloud_update
+*/
+
+  /**
+  * PointCloud.on_mesh_visibilitychange()
+  *
+  * update pointcloud on mesh_visibilitiychange
+  *
+  */
+  on_mesh_visibilitychange: function pointCloud_on_meshvisibility_change(e){
+    var mesh=this;
+    var sphere=mesh.sphere;
+    var panorama=sphere.panorama;
+
+    if (panorama.pointCloud && panorama.pointCloud.instance) {
+      var pointCloud=panorama.pointCloud.instance;
+      if (!pointCloud.updateTileSetParticleListTimeout) {
+        pointCloud.updateTileSetParticleListTimeout=setTimeout(function(){
+          pointCloud.updateTileSetParticleList();
+          pointCloud.updateTileSetParticleListTimeout=null;
+        },500);
+      }
+    }
+
+  }, // pointCloud_on_meshvisibility_change
+
+  /**
+  * PointCloud.updateTileSetParticleList
+  *
+  * Complete the particle list for every visible tile
+  *
+  */
+  updateTileSetParticleList: function pointCloud_updateTileSetParticleList() {
+
+      var pointCloud=this;
+      var section=pointCloud.section;
+      var panorama=pointCloud.panorama;
+      var json=pointCloud.json;
+      var field_count=json.points_format.length;
+      var points=json.points;
+      var sphere=panorama.sphere;
+
+      // set pointcloud data field offsets
+      pointCloud.offset={};
+      $.each(json.points_format,function(i,value){
+        pointCloud.offset[value]=i;
+      });
+      var offset=pointCloud.offset;
+
+      console.log('updating tileSet particle list...');
+
+      // allocate position attribute buffer
+      if (pointCloud.positions_buf) {
+        pointCloud.positions_buf = new Float32Array(Math.floor(json.points.length * 3));
+        pointCloud.particle_count=0;
+      }
+
+      // browse tiles
+      $.each(sphere.object3D.children, function() {
+        var mesh = this;
+
+        // only visible tiles for which no particles have been associated yet
+        if (mesh._visible && (!mesh.particles || !mesh.particles.positions)) {
+
+          // compute particle list for this tile
+          pointCloud.updateTileParticleList(mesh,pointCloud.positions_buf);
+          pointCloud.particle_count+=mesh.particles.positions.length/3;
+        }
+
+      });
+
+      console.log('updating tileSet particle list... done ('+particle_count+' particles associated with visible tiles)');
+
+
+/*
+    pointCloud.scene.remove(pointCloud.object3D);
+
+
+    pointCloud.geometry=new THREE.BufferGeometry();
+    pointCloud.geometry.addAttribute('position', new THREE.BufferAttribute(positions.subarray(0,i), 3));
+
+
+    // instantiate object3D
+    pointCloud.object3D=new THREE.PointCloud(pointCloud.geometry,pointCloud.dotMaterial);
+    pointCloud.scene.add(pointCloud.object3D);
+*/
+/*
+  pointCloud.geometry.attributes.position.array=positions.subarray(0,i);
+  pointCloud.geometry.attributes.position.needsUpdate=true;
+
+      pointCloud.panorama.drawScene();
+*/
+  }, // pointCloud_updateTileSetParticleList
+
+  /**
+  * PointCloud.updateTileParticleList
+  *
+  * Build 'position' buffer attribute array for given tile
+  *
+  * @param mesh the tile's mesh
+  * @parma positions_buf the preallocated Float32Array buffer
+  *
+  *
+  */
+  updateTileParticleList: function pointCloud_updateTileParticleList(mesh,positions_buf){
+
+        var pointCloud=this;
+        var section=pointCloud.section;
+        var panorama=pointCloud.panorama;
+        var sphere=panorama.sphere;
+        var field_count=pointCloud.json.points_format.length;
+        var offset=pointCloud.offset;
+        var points=pointCloud.json.points;
+
+
+        if (!mesh.boundary) {
+
+          // get tile boundaries in positive radians
+          mesh.boundary=sphere.tileSet.getTileBoundaries(mesh.col,mesh.row);
+
+          // convert boundaries to rounded degrees
+          var lon={};
+          var lat={};
+          lon.min=Math.round(mesh.boundary.theta.min*Math.PI/180);
+          lon.max=Math.round(mesh.boundary.theta.max*Math.PI/180);
+          lat.min=Math.round(mesh.boundary.phi.min*Math.PI/180);
+          lat.max=Math.round(mesh.boundary.phi.max*Math.PI/180);
+          if (lon.min>=360) lon.min-=360;
+          if (lon.max>=360) lon.max-=360;
+          if (lat.min>=180) lat.min-=180;
+          if (lat.max>=180) lat.max-=180;
+          mesh.boundary.lon=lon;
+          mesh.boundary.lat=lat;
+        }
+
+        // flags
+        var theta_max_lt_min=(mesh.boundary.theta.max<mesh.boundary.theta.min);
+        var phi_max_lt_min=(mesh.boundary.phi.max>mesh.boundary.phi.min);
+
+        // fill positions buffer with tile's particles using pointCloud.sections
+        var boundary=mesh.boundary;
+        var v=new THREE.Vector3();
+        var i=0;
+
+        boundary.theta.min=Math.round();
+
+        // add points inconditionally for inner sections
+        function addPointsInconditionally(_ilon,_ilat) {
+            // add points from current section to tile's particle positions array
+            $.each(section[_ilon][_ilat],function(){
+
+              var particle_index=this;
+
+              // get particle's json data base index
+              var k=particle_index*field_count;
+
+              // get particle spherical coordinates
+              var phi=points[k+offset.phi];
+              var theta=points[k+offset.theta];
+              var depth=points[k+offset.depth];
+
+              // unit vector
+              v.x=0;
+              v.y=0;
+              v.z=1;
+
+              // apply rotations
+              v.applyAxisAngle(panorama.Xaxis,phi);
+              v.applyAxisAngle(panorama.Yaxis,theta);
+
+              // store particle position
+              positions_buf[i]=-v.x*depth;
+              positions_buf[i+1]=v.y*depth;
+              positions_buf[i+2]=v.z*depth;
+              i+=3;
+
+            });
+        }
+
+        // check boundaries for outer sections (border)
+        function addPointsConditionally(_ilon,_ilat) {
+            // add points from current section to tile's particle positions array
+            $.each(section[_ilon][_ilat],function(){
+
+              var particle_index=this;
+
+              // get particle's json data base index
+              var k=particle_index*field_count;
+
+              // get particle spherical coordinates
+              var phi=points[k+offset.phi];
+              var theta=points[k+offset.theta];
+              var depth=points[k+offset.depth];
+
+              // particle not in tile ?
+              if (
+                ((!theta_max_lt_min) && (theta < mesh.boundary.theta.min || theta > mesh.boundary.theta.max)) ||
+                ((!phi_max_lt_min) && (phi < mesh.boundary.phi.min || phi > mesh.boundary.phi.max)) ||
+                ((theta_max_lt_min) && (theta < mesh.boundary.theta.min && theta > mesh.boundary.theta.max)) ||
+                ((phi_max_lt_min) && (phi < mesh.boundary.phi.min && phi > mesh.boundary.phi.max))
+              ) {
+                // skip
+                return;
+              }
+
+              // unit vector
+              v.x=0;
+              v.y=0;
+              v.z=1;
+
+              // apply rotations
+              v.applyAxisAngle(panorama.Xaxis,phi);
+              v.applyAxisAngle(panorama.Yaxis,theta);
+
+              // store particle position
+              positions_buf[i]=-v.x*depth;
+              positions_buf[i+1]=v.y*depth;
+              positions_buf[i+2]=v.z*depth;
+              i+=3;
+
+            });
+        }
+
+        // browse the tile vertical inner sectors, degree after degree
+        for (var ilat=boundary.lat.min+1; ilat<boundary.lat.max; ++ilat) {
+
+          // adjust tilt value
+          var _ilat = (ilat>=180) ? ilat-180 : (ilat<0) ? ilat+180 : ilat;
+
+          // browse the tile horizontal inner sectors, degree after degree
+          if (boundary.lon.min<boundary.lon.max) {
+
+            for (var ilon=boundary.lon.min+1; ilon<boundary.lon.max; ++ilon) {
+              addPointsInconditionally(ilon,_ilat);
+            }
+
+          } else {
+            for (var ilon=boundary.lon.min+1; ilon<360; ++ilon) {
+              addPointsInconditionally(ilon,_ilat);
+            }
+            for (var ilon=0; ilon<boundary.lon.max; ++ilon) {
+              addPointsInconditionally(ilon,_ilat);
+            }
+
+          }
+        }
+
+        // horizontal borders
+        var ilat=boundary.lat.min;
+        var _ilat_min = (ilat>=180) ? ilat-180 : (ilat<0) ? ilat+180 : ilat;
+
+        ilat=boundary.lat.max;
+        var _ilat_max= (ilat>=180) ? ilat-180 : (ilat<0) ? ilat+180 : ilat;
+
+        if (boundary.lon.min<boundary.lon.max) {
+          for (var ilon=boundary.lon.min; ilon<=boundary.lon.max; ++ilon) {
+            addPointsConditionally(ilon,_ilat_min);
+            addPointsConditionally(ilon,_ilat_max);
+          }
+        } else {
+          for (var ilon=boundary.lon.min; ilon<360; ++ilon) {
+            addPointsConditionally(ilon,_ilat_min);
+            addPointsConditionally(ilon,_ilat_max);
+          }
+          for (var ilon=0; ilon<=boundary.lon.max; ++ilon) {
+            addPointsConditionally(ilon,_ilat_min);
+            addPointsConditionally(ilon,_ilat_max);
+          }
+
+        }
+
+        // vertical borders
+        if (_ilat_min<_ilat_max ) {
+          for (ilat=_ilat_min+1; ilat<_ilat_max; ++ilat) {
+            addPointsConditionally(boundary.lon.min,ilat);
+            addPointsConditionally(boundary.lon.max,ilat);
+
+          }
+        } else {
+          for (ilat=_ilat_min+1; ilat<180; ++ilat) {
+            addPointsConditionally(boundary.lon.min,ilat);
+            addPointsConditionally(boundary.lon.max,ilat);
+          }
+          for (ilat=0; ilat<_ilat_max; ++ilat) {
+            addPointsConditionally(boundary.lon.min,ilat);
+            addPointsConditionally(boundary.lon.max,ilat);
+          }
+        }
+
+
+        // store tile's particle position array
+        if (!mesh.particles) {
+          mesh.particles={};
+        }
+        mesh.particles.positions=positions_buf.subarray(0,i);
+
+        console.log('tile('+mesh.col+','+mesh.row+') : '+(i/3)+' particles');
+
+  }, // pointCloud_updateTileParticleList
 
   // pointcloud 'load' event handler
   onload: function pointCloud_onload(e) {
 
     var pointCloud=this;
     var panorama=pointCloud.panorama;
+
+    pointCloud.updateTileSetParticleList();
 
     // add pointcloud to scene
     var scene=(pointCloud.overlay)?pointCloud.scene:panorama.scene;
@@ -266,7 +656,7 @@ $.extend(true,PointCloud.prototype,{
     pointCloud.dispatch('ready');
 
     panorama.drawScene();
-  
+
   }, // pointCloud_onload
 
   // pointcloud 'loaderror' event handler
@@ -289,13 +679,13 @@ $.extend(true,PointCloud.prototype,{
 
     var cursor=pointCloud.cursor;
     if (cursor) {
-      var scale=0.1/p.getZoom();
+      var scale=0.1/panorama.getZoom();
       cursor.sprite.scale.set(scale,scale,scale);
     }
 
     if (pointCloud.overlay) {
       panorama.renderer.clearDepth();
-      panorama.renderer.render(pointCloud.scene,panorama.camera.instance);  
+      panorama.renderer.render(pointCloud.scene,panorama.camera.instance);
     }
 
     pointCloud.dispatch('render');
@@ -393,7 +783,7 @@ $.extend(true,PointCloud.prototype,{
         }
       } else {
         // already hovering the same point, return
-        return 
+        return
       }
     }
 
@@ -418,7 +808,7 @@ $.extend(true,PointCloud.prototype,{
     }
 
     cursor.sprite.visible=pointCloud.showParticleCursor;
-      
+
     cursor.sprite.position.copy(new THREE.Vector3().copy(pointCloud.getParticlePosition(hover.index)).normalize().multiplyScalar(10));
 
     pointCloud.panorama.drawScene();
@@ -452,7 +842,7 @@ $.extend(true,PointCloud.prototype,{
     var d2min=999;
     var point_list=pointCloud.json.points;
     var offset=pointCloud.offset;
-  
+
     $.each(particle_indexList,function(i,index){
 
       index*=pointCloud.json.points_format.length;
@@ -506,7 +896,7 @@ $.extend(true,PointCloud.prototype,{
     var offset=pointCloud.offset;
 
     index*=pointCloud.json.points_format.length;
-  
+
     // initialize vector
     var v=new THREE.Vector3(0,0,1);
 
@@ -524,17 +914,17 @@ $.extend(true,PointCloud.prototype,{
   }, // pointCloud_getParticlePosition
 
   showParticleInfo: function pointCloud_showParticleInfo(index) {
- 
+
     var pointCloud=this;
     var points=pointCloud.json.points;
     var panorama=pointCloud.panorama;
     var offset=pointCloud.offset;
     index*=pointCloud.json.points_format.length;
-  
+
     var div = $('#info');
     if (!div.length) {
 
-        // create #info div 
+        // create #info div
         div = $('<div id="info"><div id="particle"></div></div>')
 
         div.appendTo(panorama.container).css({
@@ -559,9 +949,9 @@ $.extend(true,PointCloud.prototype,{
 //    + 'phi: ' + points[index+offset.phi].toPrecision(6) + '<br />'
     + 'distance: ' + points[index+offset.depth].toPrecision(6) + '<br />'
     + 'index: ' + points[index+offset.index] + '<br />';
-  
+
     $('#particle',div).html(html);
-  
+
     // trigger pointcloud_updateinfo
     var e={
       type: 'showParticleInfo',
@@ -607,13 +997,13 @@ $.extend(true,PointCloud.prototype,{
       var urlReplace=panorama.pointCloud.urlReplace||PointCloud.prototype.defaults.urlReplace;
       var replaceThis=urlReplace.replaceThis;
       var replaceWithThis=urlReplace.replaceWithThis;
-      
+
       // validate every possible URL according to urlReplace.suffix[] and use the first available one
 
       var validatedURL=[];
       var numRepliesExpected=urlReplace.suffix.length;
 
-      // ajax HEAD callback 
+      // ajax HEAD callback
       var callback=function pointcloud_ajax_head_callback(result,url,i) {
 
         validatedURL[i]=(result=='success')?url:null;
@@ -631,7 +1021,7 @@ $.extend(true,PointCloud.prototype,{
               var pointCloud=panorama.pointCloud.instance=new PointCloud($.extend(true,{},panorama.pointCloud,{
                     panorama: panorama,
                     url: validatedURL[type],
-                    type: type 
+                    type: type
               }));
 
               // exit loop
@@ -640,16 +1030,16 @@ $.extend(true,PointCloud.prototype,{
             }
 
           });
-        } 
+        }
       } // pointcloud_ajax_head_callback
 
 
       // validate urls
       $.each(urlReplace.suffix,function(i,suffix){
-      
-        var pointcloud_json_url=panorama.sphere.texture.dirName.replace(replaceThis,replaceWithThis)+p.list.currentImage+suffix;
 
-        // javascript loop closure 
+        var pointcloud_json_url=panorama.sphere.tileSet.dirName.replace(replaceThis,replaceWithThis)+panorama.list.currentImage+suffix;
+
+        // javascript loop closure
         (function(pointcloud_json_url,i,callback){
 
           // validate url
@@ -676,7 +1066,7 @@ $.extend(true,PointCloud.prototype,{
   on_panorama_dispose: function pointCloud_on_panorama_dispose(e) {
     var panorama=this;
     if (panorama.pointCloud && panorama.pointCloud.instance) {
-      
+
       // remove pointcloud from scene
       var scene=(panorama.pointCloud.instance.overlay)?panorama.pointCloud.instance.scene:panorama.scene;
       scene.remove(panorama.pointCloud.instance.object3D);
@@ -692,3 +1082,4 @@ setupEventDispatcher(PointCloud.prototype);
 
 // subscribe to panorama events
 Panorama.prototype.dispatchEventsTo(PointCloud.prototype);
+THREE.Mesh.prototype.dispatchEventsTo(PointCloud.prototype);
