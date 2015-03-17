@@ -217,23 +217,23 @@ function WidgetFactory(options) {
             widgetList.hover.splice(index,1);
           }
         });
- 
+
         if (widgetList.list[widget.name]) {
 
           // delete widget class mesh list
-          if (widget.camera && widget.camera.meshes) { 
+          if (widget.camera && widget.camera.meshes) {
              delete(widget.camera.meshes[Widget.name.toLowerCase()]);
           }
 
           // give instance to garbage collector
           widgetList.list[widget.name].instance=null;
-   
+
           // remove widget from list
           delete(widgetList.list[widget.name]);
-   
+
         }
 
-        // rebuild mesh list       
+        // rebuild mesh list
         widgetList.mesh_list_update();
 
         if (widget.object3D) {
@@ -609,6 +609,11 @@ function WidgetFactory(options) {
         on_panorama_dispose: function widgetList_on_panorama_dispose(e) {
            var panorama=this;
            var widgetList=panorama[Widget.name.toLowerCase()];
+
+           if (!widgetList || widgetList.constructor.name=="Object") {
+                 return;
+           }
+
            widgetList.dispatch('dispose');
 
           // delete camera_list and picking stuff
