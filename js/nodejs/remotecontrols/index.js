@@ -40,12 +40,19 @@ var express = require('express');
 var app = express();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
+var qr = require('qr-image');
 
 app.set('view engine', 'jade');
 app.use(express.static('public'));
 
 app.get('/', function(req, res) {
     res.render('index',{ hostname: req.hostname });
+});
+
+app.get('/qrcode', function(req, res) {
+    var code = qr.image('http://'+req.hostname+':3000/', { type: 'png', size: 3, margin: 2 });
+    res.type('png');
+    code.pipe(res);
 });
 
 http.listen(3000, function() {

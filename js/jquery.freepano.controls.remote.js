@@ -93,6 +93,11 @@ $.extend(true,RemoteControls.prototype, {
                 panorama.controls.onDeviceMotionMove(e);
             });
 
+            // qr code
+            var qrcode = $('<div>',{'class':'remoteqrcode'});
+            var img = $('<img>',{src:'http://'+window.location.hostname+':3000/qrcode',alt:''});
+            $(panorama.container).append(qrcode.append(img));
+
         }
 
     } // remotecontrols_on_panorama_init

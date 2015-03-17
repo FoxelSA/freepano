@@ -81,6 +81,20 @@ html, body {
         height:45px;
     }
 
+.remoteqrcode {
+    position:absolute;
+    bottom:65px;
+    right:15px;
+    width:1px;
+    height:1px;
+}
+
+    .remoteqrcode img {
+        position:absolute;
+        right:0;
+        bottom:0;
+    }
+
 .map {
     position:absolute;
     bottom:60px;
