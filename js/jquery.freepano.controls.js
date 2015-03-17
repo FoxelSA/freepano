@@ -823,25 +823,28 @@ $.extend(true,Controls.prototype, {
         this.devicemotion.internal.calibration.step = 'init';
 
         // remove previous calibration screen if already opened
-        if ($('#calibration').length > 0)
-            $('#calibration').remove();
+        controls.deviceMotionWizardScreenTerminate();
 
         // define calibration screen
         var calibration = $('<div>',{'id':'calibration'});
         calibration.width($(window).width());
         calibration.height($(window).height());
 
+        // window resize event
+        $(window).on('resize.devicemotionwizard',controls.deviceMotionWizardScreenResize);
+
         // define wizard
         var wizard = $('<div>',{'class':'wizard','style':'visibility:hidden;'});
+        var content = $('<div>',{'style':'display:inline-block;width:auto;'});
 
         // define image
-        wizard.append(
+        content.append(
             $('<div>',{'class':'image'}).append(
                 $('<img>',{'src':'img/calibration-init.gif','width':150})
         ));
 
         // define display
-        wizard.append(
+        content.append(
             $('<div>',{'class':'step'}).append(
                 $('<div>',{'class':'title'}).append('Calibration Wizard')
             ).append(
@@ -849,7 +852,7 @@ $.extend(true,Controls.prototype, {
         ));
 
         // clear
-        wizard.append($('<div>',{'style':'clear:both;'}));
+        content.append($('<div>',{'style':'clear:both;'}));
 
         // action
         var action = $('<a>',{'class':'action'})
@@ -864,12 +867,11 @@ $.extend(true,Controls.prototype, {
         });
 
         // dom
-        $('body').append(calibration.append(wizard));
+        $('body').append(calibration.append(wizard.append(content)));
         $('#calibration .step').append(action);
 
         // positionate wizard
-        $('#calibration .wizard').css('margin-top',($(window).height()-$('#calibration .wizard').height())/2);
-        $('#calibration .step').width($('#calibration .step').width());
+        controls.deviceMotionWizardScreenResize();
 
         // display
         wizard.css('visibility','visible');
@@ -961,7 +963,7 @@ $.extend(true,Controls.prototype, {
                 // display
                 action.remove();
                 $('#calibration .step .desc').slideUp(400, function() {
-                    $('#calibration').remove();
+                    controls.deviceMotionWizardScreenTerminate();
                     controls.devicemotion.internal.calibration.step = null;
                 });
 
@@ -1303,7 +1305,7 @@ $.extend(true,Controls.prototype, {
             .on('click.controls',function(event) {
                 action.remove();
                 $('#calibration .step').slideUp(400, function() {
-                    $('#calibration').remove();
+                    controls.deviceMotionWizardScreenTerminate();
                 });
         });
 
@@ -1312,6 +1314,39 @@ $.extend(true,Controls.prototype, {
         $('#calibration .step .desc').slideDown(400);
 
     }, // controls_deviceMotionWizardScreenDone
+
+    /**
+     * deviceMotionWizardScreenResize()
+     * Resizes the wizard screen on a window event.
+     *
+     * @return  void
+     */
+    deviceMotionWizardScreenResize: function controls_deviceMotionWizardScreenResize(e) {
+
+        $('#calibration').width($(window).width());
+        $('#calibration').height($(window).height());
+
+        $('#calibration .wizard').css('margin-top',($(window).height()-$('#calibration .wizard').height())/2);
+        $('#calibration .step').width($('#calibration .step').width());
+
+    }, // controls_deviceMotionWizardScreenResize
+
+    /**
+     * deviceMotionWizardScreenTerminate()
+     * Closes the wizard screen and free events attached.
+     *
+     * @return  void
+     */
+    deviceMotionWizardScreenTerminate: function controls_deviceMotionWizardScreenTerminate() {
+
+        // window resize event
+        $(window).off('resize.devicemotionwizard',this.deviceMotionWizardScreenResize);
+
+        // remove calibration screen
+        if ($('#calibration').length > 0)
+            $('#calibration').remove();
+
+    }, // controls_deviceMotionWizardScreenTerminate
 
     /**
      * resetTicks()

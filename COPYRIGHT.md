@@ -98,7 +98,24 @@ This program includes works distributed under the terms of another license(s) an
     Copyright (c) 2013-2014, James Simpson of GoldFire Studios, goldfirestudios.com<br />
     howler.js is licensed under the [MIT license](http://opensource.org/licenses/MIT).
 
-*   __Socket.IO Client 1.3.5__<br />
+*   __Socket.IO 1.3.5__<br />
     <[http://socket.io](http://socket.io)><br />
-    Copyright (c) 2014 Guillermo Rauch<br />
-    Socket.IO Client is licensed under the [MIT license](http://opensource.org/licenses/MIT).
+    Copyright (c) 2014-2015 Automattic &lt;dev@cloudup.com&gt;<br />
+    Socket.IO is licensed under the [MIT license](http://opensource.org/licenses/MIT).
+
+*   __Express 4.12.2__<br />
+    <[http://expressjs.com](http://expressjs.com)><br />
+    Copyright (c) 2009-2014 TJ Holowaychuk &lt;tj@vision-media.ca&gt;<br />
+    Copyright (c) 2013-2014 Roman Shtylman &lt;shtylman+expressjs@gmail.com&gt;<br />
+    Copyright (c) 2014-2015 Douglas Christopher Wilson &lt;doug@somethingdoug.com&gt;<br />
+    Express is licensed under the [MIT license](http://opensource.org/licenses/MIT).
+
+*   __Jade 1.9.2__<br />
+    <[http://jade-lang.com](http://jade-lang.com)><br />
+    Copyright (c) 2009-2014 TJ Holowaychuk &lt;tj@vision-media.ca&gt;<br />
+    Jade is licensed under the [MIT license](http://opensource.org/licenses/MIT).
+
+*   __qr-image 3.1.0__<br />
+    <[https://github.com/alexeyten/qr-image](https://github.com/alexeyten/qr-image)><br />
+    Copyright (c) 2013 Yandex LLC<br />
+    qr-image is licensed under the [MIT license](http://opensource.org/licenses/MIT).
