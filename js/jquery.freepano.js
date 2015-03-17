@@ -248,9 +248,9 @@ $.extend(true,Sphere.prototype,{
     defaults: {
         tilesToLoad: 0,
         tilesLoaded: 0,
-        dynamicTileInit: true,
-        dynamicTileLoading: false,
-        dynamicTileDisposal: false,
+        dynamicTileInit: true,       // load visible tiles first, then all the remaining ones
+        dynamicTileLoading: false,   // load only visible tiles
+        dynamicTileDisposal: false,  // dispose not visible tiles 
         radius: 150,
         widthSegments: 16,
         heightSegments: 8,
@@ -650,7 +650,7 @@ $.extend(true,Sphere.prototype,{
         // reset sphere.updateTile() related properties
         sphere.tilesLoaded=0;
         sphere.tilesToLoad=0;
-        panorama.sphere.panoramaReadyDispatched=false;
+        panorama.sphere.panoramaReadyTriggered=false;
 
         // load visible tiles first
         if (sphere.dynamicTileInit) {
@@ -1012,7 +1012,9 @@ $.extend(true,Panorama.prototype,{
       var sphere=this;
       var panorama=this.panorama;
       panorama.camera.updateFrustum();
-      sphere.panorama.drawScene();
+      setTimeout(function() {
+         sphere.panorama.drawScene();
+      },0);
     }, // panoram_on_sphere_tileload
 
     /**
@@ -1029,20 +1031,20 @@ $.extend(true,Panorama.prototype,{
       var panorama=this.panorama;
 
       // dont trigger panorama ready after each sphere.updateTiles() call
-      if (sphere.panoramaReadyTriggered) {
-        return;
-      }
+      if (!sphere.panoramaReadyTriggered) {
 
-      if (!sphere.panoramaReadyDispatched) {
-
-        if (sphere.dynamicTileInit) {
+        // dynamicTileInit is enabled and there remains tiles to load
+        if (sphere.dynamicTileInit && sphere.tilesLoaded!=sphere.tileSet.columns*sphere.tileSet.rows) {
           sphere.loadRemainingTiles();
           sphere.dynamicTileLoading=false;
+
+          // Dont trigger panorama ready event before all tiles are loaded
+          return;
         }
 
         panorama.dispatch('resize');
         panorama.dispatch('ready');
-        sphere.panoramaReadyDispatched=true;
+        sphere.panoramaReadyTriggered=true;
       }
 
     }, // panorama_on_sphere_load
