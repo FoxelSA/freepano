@@ -635,7 +635,16 @@ $.extend(true,Sphere.prototype,{
         // set all mesh as not visible
         // this will cause the tiles to be reloaded
         $.each(sphere.object3D.children, function() {
-            this.visible = false;
+            var mesh=this;
+            if (mesh.material) {
+                if (mesh.material.map &&  mesh.material.map.requested) {
+                    mesh.material.map.dispose();
+                    mesh.material.dispose();
+                    // default material
+                    mesh.material = sphere.tileSet.defaultMaterial.clone();
+                }
+            }
+            mesh.visible = mesh._visible = false;
         });
 
         // reset sphere.updateTile() related properties
