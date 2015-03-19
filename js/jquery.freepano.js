@@ -202,8 +202,8 @@ $.extend(true,TileSet.prototype,{
 
         theta.min=_clamp(theta.min,Math.PI*2);
         theta.max=_clamp(theta.max,Math.PI*2);
-        phi.min=_clamp(phi.min,Math.PI)-Math.PI/2;
-        phi.max=_clamp(phi.max,Math.PI)-Math.PI/2;
+        phi.min=-(_clamp(phi.min,Math.PI)-Math.PI/2);
+        phi.max=-(_clamp(phi.max,Math.PI)-Math.PI/2);
 
         // make sure max values are greater than min values
         if (theta.min>theta.max) {
