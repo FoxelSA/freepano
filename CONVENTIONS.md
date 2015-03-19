@@ -104,6 +104,7 @@ Read details in eventDispatcher.js header.
 Event handlers methods begin with 'on'.
 
 Eg myObject 'click' event handler:
+
     onclick: function myObject_onclick(e) {
 
       console.log('"myobject_click" event was not canceled');
