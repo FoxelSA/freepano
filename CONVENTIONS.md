@@ -71,7 +71,7 @@ is overridable at the prototype or instance level.
 ## Methods
 
 Methods must never be anonymous for the following reasons:
- 1. To locate them efficiently with a global search (eg: myObject_on_myotherobject_click)
+ 1. To locate them efficiently with a global search (eg: myObject_onclick)
  2. So that the debugger can display full names instead of "Function"
  3. To be able of calling them recursively by their names.
  4. So that they dont 'disappear' when referenced in another object and
