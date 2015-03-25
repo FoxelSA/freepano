@@ -86,6 +86,7 @@ $.extend(true,ParticleSequence.prototype,{
         scene: null,
         object3D_list: []
       }
+
     },
 
     // Init particle sequence with its scene, line geometry and material, and label scene
@@ -136,7 +137,7 @@ $.extend(true,ParticleSequence.prototype,{
 
       // add particles to sequence, if any specified
       if (seq.particle_list.length){
-        // restore line color 
+        // restore line color
         line.instance.material.color.set('#'+seq.color);
         line.instance.material.needsUpdate=true;
 
@@ -201,7 +202,7 @@ $.extend(true,ParticleSequence.prototype,{
       }
 
       var particle={index:particle_index};
-      
+
       // register particle
       seq.particle_list.push(particle);
 
@@ -252,12 +253,12 @@ $.extend(true,ParticleSequence.prototype,{
             var labelDistance=new THREE.Vector3((v1.x+v2.x)/2,(v1.y+v2.y)/2,(v1.z+v2.z)/2).length();
             sprite._scaleFactor=1/(10+labelDistance);
         }
-        
+
         sprite.scale.set(canvas.width*sprite._scaleFactor,canvas.height*sprite._scaleFactor,1.0);
 
         var object3D=new THREE.Object3D();
         object3D.add(sprite);
-       
+
         // get particles sphere coordinates
         v1=geometry.vertices[line.geometry.maxPoints-2];
         v2=vs;
@@ -274,7 +275,7 @@ $.extend(true,ParticleSequence.prototype,{
 
     }, // particleSequence_add
 
-    // remove last particle from sequence 
+    // remove last particle from sequence
     pop: function particleSequence_pop(particle) {
 
       var seq=this;
@@ -380,7 +381,7 @@ $.extend(true,ParticleSequence.prototype,{
       }
 
       var panorama=pointCloud.panorama;
-      
+
       $.each(seq_list,function(){
 
         var seq=this;
@@ -488,7 +489,7 @@ $.extend(true,ParticleSequence.prototype,{
 
     }, // on_pointcloud_particlemousein
 
-    // remove last particle added onmousein
+    // tag as 'lastmouseout' the last particle added onmousein
     on_pointcloud_particlemouseout: function particleSequence_on_pointcloud_particlemouseout(e) {
       var pointCloud=this;
 

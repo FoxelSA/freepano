@@ -250,7 +250,7 @@ $.extend(true,Sphere.prototype,{
         tilesLoaded: 0,
         dynamicTileInit: true,       // load visible tiles first, then all the remaining ones
         dynamicTileLoading: false,   // load only visible tiles
-        dynamicTileDisposal: false,  // dispose not visible tiles 
+        dynamicTileDisposal: false,  // dispose not visible tiles
         radius: 150,
         widthSegments: 16,
         heightSegments: 8,

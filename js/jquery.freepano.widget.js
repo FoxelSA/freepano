@@ -213,7 +213,7 @@ function WidgetFactory(options) {
 
         // remove widget meshes from hover list
         $.each(widgetList.hover,function(index){
-          if (this.object && this.object.parent.name==widget.name) {
+          if (this.object && this.object.parent && this.object.parent.name==widget.name) {
             widgetList.hover.splice(index,1);
           }
         });
@@ -328,7 +328,8 @@ function WidgetFactory(options) {
       _onmousedown: function _widget_mousedown(e){
 
         var widget=this;
-        var widgetList=widget.panorama[this.constructor.name.toLowerCase()];
+        var widgetList=widget.panorama[widget.constructor.name.toLowerCase()];
+
 
         // set widget mode to active
         widgetList._active=widget;
@@ -741,6 +742,10 @@ function WidgetFactory(options) {
           return;
         }
 
+        if (!widgetList.handleMouseEvents) {
+          return;
+        }
+
         if (e.pageX!=undefined) {
           // save mouse position
           panorama.pageX=e.pageX;
@@ -825,20 +830,16 @@ function WidgetFactory(options) {
           return;
         }
 
+        if (!widgetList.handleMouseEvents) {
+          return;
+        }
+
         if (!widgetList.hover.length) {
           return;
         }
 
-        // if mouse events are not disabled for widget list
-        if (!widgetList.handleMouseEvents) return;
-
-
         // call handlers for first widget from hovering list
         var widget=widgetList.list[widgetList.hover[0].object.parent.name].instance;
-
-
-        // if mouse events are not disabled for hovered widget
-        if (!widget.handleMouseEvents) return;
 
         // 1. private mouseevent handler (for hover / active color handling)
         if (widget['_on'+e.type] && widget.color) {

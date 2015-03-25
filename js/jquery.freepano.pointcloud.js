@@ -973,7 +973,7 @@ $.extend(true,PointCloud.prototype,{
             position: 'absolute',
             top: 10,
             left: 10,
-            width: 128,
+            width: 160,
             padding: 10,
             backgroundColor: "rgba(0,0,0,.4)",
             color: 'white'
