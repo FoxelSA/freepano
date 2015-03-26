@@ -551,6 +551,8 @@ function WidgetFactory(options) {
         // update mesh list used for get_mouseover_list
         mesh_list_update: function widgetList_mesh_list_update() {
           var widgetList=this;
+
+          // clear mesh list for widget type
           $.each(widgetList.list,function(name,widgetList_elem) {
             if (widgetList_elem.instance.camera.meshes) {
               widgetList_elem.instance.camera.meshes[Widget.name.toLowerCase()]=[];
@@ -558,6 +560,7 @@ function WidgetFactory(options) {
             }
           });
 
+          // rebuild mesh list for widget type
           $.each(widgetList.list,function(name,widgetList_elem) {
 
             var meshes=widgetList_elem.instance.camera.meshes;
