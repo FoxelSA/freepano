@@ -190,8 +190,7 @@ $.extend(true,PointCloud.prototype,{
   }, // pointCloud_fromJSON
 
  // generate particle positions array from json
-  parseJSON: function parseJSON(json) {
-
+  parseJSON: function pointCloud_parseJSON(json) {
     var pointCloud=this;
     var panorama=pointCloud.panorama;
 
@@ -203,19 +202,16 @@ $.extend(true,PointCloud.prototype,{
         section[x][y]=[];
       }
     }
-    var step=Math.PI/180;
-
+    
     switch(pointCloud.urlReplace.suffix[pointCloud.type]) {
       case '.json':
 
         if (pointCloud.allInOne) {
           // allocate new array
           pointCloud.positions = new Float32Array(json.points.length * 3);
-          var v=new THREE.Vector3();
+
         }
-    
-        var i=0;
-    
+        
         var field_count=json.points_format.length;
         console.log('Parsing point cloud... ('+(json.points.length/field_count)+' points)');
 
@@ -224,48 +220,128 @@ $.extend(true,PointCloud.prototype,{
         $.each(json.points_format,function(i,value){
           pointCloud.offset[value]=i;
         });
-        var offset=pointCloud.offset;
-        var points=json.points;
-        for (var k=0; k<json.points.length; k+=field_count) {
 
-          var phi=points[k+offset.phi];
-          var theta=points[k+offset.theta];
-          var depth=points[k+offset.depth];
-
-          // store particle index where it belongs
-          var x=Math.round(theta/step)%360;
-          var y=Math.round(phi/step);
-
-          if (y<0) {
-            y+=180;
+        pointCloud.progressBar=new pointCloud.ProgressBar({
+          css: {
+            zIndex: 9999999,
+            width: '100%',
+            bottom: 0,
+            position: 'absolute'
           }
+        });
 
-          section[x][y].push(k/field_count);
-
-          if (pointCloud.allInOne) {
-            // unit vector
-            v.x=0;
-            v.y=0;
-            v.z=1;
-            
-            // apply rotations
-            v.applyAxisAngle(panorama.Xaxis,phi);
-            v.applyAxisAngle(panorama.Yaxis,theta);
-            
-            // store position
-            pointCloud.positions[i]=-v.x*depth;
-            pointCloud.positions[i+1]=v.y*depth;
-            pointCloud.positions[i+2]=v.z*depth;
-            i+=3;
-          }
-
-        }
+        // start asynchronous loop (to allow progressBar update)
+        setTimeout(function(){
+          pointCloud.parseJSONchunk(json,0)
+        },0);
+     
         break;
+    }
+
+  }, // pointCloud_parseJSON
+
+  parseJSONchunk: function pointCloud_parseJSONchunk(json,kk) {
+
+    var pointCloud=this;
+    var section=pointCloud.section;
+    var positions=pointCloud.positions;
+    var offset=pointCloud.offset;
+    var offset_phi=offset.phi;
+    var offset_theta=offset.theta;
+    var offset_depth=offset.depth;
+    var points=json.points;
+    var field_count=json.points_format.length;
+    var step=Math.PI/180;
+
+    var chunkLimit=kk+points.length/100;
+    if (chunkLimit>points.length) {
+      chunkLimit=points.length;
+    }
+
+    var v=new THREE.Vector3();
+
+    for (var k=kk; k<chunkLimit; k+=field_count) {
+
+      var phi=points[k+offset_phi];
+      var theta=points[k+offset_theta];
+      var depth=points[k+offset_depth];
+
+      // store particle index where it belongs
+      var x=Math.round(theta/step)%360;
+      var y=Math.round(phi/step);
+
+      if (y<0) {
+        y+=180;
+      }
+
+      section[x][y].push(k/field_count);
+
+      if (pointCloud.allInOne) {
+        // unit vector
+        v.x=0;
+        v.y=0;
+        v.z=1;
+
+        // apply rotations
+        v.applyAxisAngle(panorama.Xaxis,phi);
+        v.applyAxisAngle(panorama.Yaxis,theta);
+
+        // store position
+        positions[i]=-v.x*depth;
+        positions[i+1]=v.y*depth;
+        positions[i+2]=v.z*depth;
+        i+=3;
+      }
+
+      pointCloud.progressBar.set(k/json.points.length);
+    }
+
+    if (k<points.length) {
+      setTimeout(function(){
+        pointCloud.parseJSONchunk(json,k);
+      },0);
+
+    } else {
+      console.log('Parsing point cloud... done');
+      pointCloud.progressBar.elem.remove();
 
     }
-    console.log('Parsing point cloud... done');
 
-  }, // pointCloud.parseJSON
+  }, // pointCloud.parseJSONchunk
+
+  ProgressBar: function ProgressBar(options) {
+
+    var bar=this;
+    
+    $.extend(true, bar, {
+
+        container: $('body'),
+        css: {},
+        value: 0.0,
+        max: 1.0,
+
+        init: function progressBar_init() {
+          var bar=this;
+          bar.elem=$('progress',bar.container);
+          if (!bar.elem.length) {
+            bar.elem=$('<progress max="'+bar.max+'" value="'+bar.value+'"></progress>');
+            bar.elem
+            .appendTo(bar.container)
+            .css(bar.css);
+          }
+        }, // progressBar_init
+
+        set: function progressBar_set(value) {
+          var bar=this;
+          $(bar.elem).attr('value',value);
+        },  // progressBar_set
+
+    }, options);
+
+    bar.init();
+   
+  }, // pointCloud_progress
+    
 /*
   // rebuild the pointcloud positions array (visible points only)
   update: function pointCloud_update() {
