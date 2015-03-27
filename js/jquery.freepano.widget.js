@@ -690,6 +690,13 @@ function WidgetFactory(options) {
         // for each hover candidate
         $.each(hover_list,function(index,hover_elem){
           var material=hover_elem.object.material;
+
+          // sprites in mesh list are problematic
+          if (!hover_elem.object.parent) {
+                console.log('fixme',hover_elem.object);
+                return true; // continue
+          }
+
           var widget=widgetList.list[hover_elem.object.parent.name].instance;
 
           // unless non-applicable or not requested for the related widget
