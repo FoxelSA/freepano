@@ -137,6 +137,9 @@ $.extend(true,ParticleSequence.prototype,{
 
       // add particles to sequence, if any specified
       if (seq.particle_list.length){
+
+        seq.mode.loading=true;
+
         // restore line color
         line.instance.material.color.set('#'+seq.color);
         line.instance.material.needsUpdate=true;
@@ -147,6 +150,8 @@ $.extend(true,ParticleSequence.prototype,{
           var particle_index=this;
           seq.add(particle_index);
         });
+
+        seq.mode.loading=false;
       }
 
     }, // particleSequence_init
