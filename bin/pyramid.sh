@@ -54,6 +54,10 @@ if [ "$1" == "-l" ] ; then
   shift 2
 fi
 
+if [ $# -lt 2 -o $# -gt 3 ] ; then
+  usage
+fi
+
 [ -n "$3" ] && QUALITY="-quality $3"
 tilesize=$1
 removedir=no
