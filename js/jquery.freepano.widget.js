@@ -213,7 +213,7 @@ function WidgetFactory(options) {
 
         // remove widget meshes from hover list
         $.each(widgetList.hover,function(index){
-          if (this.object && this.object.parent.name==widget.name) {
+          if (this.object && this.object.parent && this.object.parent.name==widget.name) {
             widgetList.hover.splice(index,1);
           }
         });
@@ -328,7 +328,8 @@ function WidgetFactory(options) {
       _onmousedown: function _widget_mousedown(e){
 
         var widget=this;
-        var widgetList=widget.panorama[this.constructor.name.toLowerCase()];
+        var widgetList=widget.panorama[widget.constructor.name.toLowerCase()];
+
 
         // set widget mode to active
         widgetList._active=widget;
@@ -550,6 +551,8 @@ function WidgetFactory(options) {
         // update mesh list used for get_mouseover_list
         mesh_list_update: function widgetList_mesh_list_update() {
           var widgetList=this;
+
+          // clear mesh list for widget type
           $.each(widgetList.list,function(name,widgetList_elem) {
             if (widgetList_elem.instance.camera.meshes) {
               widgetList_elem.instance.camera.meshes[Widget.name.toLowerCase()]=[];
@@ -557,6 +560,7 @@ function WidgetFactory(options) {
             }
           });
 
+          // rebuild mesh list for widget type
           $.each(widgetList.list,function(name,widgetList_elem) {
 
             var meshes=widgetList_elem.instance.camera.meshes;
@@ -686,6 +690,13 @@ function WidgetFactory(options) {
         // for each hover candidate
         $.each(hover_list,function(index,hover_elem){
           var material=hover_elem.object.material;
+
+          // sprites in mesh list are problematic
+          if (!hover_elem.object.parent) {
+                console.log('fixme',hover_elem.object);
+                return true; // continue
+          }
+
           var widget=widgetList.list[hover_elem.object.parent.name].instance;
 
           // unless non-applicable or not requested for the related widget
@@ -738,6 +749,10 @@ function WidgetFactory(options) {
         var widgetList=panorama[Widget.name.toLowerCase()];
 
         if (!(widgetList instanceof WidgetList)) {
+          return;
+        }
+
+        if (!widgetList.handleMouseEvents) {
           return;
         }
 
@@ -825,20 +840,16 @@ function WidgetFactory(options) {
           return;
         }
 
+        if (!widgetList.handleMouseEvents) {
+          return;
+        }
+
         if (!widgetList.hover.length) {
           return;
         }
 
-        // if mouse events are not disabled for widget list
-        if (!widgetList.handleMouseEvents) return;
-
-
         // call handlers for first widget from hovering list
         var widget=widgetList.list[widgetList.hover[0].object.parent.name].instance;
-
-
-        // if mouse events are not disabled for hovered widget
-        if (!widget.handleMouseEvents) return;
 
         // 1. private mouseevent handler (for hover / active color handling)
         if (widget['_on'+e.type] && widget.color) {

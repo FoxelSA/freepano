@@ -202,8 +202,8 @@ $.extend(true,TileSet.prototype,{
 
         theta.min=_clamp(theta.min,Math.PI*2);
         theta.max=_clamp(theta.max,Math.PI*2);
-        phi.min=_clamp(phi.min,Math.PI)-Math.PI/2;
-        phi.max=_clamp(phi.max,Math.PI)-Math.PI/2;
+        phi.min=-(_clamp(phi.min,Math.PI)-Math.PI/2);
+        phi.max=-(_clamp(phi.max,Math.PI)-Math.PI/2);
 
         // make sure max values are greater than min values
         if (theta.min>theta.max) {
@@ -250,7 +250,7 @@ $.extend(true,Sphere.prototype,{
         tilesLoaded: 0,
         dynamicTileInit: true,       // load visible tiles first, then all the remaining ones
         dynamicTileLoading: false,   // load only visible tiles
-        dynamicTileDisposal: false,  // dispose not visible tiles 
+        dynamicTileDisposal: false,  // dispose not visible tiles
         radius: 150,
         widthSegments: 16,
         heightSegments: 8,
