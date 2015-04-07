@@ -103,6 +103,7 @@ f=$2
 
   echo -n output resolution: $width\x$height
 
+  # begin with higher resolution level
   level=$bottom
   curwidth=$width
 
@@ -110,33 +111,50 @@ f=$2
     echo
     echo
     echo -n "level: $level - ${curwidth}x$(expr $curwidth / 2) "
+
+    # skip level if flagged as 'done', or is not the specific level requested
     if [ -f $base/$tilesize/$level/done ] || [ -n "$LEVEL" -a "$level" != "$LEVEL" ]; then
       echo -n "- skipped"
+
     else
-      if [ $level -eq $bottom ] ; then
+
+      if [ $level -eq $bottom ] ; then # higher resolution level
+
+        # no need to resize the higher resolution level
+        # just split f into tiles
         convert -crop ${tilesize}x${tilesize} +repage +adjoin $f $QUALITY ${base}_${level}.%05d.jpg || exit
-        [ -n "$tempfile" ] && f=$fref
-      else
+
+      else # lower resolution levels
+
+        # resize original image
         convert $f -resize ${curwidth}x$(expr $curwidth / 2) -quality 100 ${base}_${level}.jpg || exit
+
+        # split into tiles
         convert -crop ${tilesize}x${tilesize} +repage +adjoin ${base}_${level}.jpg $QUALITY ${base}_${level}.%05d.jpg || exit
+
+        # remove downscaled image
         rm ${base}_${level}.jpg
+
       fi
 
-      if [ $curwidth = $tilesize ] ; then
-        tilenum=0
-      else
-        tilenum=$(ls -1 ${base}_${level}.?????.jpg | wc -l)
-      fi
+      # get tile count
+      tilenum=$(ls -1 ${base}_${level}.?????.jpg | wc -l)
+
       echo -n "- $tilenum tiles - "
 
+      # get grid dimensions
       colCount=$(expr $curwidth / $tilesize)
       rowCount=$(expr $curwidth / 2 / $tilesize)
       echo $colCount\x$rowCount
+
+      # check tile count is matching file count
       truenum=$(expr $colCount \* $rowCount)
       if [ $tilenum -ne $truenum ] ; then
         echo tiles count and dimensions mismatch
         exit 1
       fi
+
+      # move and rename tiles
       row=$(expr $rowCount - 1)
       col=$(expr $colCount - 1)
       echo -n "row: $row - "
@@ -153,10 +171,20 @@ f=$2
         fi
         col=$(expr $col - 1)
       done
+
+      # flag level as done
       touch $base/$tilesize/$level/done
+
     fi
+
+    # if we had to upscale the original file for higher resolution level,
+    # restore f value to the original image filename for next downscales
+    [ -n "$tempfile" ] && f=$fref
+
+    # change level
     level=$(expr $level - 1)
     curwidth=$(expr $curwidth / 2)
+
   done
 
   [ -n "$tempfile" ] && rm $tempfile
