@@ -40,9 +40,18 @@
 
 #set -x
 
-if [ $# -lt 2 ] ; then
-  echo 'usage: pyramid <tile_size> <filename> [<jpeg_quality>]'
+usage() {
+  echo 'usage: pyramid [ -l <only_this_level> ] <tile_size> <filename> [<jpeg_quality>]'
   exit 1
+}
+
+if [ $# -lt 2 ] ; then
+  usage
+fi
+
+if [ "$1" == "-l" ] ; then
+  LEVEL=$2
+  shift 2
 fi
 
 [ -n "$3" ] && QUALITY="-quality $3"
@@ -101,7 +110,7 @@ f=$2
     echo
     echo
     echo -n "level: $level - ${curwidth}x$(expr $curwidth / 2) "
-    if [ -f $base/$tilesize/$level/done ] ; then
+    if [ -f $base/$tilesize/$level/done ] || [ -n "$LEVEL" -a "$level" != "$LEVEL" ]; then
       echo -n "- skipped"
     else
       if [ $level -eq $bottom ] ; then
