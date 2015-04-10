@@ -130,44 +130,43 @@ $.extend(true,PointCloud.prototype,{
 
     console.log('loading pointCloud from URL');
 
-    mt.process({
-      worker: function(options) {
 
-        var worker=this;
+    var ajax=function ajax(request) {
 
-        worker.ajax=function worker_ajax(request) {
+      try {
+        var xhr=new XMLHttpRequest();
 
-          try {
-            var xhr=new XMLHttpRequest();
-            xhr.open(request.type||'GET',request.url,request.async!=undefined?request.async:true);
-            if (request.type=='POST') {
-              xhr.setRequestHeader("Content-type","application/x-www-form-urlencoded");
-            }
-            xhr.overrideMimeType('text/plain; charset=x-user-defined');
-            xhr.responseType = request.dataType || 'json';
-
-            xhr.onreadystatechange = function() {
-              if (xhr.readyState === 4) {
-                if (xhr.status === 200 || xhr.status === 0) {
-                    self.success(xhr.response,xhr);
-
-                } else {
-                    self.error(xhr);
-                }
-              }
-            };
-
-            xhr.send(request.data);
-          
-          } catch(e) {
-            console.log(e);
-            if (options.error) {
-              options.error(e,xhr);
-            } 
+        // setup event handlers
+        var event_type=['progress','load','error','abort];
+        for (handlerType in event_type) {
+          if (request[handler_type]) {
+            xhr.addEventListener(handler_type,request[handler_type],false);
           }
+        }
 
-        } // worker_ajax
- 
+        // open asynchronous GET request by default 
+        xhr.open(request.type||'GET',request.url,request.async!=undefined?request.async:true);
+        if (request.type=='POST') {
+          xhr.setRequestHeader("Content-type",request.contentType||"application/x-www-form-urlencoded");
+        }
+
+        // set default response type to arraybuffer
+        xhr.overrideMimeType(request.mimeType||'text/plain; charset=x-user-defined');
+        xhr.responseType = request.dataType || 'arraybuffer';
+
+        // send request
+        xhr.send(request.data);
+      
+      } catch(e) {
+        console.log(e);
+        if (request.error) {
+          request.error(e,xhr);
+        } 
+      }
+
+    } // ajax
+
+/* 
         // generate particle positions array from json
         worker.parseJSON=function worker_parseJSON(json) {
 
@@ -231,7 +230,7 @@ $.extend(true,PointCloud.prototype,{
             }
 
             section[x][y].push(k/field_count);
-/*
+*//*
             if (pointCloud.allInOne) {
               // unit vector
               v.x=0;
@@ -248,7 +247,9 @@ $.extend(true,PointCloud.prototype,{
               positions[i+2]=v.z*depth;
               i+=3;
             }
-*/
+*//*
+
+
 //            pointCloud.progressBar.set(k/json.points.length);
           }
 
@@ -261,47 +262,62 @@ $.extend(true,PointCloud.prototype,{
 
         }, // worker_parseJSON
 
+          */
         
-        worker.ajax({
+        var loadData=function(dataType,url) {
 
-          url: pointCloud.url,
+          ajax({
 
-          async: false,
+            url: url,
+            responseType: 'arraybuffer',
+            mimeType: 'text/plain; charset=x-user-defined',
+            async: true,
 
-          error: function() {
-            console.log('loading pointCloud from URL... failed');
-            // trigger pointcloud 'loaderror' event
-            worker.postMessage({
-              type: 'loaderror',
-              arguments: Array.prototype.slice.call(arguments)
-            });
-//            pointCloud.dispatch('loaderror',Array.prototype.slice.call(arguments));
-          }, // error
-
-          success: function(json){
-
-            // no data available ?
-            if (!json.points) {
+            error: function() {
+              console.log('loading data from '+url+'... failed');
               // trigger pointcloud 'loaderror' event
-              console.log('loading pointCloud from URL... failed');
-              worker.postMessage({
+              pointCloud.dispatch({
                 type: 'loaderror',
+                dataType: dataType,
+                url: url,
                 arguments: Array.prototype.slice.call(arguments)
               });
-//              pointCloud.dispatch('loaderror',Array.prototype.slice.call(arguments));
-              return;
-            }
+            }, // error
 
-            console.log('loading pointCloud from URL... done');
+            load: function(arrayBuffer){
 
-            // parse point cloud json
-            worker.parseJSON(json);
+              // failed ?, trigger pointcloud 'loaderror' event
+              if (!arrayBuffer || !buffer.byteLength) {
+                console.log('loading data from '+url+'... failed');
+                pointCloud.dispatch({
+                  type: 'loaderror',
+                  dataType: dataType,
+                  url: url,
+                  arguments: Array.prototype.slice.call(arguments)
+                });
+                return;
+              }
 
-          } // success
+              // success
+              console.log('loading data from '+url+'... done');
+              pointCloud.trigger({
+                type: 'load',
+                dataType: dataType,
+                url: url,
+                buffer: arrayBuffer
+              });
 
-        });  // ajax
+            } // load
 
+          }); // ajax
+
+        } // loadData
+
+        // load sections.bin
+        loadData('sections',url.replace(/.json$/,'_sections.bin'));
+        loadData('positions',url.replace(/.json$/,'_positions.bin'));
       }
+
     });
 
   }, // pointCloud_fromURL
@@ -904,6 +920,15 @@ $.extend(true,PointCloud.prototype,{
     var pointCloud=this;
     var panorama=pointCloud.panorama;
 
+    switch(e.dataType) {
+      case 'sections':
+        pointCloud.section={
+          data: new Uint32Array(e.buffer),
+          index: new Uint32Array(e.buffer,e.buffer.byteLength-8*360*180)
+        }
+        break;
+    }
+
     pointCloud.updateTileSetParticleList();
 
     // add pointcloud to scene
@@ -1002,14 +1027,21 @@ $.extend(true,PointCloud.prototype,{
     var lat=-Math.round(panorama.mouseCoords.lat);
     if (lat<0) lat+=180;
     if (lon<0) lon+=360;
-    var intersections=pointCloud.instance.section[lon][lat];
+
+    var index=(lon*180+lat)<<1;
+    var particles={
+      offset: pointCloud.instance.sector.index[index],
+      count: pointCloud.instance.sector.index[index+1]
+    }
+
     // trigger pointcloud mouseover event
-    if (intersections.length) {
+    if (particleList_offset) {
       pointCloud.instance.dispatch({
           type: 'particlemouseover',
-          target: intersections,
+          target: particles,
           originalEvent: e
       });
+
     } else {
       if (pointCloud.instance.hover){
         pointCloud.instance.dispatch({
@@ -1028,11 +1060,11 @@ $.extend(true,PointCloud.prototype,{
     var pointCloud=this;
     var panorama=pointCloud.panorama;
 
-    var particle_indexList=e.target;
+    var particles=e.target;
 
     // get nearest point index
     panorama.getMouseCoords(e.originalEvent);
-    var hover={index: pointCloud.nearestParticle(panorama.mouseCoords,particle_indexList)};
+    var hover={index: pointCloud.nearestParticle(panorama.mouseCoords,particles)};
 
     // if we were already hovering
     if (pointCloud.hover) {
@@ -1102,43 +1134,63 @@ $.extend(true,PointCloud.prototype,{
   }, // pointCloud_onparticlemousein
 
   // return particle with least square distance from coords in radians
-  nearestParticle: function pointCloud_nearestParticle(coords,particle_indexList) {
+  nearestParticle: function pointCloud_nearestParticle(coords,particles) {
     var pointCloud=this;
     var panorama=pointCloud.panorama;
-    var candidate=0;
+    var candidate={
+      index: 0
+    }
     var d2min=999;
-    var point_list=pointCloud.json.points;
-    var offset=pointCloud.offset;
+    var data=pointCloud.section.data;
+  
+    // get mouse normalized coordinates
+    var r=panorama.sphere.radius; 
+    var phi=panorama.mouseCoords.phi;
+    var theta=panorama.mouseCoords.theta;
+    var mx=r*sin(phi)*cos(theta);
+    var my=r*sin(phi)*sin(theta);
+    var mz=r*cos(phi);
+    var mn=Math.sqrt(mx*mx+my*my+mz*mz);
+    mx/=mn;
+    my/=mn;
+    mz/=mn;
 
-    $.each(particle_indexList,function(i,index){
+    for (var i=0; i<particles.count; ++i) {
 
-      index*=pointCloud.json.points_format.length;
+      // get particle data index
+      var index=particles.offset+i*3;
 
-      // compute absolute angle difference
-      var dthe=Math.abs(point_list[index+offset.theta]-panorama.mouseCoords.theta);
-      var dphi=Math.abs(point_list[index+offset.phi]+panorama.mouseCoords.phi);
+      // particle normalized coordinates
+      var x=data[index];
+      var y=data[index+1];
+      var z=data[index+2];
+      var n=Math.sqrt(x*x+y*y+z*z);
+      var nx=x/n;
+      var ny=y/n;
+      var nz=z/n;
 
-      // adjust delta when crossing boundaries
-      // (assume distance is less than half image)
-      if (dthe>Math.PI) dthe=Math.PI*2-dthe;
-      if (dphi>Math.PI/2) dphi=Math.PI-dphi;
+      // squared distance from normalized mouse coordinates
+      var dx=mx-nx;
+      var dy=my-ny;
+      var dz=mz-nz;
+      var dsquare=dx*dx+dy*dy+dz*dz;
 
       // select least square distance
-      var dsquare=dthe*dthe+dphi*dphi;
       if (dsquare<d2min) {
         d2min=dsquare;
-        candidate=i;
+        candidate.index=index;
+        candidate.norm=n;
 
-      // select nearest point depth when equidistant from cursor
-      } else if (dsquare==d2min) {
-        if (point_list[candidate*pointCloud.json.points_format.length+offset.depth]>point_list[index+offset.depth]) {
-          candidate=i;
+      // select nearest point, when equidistant from cursor
+      } else if (dsquare==d2min && candidate.norm>n) {
+          candidate.index=index;
+          candidate.norm=n;
         }
       }
 
     });
 
-    return particle_indexList[candidate];
+    return candidate.index/3;
 
   }, // pointCloud_nearestParticle
 
@@ -1158,25 +1210,14 @@ $.extend(true,PointCloud.prototype,{
   // return cartesian particle world coordinates
   getParticlePosition: function pointCloud_getParticlePosition(index) {
     var pointCloud=this;
-    var panorama=pointCloud.panorama;
-    var points=pointCloud.json.points;
-    var offset=pointCloud.offset;
+    var data=pointCloud.section.data;
 
-    index*=pointCloud.json.points_format.length;
+    index*=3;
 
-    // initialize vector
-    var v=new THREE.Vector3(0,0,1);
-
-    // apply rotations
-    v.applyAxisAngle(panorama.Xaxis,points[index+offset.phi]);
-    v.applyAxisAngle(panorama.Yaxis,points[index+offset.theta]);
-
-    // return position
-    var depth=points[index+offset.depth];
     return {
-      x: -v.x*depth,
-      y: v.y*depth,
-      z: v.z*depth
+      x: data[index],
+      y: data[index+1],
+      z: data[index+2]
     }
   }, // pointCloud_getParticlePosition
 
