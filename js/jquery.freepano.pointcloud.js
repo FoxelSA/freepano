@@ -123,43 +123,190 @@ $.extend(true,PointCloud.prototype,{
   fromURL: function pointCloud_fromURL(url) {
 
     var pointCloud=this;
+
+    var mt=new Multithread();
+
     pointCloud.url=url;
 
     console.log('loading pointCloud from URL');
-    $.ajax({
 
-      url: pointCloud.url,
+    mt.process({
+      worker: function(options) {
 
-      error: function() {
-        console.log('loading pointCloud from URL... failed');
-        // trigger pointcloud 'loaderror' event
-        pointCloud.dispatch('loaderror',Array.prototype.slice.call(arguments));
-      }, // error
+        var worker=this;
 
-      success: function(json){
+        worker.ajax=function worker_ajax(request) {
 
-        // no data available ?
-        if (!json.points) {
-          // trigger pointcloud 'loaderror' event
-          console.log('loading pointCloud from URL... failed');
-          pointCloud.dispatch('loaderror',Array.prototype.slice.call(arguments));
-          return;
-        }
+          try {
+            var xhr=new XMLHttpRequest();
+            xhr.open(request.type||'GET',request.url,request.async!=undefined?request.async:true);
+            if (request.type=='POST') {
+              xhr.setRequestHeader("Content-type","application/x-www-form-urlencoded");
+            }
+            xhr.overrideMimeType('text/plain; charset=x-user-defined');
+            xhr.responseType = request.dataType || 'json';
 
-        console.log('loading pointCloud from URL... done');
+            xhr.onreadystatechange = function() {
+              if (xhr.readyState === 4) {
+                if (xhr.status === 200 || xhr.status === 0) {
+                    self.success(xhr.response,xhr);
 
-        // parse point cloud json
-        pointCloud.fromJSON(json);
+                } else {
+                    self.error(xhr);
+                }
+              }
+            };
 
-        // trigger pointcloud 'load' event
-        pointCloud.dispatch('load');
+            xhr.send(request.data);
+          
+          } catch(e) {
+            console.log(e);
+            if (options.error) {
+              options.error(e,xhr);
+            } 
+          }
 
-      } // success
+        } // worker_ajax
+ 
+        // generate particle positions array from json
+        worker.parseJSON=function worker_parseJSON(json) {
 
-    });  // ajax
+          // create empty sections
+          var section=[];
+          for(var x=0; x<360; ++x) {
+            section[x]=[];
+            for(var y=0; y<180; ++y) {
+              section[x][y]=[];
+            }
+          }
+
+//          switch(pointCloud.urlReplace.suffix[pointCloud.type]) {
+//            case '.json':
+
+              // use single object3D for point cloud ?
+//              if (pointCloud.allInOne) {
+                // allocate new array
+//                pointCloud.positions = new Float32Array(json.points.length * 3);
+
+//              }
+
+              var field_count=json.points_format.length;
+              console.log('Parsing point cloud... ('+(json.points.length/field_count)+' points)');
+
+              // set pointcloud field offset
+              var offset={};
+              json.points_format.forEach(function(value,i){
+                offset[value]=i;
+              });
+
+              // setup progress bar
+//              pointCloud.progressBar=new pointCloud.ProgressBar({
+//                css: {
+//                  zIndex: 9999999,
+//                  width: '100%',
+//                  bottom: 0,
+//                  position: 'absolute'
+//                }
+//              });
+          var offset_phi=offset.phi;
+          var offset_theta=offset.theta;
+          var offset_depth=offset.depth;
+          var points=json.points;
+          var step=Math.PI/180;
+
+          var v=new THREE.Vector3();
+
+          for (var k=0; k<points.length; k+=field_count) {
+
+            var phi=points[k+offset_phi];
+            var theta=points[k+offset_theta];
+            var depth=points[k+offset_depth];
+
+            // store particle index where it belongs
+            var x=Math.round(theta/step)%360;
+            var y=Math.round(phi/step);
+
+            if (y<0) {
+              y+=180;
+            }
+
+            section[x][y].push(k/field_count);
+/*
+            if (pointCloud.allInOne) {
+              // unit vector
+              v.x=0;
+              v.y=0;
+              v.z=1;
+
+              // apply rotations
+              v.applyAxisAngle(panorama.Xaxis,phi);
+              v.applyAxisAngle(panorama.Yaxis,theta);
+
+              // store position
+              positions[i]=-v.x*depth;
+              positions[i+1]=v.y*depth;
+              positions[i+2]=v.z*depth;
+              i+=3;
+            }
+*/
+//            pointCloud.progressBar.set(k/json.points.length);
+          }
+
+          console.log('Parsing point cloud... done');
+          pointCloud.progressBar.elem.remove();
+          worker.postMessage({
+            type: 'section',
+            section: section
+          });
+
+        }, // worker_parseJSON
+
+        
+        worker.ajax({
+
+          url: pointCloud.url,
+
+          async: false,
+
+          error: function() {
+            console.log('loading pointCloud from URL... failed');
+            // trigger pointcloud 'loaderror' event
+            worker.postMessage({
+              type: 'loaderror',
+              arguments: Array.prototype.slice.call(arguments)
+            });
+//            pointCloud.dispatch('loaderror',Array.prototype.slice.call(arguments));
+          }, // error
+
+          success: function(json){
+
+            // no data available ?
+            if (!json.points) {
+              // trigger pointcloud 'loaderror' event
+              console.log('loading pointCloud from URL... failed');
+              worker.postMessage({
+                type: 'loaderror',
+                arguments: Array.prototype.slice.call(arguments)
+              });
+//              pointCloud.dispatch('loaderror',Array.prototype.slice.call(arguments));
+              return;
+            }
+
+            console.log('loading pointCloud from URL... done');
+
+            // parse point cloud json
+            worker.parseJSON(json);
+
+          } // success
+
+        });  // ajax
+
+      }
+    });
 
   }, // pointCloud_fromURL
 
+/*
   // load point cloud from json
   fromJSON: function pointCloud_fromJSON(json){
 
@@ -206,6 +353,7 @@ $.extend(true,PointCloud.prototype,{
     switch(pointCloud.urlReplace.suffix[pointCloud.type]) {
       case '.json':
 
+        // use single object3D for point cloud ?
         if (pointCloud.allInOne) {
           // allocate new array
           pointCloud.positions = new Float32Array(json.points.length * 3);
@@ -221,6 +369,7 @@ $.extend(true,PointCloud.prototype,{
           pointCloud.offset[value]=i;
         });
 
+        // setup progress bar
         pointCloud.progressBar=new pointCloud.ProgressBar({
           css: {
             zIndex: 9999999,
@@ -253,7 +402,7 @@ $.extend(true,PointCloud.prototype,{
     var field_count=json.points_format.length;
     var step=Math.PI/180;
 
-    var chunkLimit=kk+points.length/100;
+    var chunkLimit=kk+Math.max(points.length/100,200);
     if (chunkLimit>points.length) {
       chunkLimit=points.length;
     }
@@ -299,7 +448,7 @@ $.extend(true,PointCloud.prototype,{
     if (k<points.length) {
       setTimeout(function(){
         pointCloud.parseJSONchunk(json,k);
-      },0);
+      },50);
 
     } else {
       console.log('Parsing point cloud... done');
@@ -308,7 +457,7 @@ $.extend(true,PointCloud.prototype,{
     }
 
   }, // pointCloud.parseJSONchunk
-
+*/
   ProgressBar: function ProgressBar(options) {
 
     var bar=this;
