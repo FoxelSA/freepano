@@ -4,7 +4,7 @@
 #
 # freepano - WebGL panorama viewer
 #
-# Copyright (c) 2014 FOXEL SA - http://foxel.ch
+# Copyright (c) 2014-2015 FOXEL SA - http://foxel.ch
 # Please read <http://foxel.ch/license> for more information.
 #
 #
@@ -40,9 +40,22 @@
 
 #set -x
 
-if [ $# -lt 2 ] ; then
-  echo 'usage: pyramid <tile_size> <filename> [<jpeg_quality>]'
+usage() {
+  echo 'usage: pyramid [ -l <only_this_level> ] <tile_size> <filename> [<jpeg_quality>]'
   exit 1
+}
+
+if [ $# -lt 2 ] ; then
+  usage
+fi
+
+if [ "$1" == "-l" ] ; then
+  LEVEL=$2
+  shift 2
+fi
+
+if [ $# -lt 2 -o $# -gt 3 ] ; then
+  usage
 fi
 
 [ -n "$3" ] && QUALITY="-quality $3"
@@ -65,69 +78,106 @@ f=$2
   height=$(echo $resolution | cut -f 2 -d x)
   [ -z "$height" ] && exit
 
-  # get output resolution (closest superior multiple of tilesize)
+  # get the highest output resolution (closest superior multiple of tilesize)
   # and make directories
   newwidth=$tilesize
   level=-1
-  levelok=0
   while [ $newwidth -lt $width ] ; do
     level=$(expr $level + 1)
-    mkdir -p $base/$tilesize/$level || exit
-    [ -f $base/$tilesize/$level/done ] && levelok=$(expr $levelok + 1)
+
+    # if a single level is requested, dont bother with other directories
+    if [ -z "$LEVEL" -o -n "$LEVEL" -a "$LEVEL" = "$level" ] ;  then
+      mkdir -p $base/$tilesize/$level || exit
+    fi
+
     newwidth=$(expr $newwidth \* 2)
+
   done
 
   bottom=$level
   echo pyramid levels: $(expr $bottom + 1)
 
-  # resize original file if width not multiple of tilesize
+  # resize original file if width not multiple of tilesize,
   tempfile=
   halfw=$(expr $newwidth / 2)
   if [ $width -ne $newwidth -o $height -ne $halfw ] ; then
     width=$newwidth
     height=$halfw
-    tempfile=/tmp/tmp.$(basename $f).tiff
-    convert $f -resize ${width}x$height -quality 100 $tempfile
-    fref=$f
-    f=$tempfile
+
+    # if a single level != bottom level is requested,
+    # or bottom level is already done,
+    # then just use the new width and height set above
+    if [ -z "$LEVEL" -o -n "$LEVEL" -a "$LEVEL" = "$bottom" ] && [ ! -f $base/$tilesize/$bottom/done ]  ; then 
+      tempfile=/tmp/tmp.$(basename $f).tiff
+      convert $f -resize ${width}x$height -quality 100 $tempfile
+      fref=$f
+      f=$tempfile
+    fi
+
   fi
 
   echo -n output resolution: $width\x$height
 
+  # begin with higher resolution level
   level=$bottom
   curwidth=$width
 
+  echo
+  echo
+
   while [ $level -ge 0 ] ; do
-    echo
-    echo
-    echo -n "level: $level - ${curwidth}x$(expr $curwidth / 2) "
-    if [ -f $base/$tilesize/$level/done ] ; then
-      echo -n "- skipped"
-    else
-      if [ $level -eq $bottom ] ; then
-        convert -crop ${tilesize}x${tilesize} +repage +adjoin $f $QUALITY ${base}_${level}.%05d.jpg || exit
-        [ -n "$tempfile" ] && f=$fref
-      else
-        convert $f -resize ${curwidth}x$(expr $curwidth / 2) -quality 100 ${base}_${level}.jpg || exit
-        convert -crop ${tilesize}x${tilesize} +repage +adjoin ${base}_${level}.jpg $QUALITY ${base}_${level}.%05d.jpg || exit
-        rm ${base}_${level}.jpg
+
+    # skip level if flagged as 'done', or is not the specific level requested
+    if [ -f $base/$tilesize/$level/done ] || [ -n "$LEVEL" -a "$level" != "$LEVEL" ]; then
+
+      if [ -z "$LEVEL" -o -n "$LEVEL" -a -f $base/$tilesize/$level/done ]  ; then
+        echo -n "level: $level - ${curwidth}x$(expr $curwidth / 2) "
+        echo -n "- skipped"
+        echo
+        echo
       fi
 
-      if [ $curwidth = $tilesize ] ; then
-        tilenum=0
-      else
-        tilenum=$(ls -1 ${base}_${level}.?????.jpg | wc -l)
+    else
+
+      echo -n "level: $level - ${curwidth}x$(expr $curwidth / 2) "
+
+      if [ $level -eq $bottom ] ; then # higher resolution level
+
+        # no need to resize the higher resolution level
+        # just split f into tiles
+        convert -crop ${tilesize}x${tilesize} +repage +adjoin $f $QUALITY ${base}_${level}.%05d.jpg || exit
+
+      else # lower resolution levels
+
+        # resize original image
+        convert $f -resize ${curwidth}x$(expr $curwidth / 2) -quality 100 ${base}_${level}.jpg || exit
+
+        # split into tiles
+        convert -crop ${tilesize}x${tilesize} +repage +adjoin ${base}_${level}.jpg $QUALITY ${base}_${level}.%05d.jpg || exit
+
+        # remove downscaled image
+        rm ${base}_${level}.jpg
+
       fi
+
+      # get tile count
+      tilenum=$(ls -1 ${base}_${level}.?????.jpg | wc -l)
+
       echo -n "- $tilenum tiles - "
 
+      # get grid dimensions
       colCount=$(expr $curwidth / $tilesize)
       rowCount=$(expr $curwidth / 2 / $tilesize)
       echo $colCount\x$rowCount
+
+      # check tile count is matching file count
       truenum=$(expr $colCount \* $rowCount)
       if [ $tilenum -ne $truenum ] ; then
         echo tiles count and dimensions mismatch
         exit 1
       fi
+
+      # move and rename tiles
       row=$(expr $rowCount - 1)
       col=$(expr $colCount - 1)
       echo -n "row: $row - "
@@ -144,10 +194,23 @@ f=$2
         fi
         col=$(expr $col - 1)
       done
+
+      # flag level as done
       touch $base/$tilesize/$level/done
+
+      echo
+      echo
+
     fi
+
+    # if we had to upscale the original file for higher resolution level,
+    # restore f value to the original image filename for next downscales
+    [ -n "$tempfile" ] && f=$fref
+
+    # change level
     level=$(expr $level - 1)
     curwidth=$(expr $curwidth / 2)
+
   done
 
   [ -n "$tempfile" ] && rm $tempfile
