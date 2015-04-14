@@ -2,6 +2,7 @@
 #include <sstream>
 #include <iostream>
 #include <cstdlib>
+#include <stdint.h>
 #include <cstring>
 #include <list>
 #include <cmath>
@@ -87,6 +88,8 @@ int main(int argc, char **argv) {
     return 1;
   }
 
+  std::cerr << filename << ": parsing " << nb_points << " points" << std::endl;
+
   // 1. parse lines beginning with [0-9] as a csv formatted as:
   // "depth, index, theta, phi," (floats)
   // 2. store cartesian coordinates in "sector" array as:
@@ -109,22 +112,25 @@ int main(int argc, char **argv) {
       // reference particle in sector lon,lat
       std::list<float> *_sector=&sector[lon][lat];
 
+      phi=(phi-M_PI/2);
+      theta=theta-M_PI/2;
       // compute cartesian coordinates
       fx=r*sin(phi)*cos(theta);
-      fy=r*sin(phi)*sin(theta);
-      fz=r*cos(phi);
+      fz=r*sin(phi)*sin(theta);
+      fy=-r*cos(phi);
 
       // store cartesian coordinates
       _sector->push_back(fx);
       _sector->push_back(fy);
       _sector->push_back(fz);
+
   }
 
 
   // output positions formatted as list of x,y,z for each [lon][lat] pair
   // and prepare a 360x180 array index formatted as offset,count
  
-  std::list<unsigned long> array_index;
+  std::list<uint32_t> array_index;
 
   for (lat=0; lat<180; ++lat) {
     for (lon=0; lon<360; ++lon) {
@@ -132,7 +138,7 @@ int main(int argc, char **argv) {
       std::list<float> *positions=&sector[lon][lat];
 
       // update array index
-      unsigned long count=positions->size();
+      uint32_t count=positions->size();
       if (count) {
         // particles in this sector: store file offset and particle count
         array_index.push_back(outf.tellp());
@@ -152,16 +158,23 @@ int main(int argc, char **argv) {
     }
   }
 
+  // check integrity
+  unsigned long count=outf.tellp();
+  std::cerr << filename << ": positions -> " << count << " bytes" << ((count%4)?" not a multiple of 4 !":"") << std::endl;
+
   // output index formatted as:
   // offset, count
-  for (std::list<unsigned long>::iterator it=array_index.begin(); it!=array_index.end(); ++it) {
-    unsigned long value=*it;
+  for (std::list<uint32_t>::iterator it=array_index.begin(); it!=array_index.end(); ++it) {
+    uint32_t value=*it;
     outf.write((char*)&value,sizeof(value));
   }
 
-  outf.close();
+  // check integrity
+  long unsigned int count2=(unsigned long)outf.tellp()-count;
+  std::cerr << filename << ": index -> " << count2 << " bytes" << ((count2%4)?" not a multiple of 4 !":"") << std::endl;
 
-  return 0;
+  outf.close();
+  return (count%4 + count2%4);
 
 }
 
