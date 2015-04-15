@@ -90,7 +90,7 @@ $.extend(true,PointCloud.prototype,{
 
     if (!pointCloud.object3D) {
       pointCloud.object3D=new THREE.Object3D();
-    }    
+    }
 
     if (pointCloud.overlay) {
       pointCloud.scene=new THREE.Scene();
@@ -144,7 +144,7 @@ $.extend(true,PointCloud.prototype,{
           }
         });
 
-        // open asynchronous GET request by default 
+        // open asynchronous GET request by default
         xhr.open(request.type||'GET',request.url,request.async!=undefined?request.async:true);
         if (request.type=='POST') {
           xhr.setRequestHeader("Content-type",request.contentType||"application/x-www-form-urlencoded");
@@ -156,17 +156,17 @@ $.extend(true,PointCloud.prototype,{
 
         // send request
         xhr.send(request.data);
-      
+
       } catch(e) {
         console.log(e);
         if (request.error) {
           request.error(e,xhr);
-        } 
+        }
       }
 
     } // ajax
 
-/* 
+/*
         // generate particle positions array from json
         worker.parseJSON=function worker_parseJSON(json) {
 
@@ -263,7 +263,7 @@ $.extend(true,PointCloud.prototype,{
         }, // worker_parseJSON
 
           */
-        
+
         var loadData=function(dataType,url) {
 
           ajax({
@@ -272,6 +272,11 @@ $.extend(true,PointCloud.prototype,{
             responseType: 'arraybuffer',
             mimeType: 'text/plain; charset=x-user-defined',
             async: true,
+
+            progress: pointCloud.progress ?
+              function ajax_progress(e){
+                pointCloud.progress(e);
+              } : undefined,
 
             error: function() {
               console.log('loading data from '+url+'... failed',arguments);
@@ -286,6 +291,8 @@ $.extend(true,PointCloud.prototype,{
 
             load: function(e){
 
+              pointCloud.progressBar.elem.remove();
+
               // failed ?, trigger pointcloud 'loaderror' event
               if (e.target.responseType!="arraybuffer" || !e.target.response.byteLength) {
                 console.log('loading data from '+url+'... failed');
@@ -298,7 +305,7 @@ $.extend(true,PointCloud.prototype,{
                 return;
               }
 
-              // success
+              // success, trigger pointcloud 'load' event
               console.log('loading data from '+url+'... done');
               pointCloud.dispatch({
                 type: 'load',
@@ -361,7 +368,7 @@ $.extend(true,PointCloud.prototype,{
         section[x][y]=[];
       }
     }
-    
+
     switch(pointCloud.urlReplace.suffix[pointCloud.type]) {
       case '.json':
 
@@ -371,7 +378,7 @@ $.extend(true,PointCloud.prototype,{
           pointCloud.positions = new Float32Array(json.points.length * 3);
 
         }
-        
+
         var field_count=json.points_format.length;
         console.log('Parsing point cloud... ('+(json.points.length/field_count)+' points)');
 
@@ -395,7 +402,7 @@ $.extend(true,PointCloud.prototype,{
         setTimeout(function(){
           pointCloud.parseJSONchunk(json,0)
         },0);
-     
+
         break;
     }
 
@@ -470,10 +477,10 @@ $.extend(true,PointCloud.prototype,{
 
   }, // pointCloud.parseJSONchunk
 */
-  ProgressBar: function ProgressBar(options) {
+  ProgressBar: function pointCloud_ProgressBar(options) {
 
     var bar=this;
-    
+
     $.extend(true, bar, {
 
         container: $('body'),
@@ -500,9 +507,33 @@ $.extend(true,PointCloud.prototype,{
     }, options);
 
     bar.init();
-   
+
+  }, // pointCloud_progressBar
+
+  progress: function pointCloud_progress(e) {
+
+    if (!e.lengthComputable) {
+      return;
+    }
+
+    var pointCloud=this;
+
+    // setup progress bar
+    if (!pointCloud.progressBar) {
+      pointCloud.progressBar=new pointCloud.ProgressBar({
+        css: {
+          zIndex: 9999999,
+          width: '100%',
+          bottom: 0,
+          position: 'absolute'
+        }
+      });
+    }
+
+    pointCloud.progressBar.set(e.loaded/e.total);
+
   }, // pointCloud_progress
-    
+
 /*
   // rebuild the pointcloud positions array (visible points only)
   update: function pointCloud_update() {
@@ -645,7 +676,7 @@ $.extend(true,PointCloud.prototype,{
         }
         mesh.particles.object3D.visible=mesh._visible;
         return;
-      }    
+      }
 
       if (!pointCloud.updateTileSetParticleListTimeout) {
         pointCloud.updateTileSetParticleListTimeout=setTimeout(function(){
@@ -697,7 +728,7 @@ $.extend(true,PointCloud.prototype,{
 
           }
           mesh.particles.object3D.visible=true;
-        
+
         } else {
           if (mesh.particles) {
               mesh.particles.object3D.visible=false;
@@ -876,7 +907,7 @@ $.extend(true,PointCloud.prototype,{
 
         var lon_min=_clamp(boundary.lon.min,360);
         var lon_max=_clamp(boundary.lon.max,360);
-        
+
         // vertical borders
         for (ilat=boundary.lat_min+1; ilat<boundary.lat.max; ++ilat) {
           var lat=_clamp(ilat,180);
@@ -1137,9 +1168,9 @@ $.extend(true,PointCloud.prototype,{
     }
     var d2min=999;
     var data=pointCloud.sector.data;
-  
+
     // get mouse normalized coordinates
-    var r=panorama.sphere.radius; 
+    var r=panorama.sphere.radius;
     var phi=panorama.mouseCoords.phi;
     var theta=panorama.mouseCoords.theta;
     var mx=r*Math.sin(phi)*Math.cos(theta);
@@ -1181,7 +1212,7 @@ $.extend(true,PointCloud.prototype,{
           candidate.index=index;
           candidate.norm=n;
       }
-      
+
     }
 
     return candidate.index/3;
