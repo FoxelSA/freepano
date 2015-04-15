@@ -941,7 +941,7 @@ $.extend(true,PointCloud.prototype,{
     switch(e.dataType) {
       case 'sectors':
         pointCloud.sector={
-          data: new Uint32Array(e.buffer,0,(e.buffer.byteLength-8*360*180)/4+1),
+          data: new Float32Array(e.buffer,0,(e.buffer.byteLength-8*360*180)/4+1),
           index: new Uint32Array(e.buffer,e.buffer.byteLength-8*360*180)
         }
         break;
@@ -964,10 +964,10 @@ $.extend(true,PointCloud.prototype,{
       // instantiate object3D
       var dotMaterial=pointCloud.dotMaterial.clone();
       dotMaterial.color.set('red');
-      pointCloud._object3D=new THREE.PointCloud(pointCloud.geometry,pointCloud.dotMaterial.clone());
-      pointCloud._object3D.sortParticles=pointCloud.sortParticles;
+      pointCloud.object3D=new THREE.PointCloud(pointCloud.geometry,pointCloud.dotMaterial.clone());
+      pointCloud.object3D.sortParticles=pointCloud.sortParticles;
 
-      scene.add(pointCloud._object3D);
+      scene.add(pointCloud.object3D);
     }
 
     pointCloud.dispatch('ready');
@@ -1050,12 +1050,12 @@ $.extend(true,PointCloud.prototype,{
 */
 
     panorama.getMouseCoords(e);
-    var lon=Math.round(panorama.mouseCoords.lon)-180;
-    var lat=-Math.round(panorama.mouseCoords.lat);
+    var lon=Math.round(panorama.mouseCoords.lon);
+    var lat=Math.round(panorama.mouseCoords.lat);
     if (lat<0) lat+=180;
     if (lon<0) lon+=360;
-
-    var index=(lat*180+lon)<<1;
+console.log(lat);
+    var index=(lat*360+lon)<<1;
     var particles={
       offset: pointCloud.instance.sector.index[index],
       count: pointCloud.instance.sector.index[index+1]
@@ -1170,16 +1170,13 @@ $.extend(true,PointCloud.prototype,{
     var data=pointCloud.sector.data;
 
     // get mouse normalized coordinates
-    var r=panorama.sphere.radius;
-    var phi=panorama.mouseCoords.phi;
+    var r=-panorama.sphere.radius;
+    var phi=panorama.mouseCoords.phi+Math.PI/2;
     var theta=panorama.mouseCoords.theta;
-    var mx=r*Math.sin(phi)*Math.cos(theta);
-    var my=r*Math.sin(phi)*Math.sin(theta);
-    var mz=r*Math.cos(phi);
-    var mn=Math.sqrt(mx*mx+my*my+mz*mz);
-    mx/=mn;
-    my/=mn;
-    mz/=mn;
+
+    var mz=-r*Math.sin(phi)*Math.cos(theta);
+    var mx=r*Math.sin(phi)*Math.sin(theta);
+    var my=r*Math.cos(phi);
 
     for (var i=0; i<particles.count; ++i) {
 
@@ -1191,14 +1188,11 @@ $.extend(true,PointCloud.prototype,{
       var y=data[index+1];
       var z=data[index+2];
       var n=Math.sqrt(x*x+y*y+z*z);
-      var nx=x/n;
-      var ny=y/n;
-      var nz=z/n;
 
       // squared distance from normalized mouse coordinates
-      var dx=mx-nx;
-      var dy=my-ny;
-      var dz=mz-nz;
+      var dx=mx-x;
+      var dy=my-y;
+      var dz=mz-z;
       var dsquare=dx*dx+dy*dy+dz*dz;
 
       // select least square distance
@@ -1212,7 +1206,6 @@ $.extend(true,PointCloud.prototype,{
           candidate.index=index;
           candidate.norm=n;
       }
-
     }
 
     return candidate.index/3;
@@ -1222,14 +1215,26 @@ $.extend(true,PointCloud.prototype,{
   // return spherical particle world coordinates
   getParticleSphericalCoords: function pointCloud_getParticleSphericalCoords(index) {
     var pointCloud=this;
-    var points=pointCloud.json.points;
-    var offset=pointCloud.offset;
-    index*=pointCloud.json.points_format.length;
+
+    index*=3;
+ 
+    // get cartesian coordinates   
+    var data=pointCloud.sector.data;
+    var x=data[index];
+    var y=data[index+1];
+    var z=data[index+2];
+
+    // convert to spherical coordinates
+    var r=Math.sqrt(x*x+y*y+z*z);
+    var theta=Math.acos(z/r);
+    var phi=Math.atan2(y/x);
+
     return {
-      lon: points[index+offset.theta]*180/Math.PI-180,
-      lat: -points[index+offset.phi]*180/Math.PI,
-      radius: points[index+offset.depth]
+      lon: theta*180/Math.PI-180,
+      lat: -phi*180/Math.PI,
+      radius: r
     }
+ 
   }, // pointCloud_getParticleSphericalCoords
 
   // return cartesian particle world coordinates
