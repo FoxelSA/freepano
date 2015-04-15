@@ -105,9 +105,11 @@ int main(int argc, char **argv) {
       phi=getFloat();
 
       // convert to degrees
-      lon=((int)round(theta/step))%360;
+      lon=((int)round(theta/step)+180)%360;
       lat=round(phi/step);
       if (lat<0) lat+=180;
+
+      lat=180-lat;
 
       // reference particle in sector lon,lat
       std::list<float> *_sector=&sector[lon][lat];
@@ -115,9 +117,9 @@ int main(int argc, char **argv) {
       phi=(phi-M_PI/2);
       theta=theta-M_PI/2;
       // compute cartesian coordinates
-      fx=r*sin(phi)*cos(theta);
-      fz=r*sin(phi)*sin(theta);
-      fy=-r*cos(phi);
+      fx=depth*sin(phi)*cos(theta);
+      fz=depth*sin(phi)*sin(theta);
+      fy=-depth*cos(phi);
 
       // store cartesian coordinates
       _sector->push_back(fx);
@@ -138,11 +140,11 @@ int main(int argc, char **argv) {
       std::list<float> *positions=&sector[lon][lat];
 
       // update array index
-      uint32_t count=positions->size();
-      if (count) {
-        // particles in this sector: store file offset and particle count
-        array_index.push_back(outf.tellp());
-        array_index.push_back(count);
+      uint32_t particle_count=positions->size()/3;
+      if (particle_count) {
+        // particles in this sector: store offset and particle count
+        array_index.push_back(outf.tellp()/sizeof(fx));
+        array_index.push_back(particle_count);
       } else {
         // no particles here
         array_index.push_back(0);
@@ -159,22 +161,22 @@ int main(int argc, char **argv) {
   }
 
   // check integrity
-  unsigned long count=outf.tellp();
-  std::cerr << filename << ": positions -> " << count << " bytes" << ((count%4)?" not a multiple of 4 !":"") << std::endl;
+  unsigned long positions_byteCount=outf.tellp();
+  std::cerr << filename << ": positions -> " << positions_byteCount << " bytes" << ((positions_byteCount%4)?" not a multiple of 4 !":"") << std::endl;
 
   // output index formatted as:
-  // offset, count
+  // offset, particle_count
   for (std::list<uint32_t>::iterator it=array_index.begin(); it!=array_index.end(); ++it) {
     uint32_t value=*it;
     outf.write((char*)&value,sizeof(value));
   }
 
   // check integrity
-  long unsigned int count2=(unsigned long)outf.tellp()-count;
-  std::cerr << filename << ": index -> " << count2 << " bytes" << ((count2%4)?" not a multiple of 4 !":"") << std::endl;
+  long unsigned int index_byteCount=(unsigned long)outf.tellp()-positions_byteCount;
+  std::cerr << filename << ": index -> " << index_byteCount << " bytes" << ((index_byteCount%4)?" not a multiple of 4 !":"") << std::endl;
 
   outf.close();
-  return (count%4 + count2%4);
+  return (positions_byteCount%4 + index_byteCount%4);
 
 }
 

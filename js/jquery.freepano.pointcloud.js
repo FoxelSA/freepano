@@ -1054,7 +1054,6 @@ $.extend(true,PointCloud.prototype,{
     var lat=Math.round(panorama.mouseCoords.lat);
     if (lat<0) lat+=180;
     if (lon<0) lon+=360;
-console.log(lat);
     var index=(lat*360+lon)<<1;
     var particles={
       offset: pointCloud.instance.sector.index[index],
@@ -1169,45 +1168,59 @@ console.log(lat);
     var d2min=999;
     var data=pointCloud.sector.data;
 
-    // get mouse normalized coordinates
-    var r=-panorama.sphere.radius;
-    var phi=panorama.mouseCoords.phi+Math.PI/2;
-    var theta=panorama.mouseCoords.theta;
+    // get mouse coordinates on the unit sphere
 
-    var mz=-r*Math.sin(phi)*Math.cos(theta);
-    var mx=r*Math.sin(phi)*Math.sin(theta);
-    var my=r*Math.cos(phi);
+    var mx=panorama.mouseCoords.x;
+    var my=panorama.mouseCoords.y;
+    var mz=panorama.mouseCoords.z;
+    var n=Math.sqrt(mx*mx+my*my+mz*mz);
+
+    mx=mx/n;
+    my=my/n;
+    mz=-mz/n;
+
+//console.log('-----')
+//console.log(mx,my,mz)
 
     for (var i=0; i<particles.count; ++i) {
 
       // get particle data index
       var index=particles.offset+i*3;
 
-      // particle normalized coordinates
+      // get particle world coordinates
       var x=data[index];
       var y=data[index+1];
       var z=data[index+2];
-      var n=Math.sqrt(x*x+y*y+z*z);
+      var depth=Math.sqrt(x*x+y*y+z*z);
 
-      // squared distance from normalized mouse coordinates
-      var dx=mx-x;
-      var dy=my-y;
-      var dz=mz-z;
-      var dsquare=dx*dx+dy*dy+dz*dz;
+      // get coordinates on the unit sphere
+      x=x/depth;
+      y=y/depth;
+      z=z/depth;
+
+//      console.log(x,y,z);
+
+      // get offset to mouse coordinates
+      // (need to swap mz and mx)
+      var dx=x-mz;
+      var dy=y-my;
+      var dz=z-mx;
 
       // select least square distance
+      var dsquare=dx*dx+dy*dy+dz*dz;
       if (dsquare<d2min) {
         d2min=dsquare;
         candidate.index=index;
-        candidate.norm=n;
+        candidate.depth=depth;
 
       // select nearest point, when equidistant from cursor
-      } else if (dsquare==d2min && candidate.norm>n) {
+      } else if (dsquare==d2min && candidate.depth>depth) {
           candidate.index=index;
-          candidate.norm=n;
+          candidate.depth=depth;
       }
     }
 
+    // return particle index
     return candidate.index/3;
 
   }, // pointCloud_nearestParticle
@@ -1276,7 +1289,7 @@ console.log(lat);
 
     // particle info
     var pos=pointCloud.getParticlePosition(index);
-    var depth=Math.sqrt(pos.x*pos.x+pos.y*pos.y+pos.z*pos.z)/panorama.sphere.radius;
+    var depth=Math.sqrt(pos.x*pos.x+pos.y*pos.y+pos.z*pos.z);
     var html = '<div style="width: 100%; position: relative; margin-left: 10px;">'
     + '<b>Particle info:</b><br />'
 //    + 'theta: ' + points[index+offset.theta].toPrecision(6) + '<br />'
