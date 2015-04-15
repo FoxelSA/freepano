@@ -1089,7 +1089,7 @@ $.extend(true,PointCloud.prototype,{
 
     // get nearest point index
     panorama.getMouseCoords(e.originalEvent);
-    var hover={index: pointCloud.nearestParticle(panorama.mouseCoords,particles)};
+    var hover={index: pointCloud.nearestParticle(particles)};
 
     // if we were already hovering
     if (pointCloud.hover) {
@@ -1158,8 +1158,8 @@ $.extend(true,PointCloud.prototype,{
     }
   }, // pointCloud_onparticlemousein
 
-  // return index of particle with least square distance from coords in radians
-  nearestParticle: function pointCloud_nearestParticle(coords,particles) {
+  // return index of particle with least square distance from mouse coords
+  nearestParticle: function pointCloud_nearestParticle(particles) {
     var pointCloud=this;
     var panorama=pointCloud.panorama;
     var candidate={
