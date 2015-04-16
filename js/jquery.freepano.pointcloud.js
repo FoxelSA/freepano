@@ -952,29 +952,35 @@ $.extend(true,PointCloud.prototype,{
     // add pointcloud to scene
     var scene=(pointCloud.overlay)?pointCloud.scene:panorama.scene;
 
-    if (pointCloud.testing) {
+    if (pointCloud.testing||pointCloud.allInOne) {
       scene.add(pointCloud.object3D);
     }
-    if (pointCloud.allInOne) {
-      pointCloud.geometry=new THREE.BufferGeometry();
-
-      // add particles to geometry
-      pointCloud.geometry.addAttribute('position', new THREE.BufferAttribute(pointCloud.sector.data, 3));
-
-      // instantiate object3D
-      var dotMaterial=pointCloud.dotMaterial.clone();
-      dotMaterial.color.set('red');
-      pointCloud.object3D=new THREE.PointCloud(pointCloud.geometry,pointCloud.dotMaterial.clone());
-      pointCloud.object3D.sortParticles=pointCloud.sortParticles;
-
-      scene.add(pointCloud.object3D);
-    }
-
     pointCloud.dispatch('ready');
-
     panorama.drawScene();
 
   }, // pointCloud_onload
+
+  // instantiate pointcloud from given buffer and add to main object3D, return object3D
+  add: function pointCloud_add(options) {
+
+      var pointCloud=this;
+
+      pointCloud.geometry=new THREE.BufferGeometry();
+
+      // add particles to geometry
+      pointCloud.geometry.addAttribute('position', new THREE.BufferAttribute(options.positions, 3));
+
+      // instantiate pointCloud and add to main object3D
+      var dotMaterial=pointCloud.dotMaterial.clone();
+      dotMaterial.color.set('red');
+      var object3D=new THREE.PointCloud(pointCloud.geometry,pointCloud.dotMaterial.clone());
+      object3D.sortParticles=pointCloud.sortParticles;
+
+      pointCloud.object3D.add(object3D);
+
+      return object3D;
+
+  }, // pointCloud_add
 
   // pointcloud 'loaderror' event handler
   onloaderror: function pointCloud_onloaderror(e) {
@@ -993,8 +999,8 @@ $.extend(true,PointCloud.prototype,{
     if (!pointCloud) {
       return;
     }
-    if (pointCloud._object3D) {
-      pointCloud._object3D.visible=pointCloud.visible;
+    if (pointCloud.object3D) {
+      pointCloud.object3D.visible=pointCloud.visible;
     }
     var cursor=pointCloud.cursor;
     if (cursor) {
@@ -1025,8 +1031,7 @@ $.extend(true,PointCloud.prototype,{
       !pointCloud ||
       !pointCloud.instance ||
       pointCloud.active===false ||
-      !pointCloud.instance.object3D ||
-      !pointCloud.instance.object3D.visible
+      !pointCloud.instance.sector
     ) {
       return;
     }
@@ -1230,8 +1235,8 @@ $.extend(true,PointCloud.prototype,{
     var pointCloud=this;
 
     index*=3;
- 
-    // get cartesian coordinates   
+
+    // get cartesian coordinates
     var data=pointCloud.sector.data;
     var x=data[index];
     var y=data[index+1];
@@ -1239,15 +1244,21 @@ $.extend(true,PointCloud.prototype,{
 
     // convert to spherical coordinates
     var r=Math.sqrt(x*x+y*y+z*z);
-    var theta=Math.acos(z/r);
-    var phi=Math.atan2(y/x);
+    var theta = Math.atan2(x,z);
+    var phi = Math.asin(y/r);
+
+    var lon=-theta*180/Math.PI-180;
+    if (lon<0) lon+=360;
+
+    var lat=phi*180/Math.PI;
+
 
     return {
-      lon: theta*180/Math.PI-180,
-      lat: -phi*180/Math.PI,
+      lon: lon,
+      lat: phi*180/Math.PI,
       radius: r
     }
- 
+
   }, // pointCloud_getParticleSphericalCoords
 
   // return cartesian particle world coordinates
