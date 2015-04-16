@@ -275,7 +275,7 @@ $.extend(true,PointCloud.prototype,{
 
             progress: pointCloud.progress ?
               function ajax_progress(e){
-                pointCloud.progress(e);
+                pointCloud.progress(e,"Loading point cloud");
               } : undefined,
 
             error: function() {
@@ -291,7 +291,8 @@ $.extend(true,PointCloud.prototype,{
 
             load: function(e){
 
-              pointCloud.progressBar.elem.remove();
+              pointCloud.progressBar.dispose();
+              pointCloud.progressBar=null;
 
               // failed ?, trigger pointcloud 'loaderror' event
               if (e.target.responseType!="arraybuffer" || !e.target.response.byteLength) {
@@ -485,24 +486,45 @@ $.extend(true,PointCloud.prototype,{
 
         container: $('body'),
         css: {},
-        value: 0.0,
-        max: 1.0,
 
         init: function progressBar_init() {
           var bar=this;
+
           bar.elem=$('progress',bar.container);
+
+          // instantiate progressbar
           if (!bar.elem.length) {
-            bar.elem=$('<progress max="'+bar.max+'" value="'+bar.value+'"></progress>');
+            bar.elem=$('<progress class="pbar" '+(bar.max?('max="'+bar.max+'" value="'+bar.value):(''))+'"></progress>');
             bar.elem
             .appendTo(bar.container)
             .css(bar.css);
+
+            bar.text=options.text;
+            bar.span=$('<span class="pbar">'+(bar.text?bar.text:'')+'</span>')
+            .appendTo(bar.container)
+            .css({
+              position: 'absolute',
+              left: '50%',
+              textAlign: 'center',
+              zIndex: 99999999,
+              bottom: '-3px',
+              color: 'black',
+              fontSize: 'small'
+            });
           }
         }, // progressBar_init
 
         set: function progressBar_set(value) {
           var bar=this;
           $(bar.elem).attr('value',value);
+          $(bar.span).text((bar.text?bar.text:'')+' '+Math.round(value*100)+'%');
+
         },  // progressBar_set
+
+        dispose: function progressBar_dispose() {
+          var bar=this;
+          $('.pbar',bar.container).remove();
+        } // progressBar_dispose
 
     }, options);
 
@@ -510,9 +532,9 @@ $.extend(true,PointCloud.prototype,{
 
   }, // pointCloud_progressBar
 
-  progress: function pointCloud_progress(e) {
+  progress: function pointCloud_progress(e,text) {
 
-    if (!e.lengthComputable) {
+    if (e && !e.lengthComputable) {
       return;
     }
 
@@ -526,11 +548,14 @@ $.extend(true,PointCloud.prototype,{
           width: '100%',
           bottom: 0,
           position: 'absolute'
-        }
+        },
+        text: text
       });
     }
 
-    pointCloud.progressBar.set(e.loaded/e.total);
+    if (e) {
+      pointCloud.progressBar.set(e.loaded/e.total);
+    }
 
   }, // pointCloud_progress
 
@@ -936,7 +961,7 @@ $.extend(true,PointCloud.prototype,{
     var pointCloud=this;
     var panorama=pointCloud.panorama;
 
-    console.log('points count:',(e.buffer.byteLength-8*360*180)/4);
+    console.log('points count:',(e.buffer.byteLength-8*360*180)/12);
 
     switch(e.dataType) {
       case 'sectors':
