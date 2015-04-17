@@ -322,7 +322,7 @@ $.extend(true,PointCloud.prototype,{
         } // loadData
 
         // load sectors.bin
-        loadData('sectors',url));
+        loadData('sectors',url);
 
   }, // pointCloud_fromURL
 
