@@ -58,7 +58,7 @@ $.extend(true,PointCloud.prototype,{
     urlReplace: {
       replaceThis: new RegExp(/\/pyramid\/.*/),
       replaceWithThis: '/pointcloud/',
-      suffix: [ '.json' ]
+      suffix: [ '.bin' ]
     },
 /*
     // point cloud dot material
@@ -322,7 +322,7 @@ $.extend(true,PointCloud.prototype,{
         } // loadData
 
         // load sectors.bin
-        loadData('sectors',url.replace(/.json$/,'.bin'));
+        loadData('sectors',url));
 
   }, // pointCloud_fromURL
 
@@ -1420,25 +1420,25 @@ $.extend(true,PointCloud.prototype,{
       // validate urls
       $.each(urlReplace.suffix,function(i,suffix){
 
-        var pointcloud_json_url=panorama.sphere.tileSet.dirName.replace(replaceThis,replaceWithThis)+panorama.list.currentImage+suffix;
+        var pointcloud_url=panorama.sphere.tileSet.dirName.replace(replaceThis,replaceWithThis)+panorama.list.currentImage+suffix;
 
         // javascript loop closure
-        (function(pointcloud_json_url,i,callback){
+        (function(pointcloud_url,i,callback){
 
           // validate url
           $.ajax({
-            url: pointcloud_json_url,
-            type:'HEAD',
+            url: pointcloud_url,
+            type: 'HEAD',
             error: function() {
               callback('error');
 
             },
             success: function() {
-              callback('success',pointcloud_json_url,i);
+              callback('success',pointcloud_url,i);
             }
           });
 
-        })(pointcloud_json_url,i,callback);
+        })(pointcloud_url,i,callback);
       });
 
     }
