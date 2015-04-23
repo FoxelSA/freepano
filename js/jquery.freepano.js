@@ -1075,7 +1075,7 @@ $.extend(true,Panorama.prototype,{
         // dynamicTileInit is enabled and there remains tiles to load
         if (sphere.dynamicTileInit && sphere.tilesLoaded!=sphere.tileSet.columns*sphere.tileSet.rows) {
           sphere.loadRemainingTiles();
-          sphere.dynamicTileLoading=sphere._DynamicTileLoading;
+          sphere.dynamicTileLoading=sphere._dynamicTileLoading;
 
           // Dont trigger panorama ready event before all tiles are loaded
           return;
