@@ -137,84 +137,33 @@ $.extend(true,PointCloud.prototype,{
 
   }, // pointCloud_fromURL
 
-  ProgressBar: function pointCloud_ProgressBar(options) {
-
-    var bar=this;
-
-    $.extend(true, bar, {
-
-        container: $('body'),
-        css: {},
-
-        init: function progressBar_init() {
-          var bar=this;
-
-          bar.elem=$('progress',bar.container);
-
-          // instantiate progressbar
-          if (!bar.elem.length) {
-            bar.elem=$('<progress class="pbar" '+(bar.max?('max="'+bar.max+'" value="'+bar.value):(''))+'"></progress>');
-            bar.elem
-            .appendTo(bar.container)
-            .css(bar.css);
-
-            bar.text=options.text;
-            bar.span=$('<span class="pbar">'+(bar.text?bar.text:'')+'</span>')
-            .appendTo(bar.container)
-            .css({
-              position: 'absolute',
-              left: '50%',
-              textAlign: 'center',
-              zIndex: 99999999,
-              bottom: '-3px',
-              color: 'black',
-              fontSize: 'small'
-            });
-          }
-        }, // progressBar_init
-
-        set: function progressBar_set(value) {
-          var bar=this;
-          $(bar.elem).attr('value',value);
-          $(bar.span).text((bar.text?bar.text:'')+' '+Math.round(value*100)+'%');
-
-        },  // progressBar_set
-
-        dispose: function progressBar_dispose() {
-          var bar=this;
-          $('.pbar',bar.container).remove();
-        } // progressBar_dispose
-
-    }, options);
-
-    bar.init();
-
-  }, // pointCloud_progressBar
-
   progress: function pointCloud_progress(e) {
 
     var pointCloud=this;
 
     if (e && e.type!='progress') {
+
+       if (!pointCloud.progressBar) {
+         return;
+       }
+
+       // remove progress bar
        pointCloud.progressBar.dispose();
        pointCloud.progressBar=null;
        return;
     }
 
     if (e && !e.lengthComputable) {
+      // nothing to display
       return;
     }
 
-    // setup progress bar
     if (!pointCloud.progressBar) {
-      pointCloud.progressBar=new pointCloud.ProgressBar({
-        css: {
-          zIndex: 9999999,
-          width: '100%',
-          bottom: 0,
-          position: 'absolute'
-        },
-        text: "Loading point cloud data"
+      // setup progress bar
+      pointCloud.progressBar=new ProgressBar({
+        text: {
+          value: "Loading point cloud data"
+        }
       });
     }
 

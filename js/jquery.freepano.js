@@ -549,6 +549,7 @@ $.extend(true,Sphere.prototype,{
                 --sphere.tilesToLoad;
                 if (!sphere.tilesLoaded) sphere.tilesLoaded=0;
                 ++sphere.tilesLoaded;
+                sphere.dispatch('progress');
                 if (!sphere.tilesToLoad) {
                   sphere.dispatch('load');
                 }
@@ -565,6 +566,36 @@ $.extend(true,Sphere.prototype,{
         return tileTexture;
 
     }, // sphere_loadTile
+
+    onprogress: function sphere_onprogress(e) {
+     
+      var sphere=this;
+     
+      if (!sphere.tilesToLoad) {
+         if (!sphere.progressBar) {
+           return;
+         }
+         // remove progress bar
+         sphere.progressBar.dispose();
+         sphere.progressBar=null;
+         return;
+      }
+
+      if (!sphere.progressBar) {
+        // setup progress bar
+        sphere.progressBar=new ProgressBar({
+          className: 'sphere_progress',
+          text: {
+            value: "Loading tiles"
+          }
+        });
+      }
+
+      // update progress bar     
+      var percent=(sphere.tilesLoaded+sphere.tilesToLoad)/sphere.tilesToLoad;
+      sphere.progressBar.set(sphere.tilesToLoad/(sphere.tilesLoaded+sphere.tilesToLoad));
+
+    }, // pointCloud_progress
 
     /**
      * Sphere.loadTile_progressive()
