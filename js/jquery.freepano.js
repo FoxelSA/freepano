@@ -288,6 +288,11 @@ $.extend(true,Sphere.prototype,{
         // set initial sphere rotation
         panorama.updateRotationMatrix();
 
+        if (sphere.dynamicTileInit) {
+            sphere._dynamicTileLoading=sphere.dynamicTileLoading;
+            sphere.dynamicTileLoading=true;
+        }
+	
         // build the sphere
         sphere.build();
 
@@ -549,7 +554,9 @@ $.extend(true,Sphere.prototype,{
                 --sphere.tilesToLoad;
                 if (!sphere.tilesLoaded) sphere.tilesLoaded=0;
                 ++sphere.tilesLoaded;
+
                 sphere.dispatch('progress');
+
                 if (!sphere.tilesToLoad) {
                   sphere.dispatch('load');
                 }
@@ -586,7 +593,7 @@ $.extend(true,Sphere.prototype,{
         sphere.progressBar=new ProgressBar({
           className: 'sphere_progress',
           text: {
-            value: "Loading tiles"
+            value: (sphere.tilesLoaded>1?"Loading more tiles":"Loading tiles")
           }
         });
       }
@@ -685,7 +692,8 @@ $.extend(true,Sphere.prototype,{
 
         // load visible tiles first
         if (sphere.dynamicTileInit) {
-          sphere.dynamicTileLoading=true;
+            sphere._dynamicTileLoading=sphere.dynamicTileLoading;
+            sphere.dynamicTileLoading=true;
         }
 
         // trigger tiles loading
@@ -1067,7 +1075,7 @@ $.extend(true,Panorama.prototype,{
         // dynamicTileInit is enabled and there remains tiles to load
         if (sphere.dynamicTileInit && sphere.tilesLoaded!=sphere.tileSet.columns*sphere.tileSet.rows) {
           sphere.loadRemainingTiles();
-          sphere.dynamicTileLoading=false;
+          sphere.dynamicTileLoading=sphere._DynamicTileLoading;
 
           // Dont trigger panorama ready event before all tiles are loaded
           return;
