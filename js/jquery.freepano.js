@@ -592,8 +592,8 @@ $.extend(true,Sphere.prototype,{
       }
 
       // update progress bar     
-      var percent=(sphere.tilesLoaded+sphere.tilesToLoad)/sphere.tilesToLoad;
-      sphere.progressBar.set(sphere.tilesToLoad/(sphere.tilesLoaded+sphere.tilesToLoad));
+      var percent=sphere.tilesLoaded/(sphere.tilesLoaded+sphere.tilesToLoad);
+      sphere.progressBar.set(percent);
 
     }, // pointCloud_progress
 
