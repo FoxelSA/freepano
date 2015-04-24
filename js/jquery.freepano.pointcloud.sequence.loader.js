@@ -117,8 +117,12 @@ $.extend(ParticleSequence_loader.prototype,{
             $.each(json.list,function(){
               var particle_list=this.particle_list;
               var color=this.color;
+              var name=this.name;
+              var lock=this.lock;
               sequence.push(new pointCloud.Sequence({
                     pointCloud: pointCloud,
+                    name: name,
+                    lock: lock,
                     color: color,
                     particle_list: particle_list
               }));
