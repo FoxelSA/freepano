@@ -128,11 +128,20 @@ function setupEventDispatcher(emitter) {
    * @return undefined
    *
    */
-  emitter.dispatchEventsTo=function eventDispatcher_dispatchEventsTo(receiver_obj){
+  emitter.dispatchEventsTo=function eventDispatcher_dispatchEventsTo(receiver_obj,options){
     var emitter=this;
     // dont add receiver_obj twice
-    if (emitter.receivers.indexOf(receiver_obj)<0) {
-      emitter.receivers.push(receiver_obj);
+    var index=emitter.receivers.indexOf(receiver_obj);
+    if (index<0) {
+      if (options && options.prepend) {
+        emitter.receivers.unshift(receiver_obj);
+      } else {
+        emitter.receivers.push(receiver_obj);
+      }
+    } else {
+        if (options && options.dispose) {
+           emitter.receivers.splice(index,1);
+        }
     }
   } // eventDispatcher_dispatchEventsTo
 

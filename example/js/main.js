@@ -423,6 +423,17 @@ $(document).on('filesloaded', function(){
         // panorama list
         images: {
 
+          '1426681049_561096': {
+            dirName: 'panoramas/result_1426681049_561096-0-25-1',
+            rotation: {
+              tilt: 0
+            },
+            coords: {
+              lon: 0,
+              lat: 0
+            }
+          },
+
           // the panorama instance will be extended
           // 1. with the list.defaults above
           // 2. with the object below
@@ -698,23 +709,33 @@ $(document).on('filesloaded', function(){
 
   $(document).on('keydown',function(e){
     switch(e.keyCode) {
-    case 32:
+    case 32: // space
       console.log('lon ['+panorama.lon+'] lat ['+panorama.lat+'] tilt ['+panorama.rotation.tilt+'] roll ['+panorama.rotation.roll+']');
       break;
-    case 49:
+    case 49: // 1
       toggleEffect(panorama.postProcessing.edge);
       break;
-    case 50:
+    case 50: // 2
       toggleEffect(panorama.postProcessing.edge2);
       break;
-    case 51:
+    case 51: // 3
       toggleEffect(panorama.postProcessing.green);
       break;
-    case 77:
+    case 77: // m
       var map = panorama.map;
       if(map) {
           map.instance.active = !map.instance.active;
       }
+      break;
+    case 80: // p
+      new SelRect({
+        panorama: panorama,
+        onmouseup: function selRect_onmouseup(e) {
+          var selRect=this;
+          console.log(selRect.rect);
+        }
+
+      });
       break;
     }
 
