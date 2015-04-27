@@ -730,7 +730,7 @@ $(document).on('filesloaded', function(){
     case 80: // p
       new panorama.Region({
         panorama: panorama,
-        onmouseup: function region_onmouseup(e) {
+        onready: function region_onready(e) {
           var region=this;
           console.log(region.rect);
         }
