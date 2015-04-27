@@ -728,11 +728,11 @@ $(document).on('filesloaded', function(){
       }
       break;
     case 80: // p
-      new SelRect({
+      new panorama.Region({
         panorama: panorama,
-        onmouseup: function selRect_onmouseup(e) {
-          var selRect=this;
-          console.log(selRect.rect);
+        onmouseup: function region_onmouseup(e) {
+          var region=this;
+          console.log(region.rect);
         }
 
       });
