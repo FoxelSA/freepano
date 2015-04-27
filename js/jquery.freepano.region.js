@@ -42,7 +42,7 @@
  *
  * Region constructor
  *
- * Instantiate rectangular selection rectangle on panorama_mousedown,
+ * Instantiate selection rectangle on panorama_mousedown,
  * dispatch a region_ready event on panorama_mouseup
  *
  */
@@ -179,6 +179,5 @@ Panorama.prototype.Region=Region;
 })(jQuery,Panorama);
 
 // Region need to receive Panorama mouse events
-        
 setupEventDispatcher(Panorama.prototype.Region.prototype);
 
