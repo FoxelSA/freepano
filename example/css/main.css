@@ -256,18 +256,21 @@ footer .logo {
   bottom: 64px;
   padding-top: 12px;
   background-color: rgba(255,255,255,0.1);
-  z-index: 10;
-  display: table-row;
+  z-index: 2;
+  display: block;
 }
 
 #snapshot_bar canvas {
     transform: scaleY(-1);
-    box-shadow: 5px -5px 5px 0px rgba(0,0,0,0.4);
-    border: 2px solid white}
+    display: block;
+}
 
 div.snapshot {
-  display: inline;
+  display: block;
+  float: left;
   margin: auto 4px;
+  box-shadow: 5px -5px 5px 0px rgba(0,0,0,0.4);
+  border: 2px solid white;
 }
 
 

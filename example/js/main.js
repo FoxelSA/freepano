@@ -418,11 +418,11 @@ $(document).on('filesloaded', function(){
 
         // initial image
         // default is the first element of 'images' below
-//      initialImage: '1403179809_224762',
+        initialImage: '1403179809_224762',
 
         // panorama list
         images: {
-
+/*
           '1426681049_561096': {
             dirName: 'panoramas/result_1426681049_561096-0-25-1',
             rotation: {
@@ -433,7 +433,7 @@ $(document).on('filesloaded', function(){
               lat: 0
             }
           },
-
+*/
           // the panorama instance will be extended
           // 1. with the list.defaults above
           // 2. with the object below
@@ -778,6 +778,9 @@ $(document).on('filesloaded', function(){
          instance: true,
 
          onSelectCancel: function() {
+
+            if (!snapshot.list[snapshot.current-1]) return;
+
               // remove thumbnail
             var canvas_id='snap'+snapshot.current;
             $('canvas#'+canvas_id).closest('.snapshot').remove();
@@ -811,6 +814,7 @@ $(document).on('filesloaded', function(){
               // create a new element
               div=$('<div class="snapshot">)');
               canvas=panorama.getCanvas(panorama.renderer,rect.x1,$(panorama.container).height()-rect.y1-rect.height,rect.width,rect.height);
+              if (!canvas) return;
               // get canvas from selection
               canvas.id=canvas_id;
               isnew=true;
@@ -821,6 +825,45 @@ $(document).on('filesloaded', function(){
 
             }
 
+            var displayRatio=5/4;
+            var imageRatio=rect.width/rect.height;
+            var div_width=snapshot.size*displayRatio;
+            if (imageRatio>displayRatio) {
+               $(canvas).css({
+                  position: 'absolute',
+                  width: snapshot.size*imageRatio,
+                  height: snapshot.size,
+                  top: -99999,
+                  bottom: -99999,
+                  left: -99999,
+                  right: -99999,
+                  margin: 'auto'
+               });
+            } else {
+               $(canvas).css({
+                  position: 'absolute',
+                  width: snapshot.size*displayRatio,
+                  height: (snapshot.size*displayRatio)/imageRatio,
+                  top: -99999,
+                  bottom: -99999,
+                  left: -99999,
+                  right: -99999,
+                  margin: 'auto'
+               });
+              
+            }
+            $(div).css({
+               width: snapshot.size*displayRatio,
+               height: snapshot.size,
+               marginTop:0,
+               marginBottom:0,
+               position: 'relative',
+               float: 'left',
+               overflow: 'hidden'
+            });
+
+                          
+/*
               // compute canvas display size
               var ratio=rect.width/rect.height;
               if (ratio>1) {                
@@ -838,7 +881,7 @@ $(document).on('filesloaded', function(){
                 console.log('xo')
                 $(canvas).css('margin-bottom',(snapshot.size-snapshot.size/ratio)/2);
                 $(canvas).css('margin-top',(snapshot.size-snapshot.size/ratio)/2);
-*/
+*//*
               } else {
                 $(canvas).add(div).css({
                   width: snapshot.size*ratio,
@@ -847,7 +890,7 @@ $(document).on('filesloaded', function(){
                   marginBottom: 0
                 });
               }
-
+*/
             if (isnew) {
 
               $(div).append(canvas);
