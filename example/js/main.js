@@ -423,8 +423,8 @@ $(document).on('filesloaded', function(){
         // panorama list
         images: {
 
-          '1426681049_561096': {
-            dirName: 'panoramas/result_1426681049_561096-0-25-1',
+          '1403179805_224762': {
+            dirName: 'panoramas/result_1403179805_224762-0-25-1',
             rotation: {
               tilt: 0
             },
