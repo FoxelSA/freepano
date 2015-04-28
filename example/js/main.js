@@ -727,15 +727,157 @@ $(document).on('filesloaded', function(){
           map.instance.active = !map.instance.active;
       }
       break;
+    case 27: // esc
+    case 13: // enter
+       if (!panorama.ias) break;
+       // continue with case 80: below
+    
     case 80: // p
-      new panorama.Region({
-        panorama: panorama,
-        onready: function region_onready(e) {
-          var region=this;
-          console.log(region.rect);
-        }
+       var map=panorama.map;
+       var snapshot=panorama.snapshot;
+          
+       if (panorama.ias) {
+   
+          var canvas_id='snap'+snapshot.current;
+          if (e.keyCode==13) {
+            // save thumbnail
+            snapshot.save();
 
-      });
+          } else {
+            // remove thumbnail
+            $('canvas#'+canvas_id).closest('.snapshot').remove();
+            snapshot.list[snapshot.current-1].deleted=true;
+          }
+
+          // remove imgAreaSelect instance
+          $(panorama.container).imgAreaSelect({remove: true});
+          panorama.ias=null;
+
+          // restore map state
+          map.instance.active=panorama._mapActive;
+
+          return;
+       }
+
+       // save map state 
+       panorama._mapActive=map.instance.active;
+
+       // hide map
+       map.instance.active=false;
+
+       // set current snapshot number
+       snapshot.current=snapshot.list.length+1;
+
+       // instantiate imgAreaSelect
+       panorama.ias=$(panorama.container).imgAreaSelect({
+
+         fadeSpeed: 400,
+
+         handles: true,
+
+         instance: true,
+
+         onSelectCancel: function() {
+              // remove thumbnail
+            var canvas_id='snap'+snapshot.current;
+            $('canvas#'+canvas_id).closest('.snapshot').remove();
+            snapshot.list[snapshot.current-1].deleted=true;
+           
+            // remove imgAreaSelect instance
+            $(panorama.container).imgAreaSelect({remove: true});
+            panorama.ias=null;
+
+            // restore map state
+            map.instance.active=panorama._mapActive;
+     
+         },
+
+         onSelectChange: function(img,rect) {
+           if (rect.x1==rect.x2 || rect.y1==rect.y2) return;
+           this.onSelectEnd.apply(this,[img,rect]);
+         },
+
+         onSelectEnd: function(img,rect) {
+
+            var canvas;
+            var div;
+            var isnew;
+
+            var canvas_id='snap'+snapshot.current;
+
+            // create or update thumbnail bar element
+            canvas=$('canvas#'+canvas_id);
+            if (!canvas.length) {
+              // create a new element
+              div=$('<div class="snapshot">)');
+              canvas=panorama.getCanvas(panorama.renderer,rect.x1,$(panorama.container).height()-rect.y1-rect.height,rect.width,rect.height);
+              // get canvas from selection
+              canvas.id=canvas_id;
+              isnew=true;
+
+            } else {
+              div=$(canvas).closest('.snapshot');
+              panorama.getCanvas(panorama.renderer,rect.x1,$(panorama.container).height()-rect.y1-rect.height,rect.width,rect.height,canvas[0]);
+
+            }
+
+              // compute canvas display size
+              var ratio=rect.width/rect.height;
+              if (ratio>1) {                
+                $(canvas).add(div).css({
+                  width: snapshot.size*ratio,
+                  height: snapshot.size,
+                  marginTop:0,
+                  marginBottom:0
+                });
+/*                
+                $(canvas).add(div).css({
+                  width: snapshot.size,
+                  height: snapshot.size/ratio
+                });
+                console.log('xo')
+                $(canvas).css('margin-bottom',(snapshot.size-snapshot.size/ratio)/2);
+                $(canvas).css('margin-top',(snapshot.size-snapshot.size/ratio)/2);
+*/
+              } else {
+                $(canvas).add(div).css({
+                  width: snapshot.size*ratio,
+                  height: snapshot.size,
+                  marginTop: 0,
+                  marginBottom: 0
+                });
+              }
+
+            if (isnew) {
+
+              $(div).append(canvas);
+              if (!$('.mCSB_container',snapshot.bar).length) {
+                $(div).appendTo(snapshot.bar);
+                if (true) // bullshit
+                snapshot.bar.mCustomScrollbar({
+                  axis: 'y',
+                  mouseWheel: {        
+                      scrollAmount: 250
+                  }    
+                });
+              } else {
+                $(div).appendTo('.mCSB_container',snapshot.bar);
+                snapshot.bar.mCustomScrollbar('update');
+              }
+
+              snapshot.list.push({
+                  image: panorama.list.currentImage,
+                  rect: rect,
+                  lon: panorama.lon,
+                  lat: panorama.lat,
+                  zoom: panorama.camera.zoom.current
+              });
+
+            }
+         }
+
+       });
+
       break;
     }
 
@@ -748,3 +890,90 @@ $(document).on('filesloaded', function(){
   }
 
 });
+
+Panorama.prototype.getCanvas=function(renderer,x,y,w,h,canvas) {
+  var panorama=this;
+
+  if (w==0 || h==0) return canvas;
+
+  panorama.renderer.render(panorama.scene,panorama.camera.instance);
+
+  // create or update canvas
+  if (!canvas) canvas=document.createElement('canvas');
+  canvas.width=w;
+  canvas.height=h;
+
+  var ctx=canvas.getContext('2d');
+
+  // allocate memory for image
+  var imageData=ctx.createImageData(w,h);
+  var bitmap=new Uint8Array(w*h*4);
+
+  // read bitmap from webgl buffer
+  var gl=renderer.getContext();
+  gl.readPixels(x,y,w,h,gl.RGBA,gl.UNSIGNED_BYTE,bitmap);
+
+  // write bitmap to canvas
+  imageData.data.set(bitmap);
+  ctx.putImageData(imageData,0,0);
+  
+  return canvas;
+  
+} // panorama_getCanvas
+
+Panorama.prototype.snapshot={
+  size: 128,
+  list: [],
+  dom: "#snapshot_bar",
+  on_panorama_init: function() {
+    var panorama=this;
+    var snapshot=panorama.snapshot;
+    snapshot.panorama=panorama;
+    if (!snapshot.bar) {
+      snapshot.bar=$(snapshot.dom);
+    }
+  },
+  // save current snapshot bitmmap and info
+  save: function snapshot_save() {
+    var snapshot=this;
+    var panorama=snapshot.panorama;
+    var canvas_id='snap'+snapshot.current;
+    var canvas=$('canvas#'+canvas_id)[0];
+    var ctx=canvas.getContext('2d');
+    var imageData=ctx.getImageData(0,0,canvas.width,canvas.height);
+    var buffer=new Uint8Array(imageData.data);
+    //snapshot.list[snapshot.current-1];
+    console.log(buffer.length);
+    var metadata=snapshot.list[snapshot.current-1];   
+
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', 'savethumb.php?index='+snapshot.current+'&image='+metadata.image+'&h='+metadata.rect.height+'&w='+metadata.rect.width+'&z='+metadata.zoom+'&lon='+metadata.lon+'&lat='+metadata.lat, true);
+    xhr.onload = function() {
+      console.log('load',arguments,xhr); 
+    };
+    xhr.onerror=function(){
+      console.log('loaderror',arguments);
+    }
+    xhr.send(buffer);
+
+  },
+
+  load: function snapshot_load() {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', 'listthumbs.php', true);
+    xhr.onload = function() {
+      console.log('load',arguments,xhr); 
+    };
+    xhr.onerror=function(){
+      console.log('loaderror',arguments);
+    }
+    xhr.send();
+
+  }
+
+}
+
+Panorama.prototype.dispatchEventsTo(Panorama.prototype.snapshot);
+
+
+

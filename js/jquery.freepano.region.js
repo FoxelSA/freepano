@@ -40,10 +40,15 @@
 /**
  * Region()
  *
- * Region constructor
+ * Region object constructor
  *
  * Instantiate selection rectangle on panorama_mousedown,
  * dispatch a region_ready event on panorama_mouseup
+ *
+ * @param options.persistent  dont dispose selrect.div on mouseup
+ * @param options.resizable  allow resizing (implies options.persistent) 
+ * @param options.selrect.css   the selrect.div css properties
+ * @return region   Region object instance
  *
  */
 function Region(options) {
@@ -60,17 +65,25 @@ $.extend(true,Region.prototype,{
   // default region options
   defaults: {
     selrect: {
+      className: 'selrect',
       css: {
         // selection rectangle color
         borderColor: 'red'
-      }
+      },
+      persistent: false,
+      resizable: false
     }
   }, // region_defaults
+
+  // region mode
+  mode: {
+    resizable: false
+  },
 
   /**
    * Region.init()
    *
-   * Initialize region instance
+   * Initialize Region instance
    *
    */
   init: function region_init() {
@@ -78,10 +91,14 @@ $.extend(true,Region.prototype,{
     var region=this;
     var panorama=region.panorama;
 
+    region.persistent=region.persistent||region.resizable;
+
     // instantiate the selection rectangle
-    $(panorama.container).selrect({
+    var jq=$(panorama.container).selrect({
 
       region: region,
+
+      resizable: true,
 
       css: region.selrect.css,
 
@@ -95,13 +112,28 @@ $.extend(true,Region.prototype,{
         }
 
         // forward selrect events to region instance
-        if (region['on_selrect_'+e.type]) {
-          return region['on_selrect_'+e.type].apply(selrect,[e]);
+        if (selrect.region['on_selrect_'+e.type]) {
+          return selrect.region['on_selrect_'+e.type].apply(selrect,[e]);
         }
 
-      } // selrect_callback
+      }, // selrect_callback
+
+      on_panorama_mousedown: function selrect_on_panorama_mousedown(e) {
+        return this.selrect.onmousedown(e);
+      },
+
+      on_panorama_mousemove: function selrect_on_panorama_mousemove(e) {
+        return this.selrect.onmousemove(e);
+      },
+
+      on_panorama_mouseup: function selrect_on_panorama_mouseup(e) {
+        return this.selrect.onmouseup(e);
+      }
+
 
     }); // selrect
+
+    panorama.selrect=jq.selrect;
 
   }, // region_init
 
@@ -116,7 +148,7 @@ $.extend(true,Region.prototype,{
 
     var selrect=this;
 
-    // forward future panorama (mouse) events to this selrect instance
+    // selrect instance needs to receive Panorama mouse events
     Panorama.prototype.dispatchEventsTo(selrect,{
 
       // intercept mouse events before Controls.prototype handlers
@@ -133,10 +165,15 @@ $.extend(true,Region.prototype,{
    *
    */
   on_selrect_mousemove: function region_on_selrect_mousemove(e) {
+
+    var selrect=this;
+
     // prevent panorama_mousemove event from reaching Controls or Panorama handlers
     e.preventDefault();
     e.stopPropagation();
+
     return false;
+
   }, // region_on_select_mousemove
 
   /**
@@ -156,28 +193,71 @@ $.extend(true,Region.prototype,{
 
     // region has been selected
     region.rect=selrect.rect;
-    region.dispatch({
-      type: 'ready',
-      rect: selrect.rect
-    });
+    if (region.dispatch({
+      type: 'mouseup',
+      selrect: selrect
 
-    // selrect instance does not need to receive Panorama events anymore
-    Panorama.prototype.dispatchEventsTo(selrect,{dispose: true});
+    })!==false) {
+      // region.persistent and region.resizable are false 
 
-    // selrect div is not needed anymore
-    $(selrect.div).remove();
+      // selrect instance does not need to receive Panorama events anymore
+      Panorama.prototype.dispatchEventsTo(selrect,{dispose: true});
+
+      // selrect div is not needed anymore
+      $(selrect.div).remove();
+    }
 
     return false;
 
   }, // region_on_selrect_mouseup
 
+  /**
+   * Region.onmouseup()
+   *
+   * region_mouseup event handler
+   *
+   */
+  onmouseup: function region_onmouseup(e) {
+
+    var region=this;
+
+    if (!region.persistent && !region.resizable) {
+
+      // trigger region_ready event
+      region.dispatch({
+        type: 'ready',
+        selrect: e.selrect
+      });
+
+      // dispose selrect.div
+      return false;
+    }
+
+    if (region.persistent && !region.resizable) {
+
+      // trigger region_ready event
+      region.dispatch({
+        type: 'ready',
+        selrect: e.selrect
+      });
+
+      // preserve selrect.div
+      return;
+    }
+
+    // region is resizable
+    region.selrect.mode.resize=true;
+      // dispose selrect.div
+
+  } // region_onmouseup
+
 });
 
-// add Region to Panorama.prototype
+// add Region object constructor to Panorama.prototype
 Panorama.prototype.Region=Region;
 
 })(jQuery,Panorama);
 
-// Region need to receive Panorama mouse events
+// Region instances need to emit events
 setupEventDispatcher(Panorama.prototype.Region.prototype);
 

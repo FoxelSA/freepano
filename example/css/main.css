@@ -49,7 +49,7 @@ html, body, canvas {
     overflow:hidden;
 }
 
-html, body {
+canvas#snap1 {
     font-size:15px;
     font-family:arial,helvetica,sans;
     line-height:150%;
@@ -98,8 +98,8 @@ html, body {
 .map {
     position:absolute;
     box-shadow: 10px 10px 20px 0px rgba(0,0,0,0.2);
-    bottom:60px;
-    left:10px;
+    top: 20px;
+    right: 20px;
     width:350px;
     height:250px;
 }
@@ -248,3 +248,26 @@ footer .logo {
     }
 
 }
+
+#snapshot_bar {
+  width: 100%;
+  height: 144px;
+  position: absolute;
+  bottom: 64px;
+  padding-top: 12px;
+  background-color: rgba(255,255,255,0.1);
+  z-index: 10;
+  display: table-row;
+}
+
+#snapshot_bar canvas {
+    transform: scaleY(-1);
+    box-shadow: 5px -5px 5px 0px rgba(0,0,0,0.4);
+    border: 2px solid white}
+
+div.snapshot {
+  display: inline;
+  margin: auto 4px;
+}
+
+

@@ -54,6 +54,8 @@
     <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,minimum-scale=1,maximum-scale=1" />
     <link rel="stylesheet" type="text/css" media="all" href="../js/thirdparty/jquery-toastmessage/css/jquery.toastmessage.css" />
     <link rel="stylesheet" type="text/css" media="all" href="../js/thirdparty/leaflet/leaflet.css" />
+    <link rel="stylesheet" type="text/css" media="all" href="../js/thirdparty/malihu-custom-scrollbar-plugin/jquery.mCustomScrollbar.css" />
+    <link rel="stylesheet" type="text/css" media="all" href="../js/thirdparty/imgareaselect/distfiles/css/imgareaselect-default.css" />
     <link rel="stylesheet" type="text/css" media="all" href="css/main.css" />
     <script type="text/javascript" src="../js/thirdparty/jquery-2.1.3.min.js"></script>
     <script type="text/javascript" src="../js/thirdparty/jquery.easing-1.3.min.js"></script>
@@ -75,9 +77,12 @@
     <script type="text/javascript" src="../js/thirdparty/howler.js/howler.core.js"></script>
     <script type="text/javascript" src="../js/thirdparty/howler.js/howler.effects.js"></script>
     <script type="text/javascript" src="../js/thirdparty/socket.io-1.3.5.js"></script>
+    <script type="text/javascript" src="../js/thirdparty/CamanJS-4.1.1/dist/caman.full.js"></script>
+    <script type="text/javascript" src="../js/imageFilterWidget.js"></script>
+    <script type="text/javascript" src="../js/thirdparty/malihu-custom-scrollbar-plugin/jquery.mCustomScrollbar.js"></script>
+    <script type="text/javascript" src="../js/thirdparty/imgareaselect/jquery.imgareaselect.js"></script>
     <script type="text/javascript" src="../js/notify.js"></script>
     <script type="text/javascript" src="../js/eventDispatcher.js"></script>
-    <script type="text/javascript" src="../js/jquery.selrect.js"></script>
     <script type="text/javascript" src="../js/progressBar.js"></script>
     <script type="text/javascript" src="../js/jquery.freepano.js"></script>
     <script type="text/javascript" src="../js/jquery.freepano.widget.js"></script>
@@ -89,7 +94,6 @@
     <script type="text/javascript" src="../js/jquery.freepano.controls.remote.js"></script>
     <script type="text/javascript" src="../js/jquery.freepano.pyramid.js"></script>
     <script type="text/javascript" src="../js/jquery.freepano.map.js"></script>
-    <script type="text/javascript" src="../js/jquery.freepano.region.js"></script>
     <script type="text/javascript" src="../js/jquery.freepano.example.js"></script>
     <script type="text/javascript" src="js/main.js"></script>
 </head>
@@ -97,6 +101,8 @@
 <body>
 
 <div id="pano" class="freepano"></div>
+
+<div id="snapshot_bar"></div>
 
 <footer>
     <div class="shade"></div>

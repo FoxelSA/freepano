@@ -39,12 +39,16 @@
          display: 'block',
          width: 1,
          height: 1
-      }
+      },
+      resizable: false,
+      persistent: false
     };
 
     $.extend(true,this,this.defaults,options);
 
     this.init=function init() {
+
+      this.persistent=this.persistent||this.resizable;
 
       if (this.container.getElementsByClassName(this.className).length) {
         throw("selrect: already initialized");
@@ -63,12 +67,15 @@
       
     } // selrect_init
        
-    this.on_panorama_mousedown=function mousedown(event) {
+    this.onmousedown=function mousedown(event) {
 
       event.preventDefault();
       event.stopPropagation();
 
+      // left button or nothing
       if (event.button!=0) return;
+
+//      this.resizing=$(self.div).is(':visible');
 
       var x,y;
       x=event.pageX;
@@ -88,7 +95,22 @@
 
     }
 
-    this.on_panorama_mousemove=function mousemove(event) {
+    this.onmousemove=function mousemove(event) {
+
+      if (self.resizing) {
+        function isMouseOver(elem,e){
+          var o=elem.offset();
+          return (
+            e.pageX >= o.left && 
+            e.pageX <= o.left+elem.outerWidth() &&
+            e.pageY >= o.top &&
+            e.pageY <= o.top+elem.outerHeight()
+          );
+        }
+
+
+        return;
+      }
    
       var x=event.pageX;                                                        
       var y=event.pageY;                                                        
@@ -104,6 +126,7 @@
           top: self.xorig,
           left: self.yorig
         }));
+
         self.moving=true; 
       }
 
@@ -139,7 +162,7 @@
 
     }
 
-    this.on_panorama_mouseup=function mouseup(event) {
+    this.onmouseup=function mouseup(event) {
 
       self.event=event;
       
@@ -148,23 +171,75 @@
 
       if (self.moving) {
 
-        $(self.div).css({
-          display: 'none'
-        });
+        if (!self.persistent) {
+          $(self.div).css({
+            display: 'none'
+          });
+        }
+
+        self.moving=false;
+
+        var ret=self.callback(event);
+
+        if (self.resizable && !self.resizing) {
+          self.resizing=true;
+          $(self.div).on('mousemove.selrect',selrect.ondivmousemove);
+          $(self.div).on('mousedown.selrect',selrect.ondivmousedown);
+
+          self.updateBorder();
+          self.updateHandles();
+          
+        }
       
-        return self.callback(event);
+        return ret;
       }
     }
+
+    /**
+     * selrect.ondivmousemove()
+     */
+    this.ondivmousemove=function ondivmousemove(e) {
+      console.log(e.pageX,e.pageY);
+
+    }
+/*
+    this.updateBorder=function() updateBorder{
+      if (!self.blackBorders) return;
+    }
+
+    this.updateHandles=function() {
+      if (!self.handles) {
+        var handle=self.handles={};
+        var o=$(self.div).offset();
+        var w=$(self.div).outerWidth();
+        var h=$(self.div).innerWidth();
+
+        // topleft
+        var div=document.createElement('div');
+        div.css({
+
+        });
+
+
+      }
+    }
+    */
+
 
     this.init();
   }
 
   $.fn.selrect=function(options) {
+    var instance;
     this.each(function () {
-      selrect($.extend(true,{
+      instance=new selrect($.extend(true,{
           container: this
       },options));
+      $(this).data('selrect',instance);
     });
+    if (this.length==1) {
+      this.selrect=instance;
+    }
     return this;
   };
 
