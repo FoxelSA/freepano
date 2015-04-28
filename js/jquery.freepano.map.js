@@ -294,6 +294,8 @@ $.extend(true, Map.prototype, {
 
     updateCurrentMarker: function(){
       var map=this;
+      if (map.currentMarker===undefined)
+        return;
       var currentImage=map.panorama.list.currentImage;
       map.currentMarker.setIcon(map.markerIcon);
       $.each(map.markers,function(){
