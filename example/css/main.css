@@ -47,6 +47,8 @@ html, body, canvas {
     height:100%;
     width:100%;
     overflow:hidden;
+    font-size:15px;
+    font-family:arial,helvetica,sans;
 }
 
 canvas#snap1 {
@@ -132,6 +134,7 @@ footer .caption {
     position:absolute;
     top:15px;
     left:10px;
+    color:#fff;
 }
 
     footer .caption > div {
