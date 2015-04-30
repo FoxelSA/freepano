@@ -732,9 +732,12 @@ $(document).on('filesloaded', function(){
             snapshot.save();
 
           } else {
-            // remove thumbnail
-            $('canvas#'+canvas_id).closest('.snapshot').remove();
-            snapshot.list[snapshot.current-1].deleted=true;
+              // remove thumbnail
+              var canvas=$('canvas#'+canvas_id);
+              if (canvas.length) {
+                canvas.closest('.snapshot').remove();
+                snapshot.list[snapshot.current-1].deleted=true;
+              }        
           }
 
           // remove imgAreaSelect instance
@@ -769,10 +772,12 @@ $(document).on('filesloaded', function(){
 
             if (!snapshot.list[snapshot.current-1]) return;
 
-              // remove thumbnail
-            var canvas_id='snap'+snapshot.current;
-            $('canvas#'+canvas_id).closest('.snapshot').remove();
-            snapshot.list[snapshot.current-1].deleted=true;
+            // remove thumbnail
+            var canvas=$('canvas#'+canvas_id);
+            if (canvas.length) {
+              canvas.closest('.snapshot').remove();
+              snapshot.list[snapshot.current-1].deleted=true;
+            }
            
             // remove imgAreaSelect instance
             $(panorama.container).imgAreaSelect({remove: true});
@@ -840,6 +845,7 @@ $(document).on('filesloaded', function(){
                });
               
             }
+
             $(div).css({
                width: snapshot.size*displayRatio,
                height: snapshot.size,
@@ -904,7 +910,14 @@ $(document).on('filesloaded', function(){
                   zoom: panorama.camera.zoom.current
               });
 
-            }
+   //           setTimeout(function(){
+                snapshot.imageFilters();
+     //         },0);
+
+            } else {
+              snapshot.list[snapshot.list.length-1].rect=rect;
+              $('#imagefilters input:first').change();
+            }          
          }
 
        });
@@ -999,6 +1012,78 @@ Panorama.prototype.snapshot={
       console.log('loaderror',arguments);
     }
     xhr.send();
+
+  },
+
+  imageFilters: function snapshot_imageFilters(action) {
+    var snapshot=this;
+    var container=snapshot.imageFilters.container=$('#imagefilters');
+
+    // create container for image filter widgets
+    if (!container.length) {
+      container=$('<div id="imagefilters">').appendTo('body').css({
+        top: 10,
+        left: 10,
+        position: 'absolute',
+        backgroundColor: 'rgba(0,0,0,0.3)',
+        color: 'white'
+      });
+    }
+
+    // 
+    if ($(container).data('snapshot')!=snapshot.current) {
+
+      var canvas_id='#snap'+snapshot.current;
+      
+      function addSlider(filter) {
+
+        var className=filter+'_slider';
+        $('<div class="'+className+'">')
+        .appendTo(container);
+
+        $('.'+className,container).css({
+          margin: 10
+        });
+        
+        return new ImageFilterWidget({
+          target: canvas_id,
+          container: $('.'+className,container),
+          filter: filter,
+          filterType: 'glfx'
+        });
+
+      } // addSlider
+
+      container.empty();
+
+//      addSlider('gamma');
+      addSlider('brightness');
+      addSlider('contrast');
+      addSlider('denoise');
+  
+      var filters=$(canvas_id).parent().data('filters');
+      filters.canvas_setup=function(canvas,isupdate){
+        var rect=snapshot.list[snapshot.current-1].rect;
+        
+        if (!isupdate) {
+          $(canvas).appendTo('body');
+        }
+
+        $(canvas).css({
+          position: 'absolute',
+          left: rect.x1,
+          top: rect.y1,
+          width: rect.x2-rect.x1+1,
+          height: rect.y2-rect.y1+1,
+          transform: 'scaleY(-1)'
+        });
+        
+      }
+
+//      addSlider('exposure');
+//      addSlider('vibrance');
+    
+    }
 
   }
 
