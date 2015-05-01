@@ -60,7 +60,8 @@ function ImageFilter(options) {
 $.extend(true,ImageFilter.prototype,{
   defaults: {
     widgetType: 'slider',
-    filterType: 'glfx'
+    filterType: 'glfx',
+    group: 'filters'
   },
 
   // instantiate imageFilter widget list
@@ -88,139 +89,146 @@ $.extend(true,ImageFilter.prototype,{
 
     });
 
-    var filters=imageFilter.getList();
-    filters[imageFilter.filterType].list.push(imageFilter);
-    $(imageFilter.target).parent().data('filters',filters);    
+    // append this imageFilter instance to static data 
+    var staticData=imageFilter.getStaticData();
+    staticData[imageFilter.filterType].list.push(imageFilter);
+    imageFilter.saveStaticData(staticData);
 
-  },
-
-  getList: function imageFilter_getList() {
-    var imageFilter=this;
-
-    var filters=$(imageFilter.target).parent().data('filters');
-
-    return filters || {        
-      caman: {
-        list: [],
-        process: function(filters,widget) {
-          if (!filters.caman.instance) {
-            filters.caman.instance=Caman(widget.imageFilter.target);
-          }
-          var caman=filters.caman.instance;
-
-          // revert canvas content without updating display
-          caman.revert(false);
-
-          // apply filters
-          $.each(filters.caman.list,function(){
-            var widget=this;
-            switch(widget.name) {
-              default:
-                try {
-//                    console.log(widget.name,widget.value);
-                  caman[widget.name](parseInt(widget.value||0,10));
-                } catch(e) {}
-                break;
-            }
-          });
-          caman.render(function callback(){
-          });
-        },
-      },
-
-      glfx: {
-        list: [],
-        process: function(filters,widget) {
-          var glfx=filters.glfx;
-          var isupdate=true;
-
-          if (!glfx.canvas) {
-            glfx.canvas=fx.canvas();
-            isupdate=false;
-          }
-
-          if (filters.canvas_setup) {
-            filters.canvas_setup(glfx.canvas,isupdate);
-          }
-
-          if (isupdate) {
-            var oldStyle=glfx.canvas.oldStyle;
-            if (oldStyle) {
-              if (
-                oldStyle.left!=glfx.canvas.style.left ||
-                oldStyle.top!=glfx.canvas.style.top ||
-                oldStyle.width!=glfx.canvas.style.width ||
-                oldStyle.bottom!=glfx.canvas.style.bottom
-              ) {
-                glfx.texture.destroy();
-                glfx.texture=null;
-              }
-            }
-
-
-          } else {
-            var style=glfx.canvas.style;
-            glfx.canvas.oldStyle={
-              left: style.left,
-              top: style.top,
-              width: style.width,
-              height: style.height
-            }
-
-          }
-
-          if (!glfx.texture) {
-            glfx.texture=glfx.canvas.texture($(widget.imageFilter.target)[0]);
-          }
-
-          var texture;
-          $.each(filters.glfx.list,function(index,filter){
-
-            function getParameterList(){
-              var list=[];
-              $.each(filter.widget,function(){
-                  list.push(parseFloat(this.value,10)||0);                  
-              });
-              return list;
-            }
-
-            switch(filter.filter) {
-              default:
-                try {
-
-                   if (filter.disabled) {
-                     return;
-                   }
-
-                  // use resulting canvas texture for subsequent passes
-                  if (index) {
-                    texture=glfx.canvas.contents();
-                  }
-
-                  (glfx.canvas.draw(texture||glfx.texture))[filter.filter].apply(glfx.canvas,getParameterList()).update();
-
-                  if (texture) {
-                    texture.destroy();
-                  }
-
-                } catch(e) {
-                  console.log(e);
-                }
-                break;
-            }
-          });
-        }
-      }
-    }
-      
   }, // imageFilter_init
+
+  saveStaticData: function imageFilter_saveStaticData(data) {
+    var imageFilter=this;
+    $(imageFilter.target).parent().data(imageFilter.group,data);    
+  }, // imageFilter_saveStaticData
+
+  // get image
+  getStaticData: function imageFilter_getStaticData() {
+    var imageFilter=this;
+    return $(imageFilter.target).parent().data(imageFilter.group) || imageFilter.staticData;
+  }, // imageFilter_getStaticData
 
   // imageFilterWidget list
   widget: [],
   
   // available filter types
   filterTypeAvailable: ['caman','glfx'],
- 
+
+  staticData: {
+
+     caman: {
+      list: [],
+      process: function(widget) {
+        var filters=this;
+        if (!filters.caman.instance) {
+          filters.caman.instance=Caman(widget.imageFilter.target);
+        }
+        var caman=filters.caman.instance;
+
+        // revert canvas content without updating display
+        caman.revert(false);
+
+        // apply filters
+        $.each(filters.caman.list,function(){
+          var widget=this;
+          switch(widget.name) {
+            default:
+              try {
+//                    console.log(widget.name,widget.value);
+                caman[widget.name](parseInt(widget.value||0,10));
+              } catch(e) {}
+              break;
+          }
+        });
+        caman.render(function callback(){
+        });
+      },
+    },
+
+    glfx: {
+      list: [],
+      process: function(staticData,widget) {
+        var glfx=staticData.glfx;
+        var isupdate=true;
+
+        if (!glfx.canvas) {
+          glfx.canvas=fx.canvas();
+          isupdate=false;
+        }
+
+        if (staticData.canvas_setup) {
+          staticData.canvas_setup(glfx.canvas,isupdate);
+        }
+
+        if (isupdate) {
+          var oldStyle=glfx.canvas.oldStyle;
+          if (oldStyle) {
+            if (
+              oldStyle.left!=glfx.canvas.style.left ||
+              oldStyle.top!=glfx.canvas.style.top ||
+              oldStyle.width!=glfx.canvas.style.width ||
+              oldStyle.bottom!=glfx.canvas.style.bottom
+            ) {
+              glfx.texture.destroy();
+              glfx.texture=null;
+            }
+          }
+
+
+        } else {
+          var style=glfx.canvas.style;
+          glfx.canvas.oldStyle={
+            left: style.left,
+            top: style.top,
+            width: style.width,
+            height: style.height
+          }
+
+        }
+
+        if (!glfx.texture) {
+          glfx.texture=glfx.canvas.texture($(widget.imageFilter.target)[0]);
+        }
+
+        var texture;
+        $.each(staticData.glfx.list,function(index,filter){
+
+          function getParameterList(){
+            var list=[];
+            $.each(filter.widget,function(){
+                list.push(parseFloat(this.value,10)||0);                  
+            });
+            return list;
+          }
+
+          switch(filter.filter) {
+            default:
+              try {
+
+                 if (filter.disabled) {
+                   return;
+                 }
+
+                // use resulting canvas texture for subsequent passes
+                if (index) {
+                  texture=glfx.canvas.contents();
+                }
+
+                (glfx.canvas.draw(texture||glfx.texture))[filter.filter].apply(glfx.canvas,getParameterList()).update();
+
+                if (texture) {
+                  texture.destroy();
+                }
+
+              } catch(e) {
+                console.log(e);
+              }
+              break;
+          }
+        });
+      }
+    }
+  },
+
   // list of filters per filterType
   list: {
 
@@ -461,21 +469,17 @@ $.extend(true,ImageFilterWidget.prototype,{
         
     $('.'+widget.name,widget.imageFilter.container).html(widget.html[widget.type].call(widget));
 
-    // retrieve filters list and settings for target, if available
-    var filters=$(widget.imageFilter.target).parent().data('filters')||{};
 
-
-
-    $('input',widget.imageFilter.container)
+    $('.'+widget.name+' input',widget.imageFilter.container)
     .off('.imageFilterWidget')
     .on('input.imageFilterWidget change.imageFilterWidget', widget.onchange)
-    .closest('div.filter')
+    .closest('div.parameter')
     .data('imageFilterWidget',widget);
 
   },
 
   onchange: function imageFilterWidget_onchange(e){
-    var div=$(e.target).closest('div.filter');
+    var div=$(e.target).closest('div.parameter');
     var widget=div.data('imageFilterWidget');
     var panel=$(div).closest('#imagefilters');
 
@@ -483,13 +487,14 @@ $.extend(true,ImageFilterWidget.prototype,{
 
     widget.value=value;    
     
-    $('.filtervalue',div).text(widget.value);
+    $('.parameter_value',div).text(widget.value);
 
-    var filters=$(widget.imageFilter.target).parent().data('filters');
+    var staticData=widget.imageFilter.getStaticData();
 
-    $.each(widget.imageFilter.filterTypeAvailable,function(i,type) {
-      if (filters[type].list.length) {
-        filters[type].process(filters,widget);
+    $.each(staticData,function() {
+      var imageFilters=this;
+      if (imageFilters.list && imageFilters.list.length && imageFilters.process) {
+        imageFilters.process(staticData,widget);
       }
     });
         
