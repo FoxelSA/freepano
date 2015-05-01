@@ -1035,34 +1035,36 @@ Panorama.prototype.snapshot={
 
       var canvas_id='#snap'+snapshot.current;
       
-      function addSlider(filter) {
+      function addFilter(filter) {
 
-        var className=filter+'_slider';
-        $('<div class="'+className+'">')
+        $('<div class="filter '+filter+'">')
         .appendTo(container);
 
-        $('.'+className,container).css({
+        $('.filter.'+filter, container).css({
           margin: 10
         });
         
-        return new ImageFilterWidget({
+        return new ImageFilter({
           target: canvas_id,
-          container: $('.'+className,container),
+          container: $('.filter.'+filter, container),
           filter: filter,
           filterType: 'glfx'
         });
 
-      } // addSlider
+      } // addFilter
 
       container.empty();
 
 //      addSlider('gamma');
-      addSlider('brightness');
-      addSlider('contrast');
-      addSlider('denoise');
+      addFilter('brightnessContrast');
+ //     addFilter('denoise');
   
+      // get ImageFilters list
       var filters=$(canvas_id).parent().data('filters');
+      
+      // 
       filters.canvas_setup=function(canvas,isupdate){
+
         var rect=snapshot.list[snapshot.current-1].rect;
         
         if (!isupdate) {
