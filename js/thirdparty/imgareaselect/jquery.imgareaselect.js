@@ -701,7 +701,7 @@ $.imgAreaSelect = function (img, options) {
     /**
      * Cancel selection
      */
-    function cancelSelection() {
+    function cancelSelection(param) {
         $(document).unbind('mousemove', startSelection)
             .unbind('mouseup', cancelSelection);
         hide($box.add($outer));
@@ -712,9 +712,8 @@ $.imgAreaSelect = function (img, options) {
         if (!(this instanceof $.imgAreaSelect)) {
               options.onSelectChange(img, getSelection());
               options.onSelectEnd(img, getSelection());
-              options.onSelectCancel(img, getSelection());
-    
         }
+        options.onSelectCancel(param.keepThumb);  
     }
 
     /**
