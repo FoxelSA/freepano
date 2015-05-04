@@ -117,24 +117,89 @@ $.extend(true,ImageFilter.prototype,{
 
      caman: {
       list: [],
-      process: function(widget) {
-        var filters=this;
-        if (!filters.caman.instance) {
-          filters.caman.instance=Caman(widget.imageFilter.target);
-        }
-        var caman=filters.caman.instance;
+      process: function(staticData,widget) {
+        var caman=staticData.caman.instance;
+        var canvas=$(widget.imageFilter.target)[0];
+        var isupdate;
+      
+        if (!caman) {
+          
+          // copy original canvas
+         
+          var caman_canvas=document.createElement('canvas');
+          $(caman_canvas).appendTo('body');
+     
+          caman_canvas.textureCopy=function(canvas) {
+            var caman_canvas=this;  
+            caman_canvas.width=canvas.width;
+            caman_canvas.height=canvas.height;            
+            var ctx=caman_canvas.getContext('2d');
+            ctx.drawImage(canvas,0,0);
+          }
 
-        // revert canvas content without updating display
-        caman.revert(false);
+          caman_canvas.textureCopy(canvas);
+
+          // instantiate caman object
+          caman=staticData.caman.instance=Caman(caman_canvas);
+          caman.canvas=caman_canvas;
+          isupdate=false;
+
+        } else {
+          // revert canvas content without updating display
+//          caman.revert(false);
+                    caman.reloadCanvasData();
+
+          isupdate=true;
+        }
+
+        if (staticData.canvas_setup) {
+          staticData.canvas_setup(caman.canvas,isupdate);
+        }
+
+        if (isupdate) {
+          var oldStyle=caman.canvas.oldStyle;
+          if (oldStyle) {
+            if (
+              oldStyle.left!=caman.canvas.style.left ||
+              oldStyle.top!=caman.canvas.style.top ||
+              oldStyle.width!=caman.canvas.style.width ||
+              oldStyle.height!=caman.canvas.style.height
+            ) {
+              caman.canvasNeedsUpdate=true;
+            }
+          }
+        }
+
+        var style=caman.canvas.style;
+        caman.canvas.oldStyle={
+          left: style.left,
+          top: style.top,
+          width: style.width,
+          height: style.height
+        }
+
+        if (caman.canvasNeedsUpdate) {
+          caman.canvas.textureCopy($(widget.imageFilter.target)[0]);
+          caman.reloadCanvasData();
+          caman.canvasNeedsUpdate=false;
+        }
 
         // apply filters
-        $.each(filters.caman.list,function(){
-          var widget=this;
-          switch(widget.name) {
+        $.each(staticData.caman.list,function(index,filter){
+
+          function getParameterList(){
+            var list=[];
+            $.each(filter.widget,function(){
+                list.push(parseFloat(this.value,10)||0);                  
+            });
+            return list;
+          }
+         
+          switch(filter.filter) {
             default:
               try {
 //                    console.log(widget.name,widget.value);
-                caman[widget.name](parseInt(widget.value||0,10));
+                caman[filter.filter].apply(caman,getParameterList());
               } catch(e) {}
               break;
           }
@@ -166,23 +231,20 @@ $.extend(true,ImageFilter.prototype,{
               oldStyle.left!=glfx.canvas.style.left ||
               oldStyle.top!=glfx.canvas.style.top ||
               oldStyle.width!=glfx.canvas.style.width ||
-              oldStyle.bottom!=glfx.canvas.style.bottom
+              oldStyle.height!=glfx.canvas.style.height
             ) {
               glfx.texture.destroy();
               glfx.texture=null;
             }
           }
-
-
-        } else {
-          var style=glfx.canvas.style;
-          glfx.canvas.oldStyle={
-            left: style.left,
-            top: style.top,
-            width: style.width,
-            height: style.height
-          }
-
+        }
+        
+        var style=glfx.canvas.style;
+        glfx.canvas.oldStyle={
+          left: style.left,
+          top: style.top,
+          width: style.width,
+          height: style.height
         }
 
         if (!glfx.texture) {
@@ -192,10 +254,12 @@ $.extend(true,ImageFilter.prototype,{
         var texture;
         $.each(staticData.glfx.list,function(index,filter){
 
-          function getParameterList(){
+          function getParameterList(filterName){
             var list=[];
             $.each(filter.widget,function(){
-                list.push(parseFloat(this.value,10)||0);                  
+                if (this.imageFilter.filter==filterName) {
+                  list.push(parseFloat(this.value,10)||0);
+                }                  
             });
             return list;
           }
@@ -213,7 +277,7 @@ $.extend(true,ImageFilter.prototype,{
                   texture=glfx.canvas.contents();
                 }
 
-                (glfx.canvas.draw(texture||glfx.texture))[filter.filter].apply(glfx.canvas,getParameterList()).update();
+                (glfx.canvas.draw(texture||glfx.texture))[filter.filter].apply(glfx.canvas,getParameterList(filter.filter)).update();
 
                 if (texture) {
                   texture.destroy();
@@ -313,9 +377,11 @@ $.extend(true,ImageFilter.prototype,{
 
       gamma: {
         parameters: {
-          min: 0,
-          max: 10,
-          step: 0.1
+          gamma: {
+            min: 0,
+            max: 10,
+            step: 0.1
+          }
         }
       },
 
