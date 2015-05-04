@@ -612,15 +612,13 @@ $.extend(true,ImageFilterWidget.prototype,{
       slider: function imageFilterWidget_sliderHtml() {
         var widget=this;
         var settings=widget.settings;
-        return '<div class="parameter">'
-        + '<span class="parameter_name">'
+        return '<span class="parameter_name">'
         + widget.name
         + '</span>'
         + '<span class="parameter_widget">'
         + '<input type="range" min="'+settings.min+'" max="'+settings.max+'" step="'+settings.step+'" value="'+(settings.value||0)+'" data-filter="'+widget.name+'">'
         + '<span class="parameter_value">'+(settings.value||0)+'</span>'
-        + '</span>'
-        + '</div>';
+        + '</span>';
       }
   },
      

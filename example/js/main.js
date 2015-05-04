@@ -795,6 +795,7 @@ $(document).on('filesloaded', function(){
             // restore map state
             map.instance.active=panorama._mapActive;
 
+
             $('#imagefilters').remove();
 
             $(filters.glfx.canvas).remove();
@@ -941,6 +942,19 @@ $(document).on('filesloaded', function(){
     }
 
     if (panorama.postProcessing) panorama.postProcessing.enabled=panorama.postProcessing.edge.pass.enabled||panorama.postProcessing.edge2.pass.enabled||panorama.postProcessing.green.pass.enabled;
+
+  }); // keydown
+
+
+  // apply clicked snapshot image filter parameters to current selection
+  $('#snapshot_bar').on('click','canvas',function(e){
+    var filters=$(e.target).parent().data('filters');
+    console.log(filters);
+    $.each(filters.widget,function(){
+      var widget=this;
+      $('#imagefilters .filter.'+widget.imageFilter.filter+' '+'.parameter.'+widget.name+' input').val(widget.value).trigger('change');
+    });
+
   });
 
   function toggleEffect(effect){
@@ -948,7 +962,7 @@ $(document).on('filesloaded', function(){
     panorama.drawScene();
   }
 
-});
+}); // filesloaded
 
 Panorama.prototype.getCanvas=function(renderer,x,y,w,h,canvas) {
   var panorama=this;
