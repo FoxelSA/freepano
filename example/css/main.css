@@ -272,8 +272,37 @@ div.snapshot {
   display: block;
   float: left;
   margin: auto 4px;
-  box-shadow: 5px -5px 5px 0px rgba(0,0,0,0.4);
+  box-shadow: 5px 5px 5px 0px rgba(0,0,0,0.4);
   border: 2px solid white;
 }
 
+.parameter_widget {
+  float: left;
+}
 
+
+
+.parameter_value {
+  vertical-align: super;
+  margin-left: 16px
+
+}
+
+.parameter_name {
+
+  margin-top: 2px;
+  float: left;
+  width: 100px;
+}
+
+.parameter_name:first-letter {
+  text-transform: uppercase;
+}
+
+fieldset {
+  background-color: rgba(0,0,0,0.8);
+  border-radius: 8px;
+  margin-bottom: 8px;
+  box-shadow: 5px 5px 5px 0px rgba(0,0,0,0.4);
+
+}

@@ -728,8 +728,17 @@ $(document).on('filesloaded', function(){
    
           var canvas_id='snap'+snapshot.current;
           if (e.keyCode==13) {
+
+            // copy filtered canvas
+            var canvas=$('#'+canvas_id)[0];
+            var ctx=canvas.getContext('2d');
+            drawGlImage(ctx,filters.glfx.canvas._.gl);
+            $(canvas).css({
+              transform: 'none'
+            })
             // save thumbnail
-            snapshot.save();
+        //    snapshot.save();
+            panorama.ias.cancelSelection({keepThumb: true});
 
           } else {
               // remove thumbnail
@@ -738,11 +747,10 @@ $(document).on('filesloaded', function(){
                 canvas.closest('.snapshot').remove();
                 snapshot.list[snapshot.current-1].deleted=true;
               }        
+              panorama.ias.cancelSelection({keepThumb: false});
           }
 
-          // remove imgAreaSelect instance
-          $(panorama.container).imgAreaSelect({remove: true});
-          panorama.ias=null;
+          // cancel selection
 
           // restore map state
           map.instance.active=panorama._mapActive;
@@ -768,13 +776,14 @@ $(document).on('filesloaded', function(){
 
          instance: true,
 
-         onSelectCancel: function() {
+         onSelectCancel: function(keepThumb) {
 
             if (!snapshot.list[snapshot.current-1]) return;
+            var canvas_id='snap'+snapshot.current;
 
             // remove thumbnail
             var canvas=$('canvas#'+canvas_id);
-            if (canvas.length) {
+            if (canvas.length && !keepThumb) {
               canvas.closest('.snapshot').remove();
               snapshot.list[snapshot.current-1].deleted=true;
             }
@@ -785,6 +794,12 @@ $(document).on('filesloaded', function(){
 
             // restore map state
             map.instance.active=panorama._mapActive;
+
+            $('#imagefilters').remove();
+
+            $(filters.glfx.canvas).remove();
+
+           
      
          },
 
@@ -1025,8 +1040,8 @@ Panorama.prototype.snapshot={
         top: 10,
         left: 10,
         position: 'absolute',
-        backgroundColor: 'rgba(0,0,0,0.3)',
-        color: 'white'
+        color: 'white',
+        width: 340
       });
     }
 
@@ -1034,10 +1049,14 @@ Panorama.prototype.snapshot={
     if ($(container).data('snapshot')!=snapshot.current) {
 
       var canvas_id='#snap'+snapshot.current;
-      
-      function addFilter(filter) {
+ 
+      /**
+      * addFilter()
+      *
+      */     
+      function addFilter(filterType,filter) {
 
-        $('<div class="filter '+filter+'">')
+        $('<fieldset><div class="filter '+filter+'"></div></fieldset>')
         .appendTo(container);
 
         $('.filter.'+filter, container).css({
@@ -1048,19 +1067,25 @@ Panorama.prototype.snapshot={
           target: canvas_id,
           container: $('.filter.'+filter, container),
           filter: filter,
-          filterType: 'glfx'
+          filterType: filterType
         });
 
       } // addFilter
 
       container.empty();
 
-//      addSlider('gamma');
-      addFilter('brightnessContrast');
- //     addFilter('denoise');
+      addFilter('glfx','vibrance');
+      addFilter('glfx','sepia');
+
+      addFilter('glfx','brightnessContrast');
+  //    addFilter('caman','gamma');
+    //  addFilter('glfx','denoise');
+      addFilter('glfx','vignette');
+
+
   
       // get ImageFilters list
-      var filters=$(canvas_id).parent().data('filters');
+      var filters=window.filters=$(canvas_id).parent().data('filters');
       
       // 
       filters.canvas_setup=function(canvas,isupdate){
@@ -1082,6 +1107,7 @@ Panorama.prototype.snapshot={
         
       }
 
+      $('input').trigger('change');
 //      addSlider('exposure');
 //      addSlider('vibrance');
     
@@ -1090,6 +1116,46 @@ Panorama.prototype.snapshot={
   }
 
 }
+
+/*
+* drawGlImage()
+*
+* copy the specified rect from a WebGL canvas to the 2d canvas context specified
+* 
+* returns a new canvas if ctx is null 
+*
+*/
+function drawGlImage(ctx,gl,x,y,w,h,destx,desty) {
+ 
+  if (x==undefined) x=0;
+  if (y==undefined) y=0;
+  if (w==undefined) w=gl.drawingBufferWidth;
+  if (h==undefined) h=gl.drawingBufferHeight;
+  if (destx==undefined) destx=0;
+  if (desty==undefined) desty=0;
+  
+  if (!ctx) {
+    var canvas=document.createElement('canvas');
+    canvas.width=w;
+    canvas.height=h;
+    ctx=canvas.getContext('2d');
+  }
+
+
+  // allocate memory for image
+  var imageData=ctx.createImageData(w,h);
+  var bitmap=new Uint8Array(w*h*4);
+
+  // read bitmap from webgl buffer
+  gl.readPixels(x,y,w,h,gl.RGBA,gl.UNSIGNED_BYTE,bitmap);
+
+  // write bitmap to canvas
+  imageData.data.set(bitmap);
+  ctx.putImageData(imageData,destx,desty);
+  
+  return canvas;
+  
+} // drawGlImage
 
 Panorama.prototype.dispatchEventsTo(Panorama.prototype.snapshot);
 

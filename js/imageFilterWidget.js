@@ -68,7 +68,8 @@ $.extend(true,ImageFilter.prototype,{
   init: function imageFilter_init() {
 
     var imageFilter=this;
-
+    var staticData=imageFilter.getStaticData();
+        
     // extend default filter settings with specified ones
     var settings=$.extend(true,{},imageFilter.list[imageFilter.filterType][imageFilter.filter],imageFilter.settings);
     if (!settings.parameters) {
@@ -77,43 +78,55 @@ $.extend(true,ImageFilter.prototype,{
 
     // instantiate imageFilter parameter widgets and append to imageFilter container
     $.each(settings.parameters,function(widgetName,settings){
-
       var widget_container=$('<div class="parameter '+widgetName+'">');
       $(imageFilter.container).append(widget_container);
 
-      imageFilter.widget.push(new ImageFilterWidget({
+      staticData.widget.push(new ImageFilterWidget({
         imageFilter: imageFilter,
         name: widgetName,
         settings: settings
       }));
-
+console.log(staticData.widget.length);
     });
 
     // append this imageFilter instance to static data 
-    var staticData=imageFilter.getStaticData();
+
     staticData[imageFilter.filterType].list.push(imageFilter);
     imageFilter.saveStaticData(staticData);
 
   }, // imageFilter_init
+
+  dispose: function imageFilter_dispose()  {
+    var imageFilter=this;
+
+    // dispose of every widget
+    $.each(imageFilter.widget,function(index,widget){
+      widget.dispose();
+    });
+
+    // dispose of static data
+    $(imageFilter.target).parent().removeData(imageFilter.group);
+
+  }, // imageFilter_dispose
 
   saveStaticData: function imageFilter_saveStaticData(data) {
     var imageFilter=this;
     $(imageFilter.target).parent().data(imageFilter.group,data);    
   }, // imageFilter_saveStaticData
 
-  // get image
+  // get or initialize imageFilter static data (shared between widgets of this.group)
   getStaticData: function imageFilter_getStaticData() {
     var imageFilter=this;
-    return $(imageFilter.target).parent().data(imageFilter.group) || imageFilter.staticData;
+    return $(imageFilter.target).parent().data(imageFilter.group) || $.extend(true,{},imageFilter.staticData);
   }, // imageFilter_getStaticData
 
-  // imageFilterWidget list
-  widget: [],
   
   // available filter types
   filterTypeAvailable: ['caman','glfx'],
 
   staticData: {
+
+     widget: [],
 
      caman: {
       list: [],
@@ -187,9 +200,9 @@ $.extend(true,ImageFilter.prototype,{
         // apply filters
         $.each(staticData.caman.list,function(index,filter){
 
-          function getParameterList(){
+          function getParameterList(filter){
             var list=[];
-            $.each(filter.widget,function(){
+            $.each(staticData.widget,function(){
                 list.push(parseFloat(this.value,10)||0);                  
             });
             return list;
@@ -199,7 +212,7 @@ $.extend(true,ImageFilter.prototype,{
             default:
               try {
 //                    console.log(widget.name,widget.value);
-                caman[filter.filter].apply(caman,getParameterList());
+                caman[filter.filter].apply(caman,getParameterList(filter));
               } catch(e) {}
               break;
           }
@@ -213,11 +226,10 @@ $.extend(true,ImageFilter.prototype,{
       list: [],
       process: function(staticData,widget) {
         var glfx=staticData.glfx;
-        var isupdate=true;
+        var isupdate=(glfx.canvas);
 
-        if (!glfx.canvas) {
+        if (!isupdate) {
           glfx.canvas=fx.canvas();
-          isupdate=false;
         }
 
         if (staticData.canvas_setup) {
@@ -254,10 +266,10 @@ $.extend(true,ImageFilter.prototype,{
         var texture;
         $.each(staticData.glfx.list,function(index,filter){
 
-          function getParameterList(filterName){
+          function getParameterList(filter){
             var list=[];
-            $.each(filter.widget,function(){
-                if (this.imageFilter.filter==filterName) {
+            $.each(staticData.widget,function(){
+                if (this.imageFilter.filter==filter.filter) {
                   list.push(parseFloat(this.value,10)||0);
                 }                  
             });
@@ -277,7 +289,7 @@ $.extend(true,ImageFilter.prototype,{
                   texture=glfx.canvas.contents();
                 }
 
-                (glfx.canvas.draw(texture||glfx.texture))[filter.filter].apply(glfx.canvas,getParameterList(filter.filter)).update();
+                (glfx.canvas.draw(texture||glfx.texture))[filter.filter].apply(glfx.canvas,getParameterList(filter)).update();
 
                 if (texture) {
                   texture.destroy();
@@ -491,8 +503,31 @@ $.extend(true,ImageFilter.prototype,{
       vignette: {
         parameters: {
           vignette: {
-            min: -1,
+            min: 0,
             max: 1,
+            step: 0.01
+//            value: 0.2
+          },
+          amount: {
+            min: 0,
+            max: 1,
+            step: 0.01
+//            value: 0.7
+          }
+        }
+      },
+
+      unsharpMask: {
+        parameters: {
+          radius: {
+            min: 0,
+            max: 200,
+            step: 1
+          },
+          
+          strength: {
+            min: 0,
+            max: 5,
             step: 0.05
           }
         }
@@ -544,6 +579,13 @@ $.extend(true,ImageFilterWidget.prototype,{
 
   },
 
+  dispose: function imageFilterWidget_dispose() {
+    $('.'+widget.name+' input',widget.imageFilter.container)
+    .closest('div.parameter')
+    .removeData('imageFilterWidget');
+
+  }, // imageFilterWidget_dispose
+
   onchange: function imageFilterWidget_onchange(e){
     var div=$(e.target).closest('div.parameter');
     var widget=div.data('imageFilterWidget');
@@ -571,13 +613,13 @@ $.extend(true,ImageFilterWidget.prototype,{
         var widget=this;
         var settings=widget.settings;
         return '<div class="parameter">'
-        + '<div class="parameter_name">'
-        + '<p>'+widget.name+'</p>'
-        + '</div>'
-        + '<div class="parameter_widget">'
+        + '<span class="parameter_name">'
+        + widget.name
+        + '</span>'
+        + '<span class="parameter_widget">'
         + '<input type="range" min="'+settings.min+'" max="'+settings.max+'" step="'+settings.step+'" value="'+(settings.value||0)+'" data-filter="'+widget.name+'">'
         + '<span class="parameter_value">'+(settings.value||0)+'</span>'
-        + '</div>'
+        + '</span>'
         + '</div>';
       }
   },
