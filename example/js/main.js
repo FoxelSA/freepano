@@ -960,6 +960,92 @@ $(document).on('filesloaded', function(){
 
   });
 
+   var gallery = {
+     container: 'body',
+     margin: 8,
+
+     show: function gallery_show(canvas) {
+     
+       var gallery=this;
+     
+       if (gallery.canvas) {
+         if (gallery.canvas.id==canvas.id) {
+           return;
+         }
+       }
+   
+       gallery.copyCanvas(canvas);
+       gallery.centerAndFitCanvas();
+     
+       
+
+     }, // gallery_show
+
+     copyCanvas: function gallery_copyCanvas(canvas) {
+
+       var gallery=this;
+
+       if (!gallery.canvas) {
+         gallery.canvas=document.createElement('canvas');
+         gallery.canvas.className='gallery';
+         $(gallery.canvas).appendTo(gallery.container);
+       }
+
+       gallery.canvas.width=canvas.width;
+       gallery.canvas.height=canvas.height;
+       var ctx=gallery.canvas.getContext('2d');
+       ctx.drawImage(canvas,0,0);
+
+     }, // gallery_copyCanvas
+
+     // set gallery canvas dimensions and position
+     // according to source canvas and container dimensions 
+     centerAndFitCanvas: function gallery_centerAndFitCanvas() {
+
+       var gallery=this;
+       var canvas=gallery.canvas;
+       var container=$(gallery.container);
+
+       var canvasRatio=canvas.width/canvas.height;
+       var containerRatio=$(gallery.container).innerWidth()/$(gallery.container).innerHeight();
+       
+       var width, height;
+       if (canvasRatio>1) {
+         
+         width=Math.min(container.width()-gallery.margin,canvas.width);
+         height=width/canvasRatio;
+
+         if (height>container.height()-gallery.margin) {
+           height=container.height()-gallery.margin;
+           width=height*canvasRatio;
+         }
+
+       } else {
+
+         height=Math.min(container.height()-gallery.margin,canvas.height);
+         width=height*canvasRatio;
+
+         if (width>container.width()-gallery.margin) {
+           width=container.width()-gallery.margin;
+           height=width/canvasRatio;
+         }
+       }
+
+       $(canvas).css({
+         position: 'absolute',
+         width: width,
+         height: height,
+         top: -99999,
+         bottom: -99999,
+         left: -99999,
+         right: -99999,
+         margin: 'auto'
+      });
+
+     } // gallery_centerAndFitCanvas
+
+   } // gallery
+
   function toggleEffect(effect){
     effect.pass.enabled=!effect.pass.enabled;
     panorama.drawScene();
