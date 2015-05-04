@@ -865,8 +865,8 @@ $(document).on('filesloaded', function(){
             $(div).css({
                width: snapshot.size*displayRatio,
                height: snapshot.size,
-               marginTop:0,
-               marginBottom:0,
+               marginTop: 0,
+               marginBottom: 8,
                position: 'relative',
                float: 'left',
                overflow: 'hidden'
@@ -948,8 +948,11 @@ $(document).on('filesloaded', function(){
 
   // apply clicked snapshot image filter parameters to current selection
   $('#snapshot_bar').on('click','canvas',function(e){
+    if (!panorama.ias) {
+      gallery.show(e.target);
+      return;
+    }
     var filters=$(e.target).parent().data('filters');
-    console.log(filters);
     $.each(filters.widget,function(){
       var widget=this;
       $('#imagefilters .filter.'+widget.imageFilter.filter+' '+'.parameter.'+widget.name+' input').val(widget.value).trigger('change');
