@@ -86,7 +86,7 @@ $.extend(true,ImageFilter.prototype,{
         name: widgetName,
         settings: settings
       }));
-console.log(staticData.widget.length);
+
     });
 
     // append this imageFilter instance to static data 

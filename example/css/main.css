@@ -49,6 +49,7 @@ html, body, canvas {
     overflow:hidden;
     font-size:15px;
     font-family:arial,helvetica,sans;
+
 }
 
 canvas#snap1 {
@@ -252,6 +253,10 @@ footer .logo {
 
 }
 
+#snapshot_toggle {
+  display: none; 
+}
+
 #snapshot_bar {
   width: 100%;
   height: 144px;
@@ -261,12 +266,14 @@ footer .logo {
   background-color: rgba(255,255,255,0.1);
   z-index: 2;
   display: block;
-  user-select: none;
+  -webkit-user-select: none;
+  visibility: hidden;
 }
 
 #snapshot_bar canvas {
     transform: scaleY(-1);
     display: block;
+    cursor: pointer;
 }
 
 div.snapshot {
@@ -284,11 +291,9 @@ div.snapshot {
 .parameter_value {
   vertical-align: super;
   margin-left: 16px
-
 }
 
 .parameter_name {
-
   margin-top: 2px;
   float: left;
   width: 100px;
@@ -307,5 +312,59 @@ div.snapshot {
 }
 
 #imagefilters {
+  -webkit-user-select: none;
   user-select: none;
+}
+
+
+.gallery_overlay {
+  background-color: rgba(0,0,0,0.5);
+  position: absolute;
+  width: 100%;
+  height: 100%;
+}
+
+
+canvas.gallery {
+  border: 8px solid white
+}
+
+a.button {
+  box-shadow: 6px 6px 12px rgba(0,0,0,0.4);
+  position: absolute;
+  top: 0;
+  left: 0;
+  color: black;
+  margin: 1em;
+  border: 1px solid black;
+  border-radius: 0.5em;
+  background-color: rgba(255,255,255,0.6);
+  -webkit-user-select: none;
+  user-select: none;
+  cursor: pointer;
+  transition: all 0.0.5s ease-in;
+}
+
+a.button:hover {
+  background-color: rgba(255,255,255,0.7);
+}
+
+a.button:active {
+  box-shadow: 3px 3px 6px rgba(0,0,0,0.5);
+  transform: scale(0.98);
+}
+
+a.button div {
+  position: relative;
+  font-size: 3em;
+  margin: 0.2em;
+}
+
+.imgareaselect-outer {
+  cursor: crosshair;
+}
+
+.gallery {
+  user-select: none;
+  -webkit-user-select: none;
 }

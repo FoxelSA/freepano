@@ -172,7 +172,7 @@ function setupEventDispatcher(emitter) {
     }
 
     // THREE.js constructors are unnamed
-    var emitter_constructor_name=(emitter.constructor.name||emitter.type);
+    var emitter_constructor_name=emitter.object_type||emitter.constructor.name||emitter.type;
 
     if (eventDispatcherDebug) {
       var serial=window.eventDispatcherSerial++;

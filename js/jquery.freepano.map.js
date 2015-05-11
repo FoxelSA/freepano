@@ -124,7 +124,9 @@ $.extend(true, Map.prototype, {
         }
 
         // Append map
+        map.wrapper = $('<div class="wrapper">');
         map.container = $('<div>',{'class':'map'});
+        map.wrapper.append(map.container);
         $(panorama.container).append(map.container);
 
         // Create leaflet map object

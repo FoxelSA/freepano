@@ -126,6 +126,11 @@ This program includes works distributed under the terms of another license(s) an
     Dual licensed under the [MIT-LICENSE]<br />
     and GPL [GPL-LICENSE] licenses.
 
+*   __Font Awesome 4.3.0__<br />                                                
+    <[http://fontawesome.io](http://fontawesome.io)><br />
+    Font Awesome by Dave Gandy - http://fontawesome.io<br />
+    Font Awesome is licensed under the [SIL OFL 1.1 license](http://scripts.sil.org/OFL).
+
 *   __Malihu custom scrollbar plugin__<br />
     <[http://manos.malihu.gr](http://manos.malihu.gr)><br />
     Copyright (c) 2014 Manos Malihutsakis, http://manos.malihu.gr<br />

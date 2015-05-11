@@ -716,228 +716,24 @@ $(document).on('filesloaded', function(){
       }
       break;
     case 27: // esc
+      if (panorama.ias) {
+        panorama.snapshot.toggleEdit({
+          keepThumb:false
+        });
+      }
+      break;
     case 13: // enter
-       if (!panorama.ias) break;
-       // continue with case 80: below
-    
+      if (panorama.ias) {
+        panorama.snapshot.toggleEdit({
+          save: true,
+          keepThumb: true
+        });
+      }
+      break;    
     case 80: // p
-       var map=panorama.map;
-       var snapshot=panorama.snapshot;
-          
-       if (panorama.ias) {
-   
-          var canvas_id='snap'+snapshot.current;
-          if (e.keyCode==13) {
-
-            // copy filtered canvas
-            var canvas=$('#'+canvas_id)[0];
-            var ctx=canvas.getContext('2d');
-            drawGlImage(ctx,filters.glfx.canvas._.gl);
-            $(canvas).css({
-              transform: 'none'
-            })
-            // save thumbnail
-        //    snapshot.save();
-            panorama.ias.cancelSelection({keepThumb: true});
-
-          } else {
-              // remove thumbnail
-              var canvas=$('canvas#'+canvas_id);
-              if (canvas.length) {
-                canvas.closest('.snapshot').remove();
-                snapshot.list[snapshot.current-1].deleted=true;
-              }        
-              panorama.ias.cancelSelection({keepThumb: false});
-          }
-
-          // cancel selection
-
-          // restore map state
-          map.instance.active=panorama._mapActive;
-
-          return;
-       }
-
-       // save map state 
-       panorama._mapActive=map.instance.active;
-
-       // hide map
-       map.instance.active=false;
-
-       // set current snapshot number
-       snapshot.current=snapshot.list.length+1;
-
-       // instantiate imgAreaSelect
-       panorama.ias=$(panorama.container).imgAreaSelect({
-
-         fadeSpeed: 400,
-
-         handles: true,
-
-         instance: true,
-
-         onSelectCancel: function(keepThumb) {
-
-            if (!snapshot.list[snapshot.current-1]) return;
-            var canvas_id='snap'+snapshot.current;
-
-            // remove thumbnail
-            var canvas=$('canvas#'+canvas_id);
-            if (canvas.length && !keepThumb) {
-              canvas.closest('.snapshot').remove();
-              snapshot.list[snapshot.current-1].deleted=true;
-            }
-           
-            // remove imgAreaSelect instance
-            $(panorama.container).imgAreaSelect({remove: true});
-            panorama.ias=null;
-
-            // restore map state
-            map.instance.active=panorama._mapActive;
-
-
-            $('#imagefilters').remove();
-
-            $(filters.glfx.canvas).remove();
-
-           
-     
-         },
-
-         onSelectChange: function(img,rect) {
-           if (rect.x1==rect.x2 || rect.y1==rect.y2) return;
-           this.onSelectEnd.apply(this,[img,rect]);
-         },
-
-         onSelectEnd: function(img,rect) {
-
-            var canvas;
-            var div;
-            var isnew;
-
-            var canvas_id='snap'+snapshot.current;
-
-            // create or update thumbnail bar element
-            canvas=$('canvas#'+canvas_id);
-            if (!canvas.length) {
-              // create a new element
-              div=$('<div class="snapshot">)');
-              canvas=panorama.getCanvas(panorama.renderer,rect.x1,$(panorama.container).height()-rect.y1-rect.height,rect.width,rect.height);
-              if (!canvas) return;
-              // get canvas from selection
-              canvas.id=canvas_id;
-              isnew=true;
-
-            } else {
-              div=$(canvas).closest('.snapshot');
-              panorama.getCanvas(panorama.renderer,rect.x1,$(panorama.container).height()-rect.y1-rect.height,rect.width,rect.height,canvas[0]);
-
-            }
-
-            var displayRatio=5/4;
-            var imageRatio=rect.width/rect.height;
-            var div_width=snapshot.size*displayRatio;
-            if (imageRatio>displayRatio) {
-               $(canvas).css({
-                  position: 'absolute',
-                  width: snapshot.size*imageRatio,
-                  height: snapshot.size,
-                  top: -99999,
-                  bottom: -99999,
-                  left: -99999,
-                  right: -99999,
-                  margin: 'auto'
-               });
-            } else {
-               $(canvas).css({
-                  position: 'absolute',
-                  width: snapshot.size*displayRatio,
-                  height: (snapshot.size*displayRatio)/imageRatio,
-                  top: -99999,
-                  bottom: -99999,
-                  left: -99999,
-                  right: -99999,
-                  margin: 'auto'
-               });
-              
-            }
-
-            $(div).css({
-               width: snapshot.size*displayRatio,
-               height: snapshot.size,
-               marginTop: 0,
-               marginBottom: 8,
-               position: 'relative',
-               float: 'left',
-               overflow: 'hidden'
-            });
-
-                          
-/*
-              // compute canvas display size
-              var ratio=rect.width/rect.height;
-              if (ratio>1) {                
-                $(canvas).add(div).css({
-                  width: snapshot.size*ratio,
-                  height: snapshot.size,
-                  marginTop:0,
-                  marginBottom:0
-                });
-/*                
-                $(canvas).add(div).css({
-                  width: snapshot.size,
-                  height: snapshot.size/ratio
-                });
-                console.log('xo')
-                $(canvas).css('margin-bottom',(snapshot.size-snapshot.size/ratio)/2);
-                $(canvas).css('margin-top',(snapshot.size-snapshot.size/ratio)/2);
-*//*
-              } else {
-                $(canvas).add(div).css({
-                  width: snapshot.size*ratio,
-                  height: snapshot.size,
-                  marginTop: 0,
-                  marginBottom: 0
-                });
-              }
-*/
-            if (isnew) {
-
-              $(div).append(canvas);
-              if (!$('.mCSB_container',snapshot.bar).length) {
-                $(div).appendTo(snapshot.bar);
-                if (true) // bullshit
-                snapshot.bar.mCustomScrollbar({
-                  axis: 'y',
-                  mouseWheel: {        
-                      scrollAmount: 250
-                  }    
-                });
-              } else {
-                $(div).appendTo('.mCSB_container',snapshot.bar);
-                snapshot.bar.mCustomScrollbar('update');
-              }
-
-              snapshot.list.push({
-                  image: panorama.list.currentImage,
-                  rect: rect,
-                  lon: panorama.lon,
-                  lat: panorama.lat,
-                  zoom: panorama.camera.zoom.current
-              });
-
-   //           setTimeout(function(){
-                snapshot.imageFilters();
-     //         },0);
-
-            } else {
-              snapshot.list[snapshot.list.length-1].rect=rect;
-              $('#imagefilters input:first').change();
-            }          
-         }
-
-       });
-
+      panorama.snapshot.toggleEdit({
+        keepThub: false,
+      });
       break;
     }
 
@@ -960,13 +756,24 @@ $(document).on('filesloaded', function(){
 
   });
 
+   /**
+   * gallery
+   */
    var gallery = {
+
+     // object type for event dispatcher
+     object_type: 'gallery',
+
      container: 'body',
      margin: 8,
+
+     panorama: panorama,
 
      show: function gallery_show(canvas) {
      
        var gallery=this;
+
+       gallery.showOverlay();
      
        if (gallery.canvas) {
          if (gallery.canvas.id==canvas.id) {
@@ -976,19 +783,166 @@ $(document).on('filesloaded', function(){
    
        gallery.copyCanvas(canvas);
        gallery.centerAndFitCanvas();
-     
-       
 
+       gallery.dispatch({
+         type: 'show',
+         canvas: canvas
+       });
+     
      }, // gallery_show
 
+     showOverlay: function gallery_showOverlay() {
+       var gallery=this;
+
+       if (gallery.overlay) {
+           gallery.overlay.show(0);
+           $('.gallery',gallery.container).show(0);
+
+       } else {
+
+           gallery.initOverlay();
+           gallery.initEventHandlers();
+       }
+
+     }, // gallery_showOverlay
+
+     initOverlay: function gallery_initOverlay() {
+
+       var gallery=this;
+
+       gallery.overlay=$('<div class="gallery_overlay">').appendTo(gallery.container).css({
+         backgroundColor: 'rgba(0,0,0,0.7)',
+         position: 'absolute',
+         width: '100%',
+         height: '100%',
+         top: 0,
+         left: 0
+
+       });
+
+       gallery.leftArrow=$('<a class="fa fa-angle-left">').css({
+          position: 'absolute',
+          height: '10em',
+          lineHeight: '10em',
+          width: '10em',
+          top: -99999,
+          bottom: -99999,
+          left: 0,
+          paddingLeft: '1em',
+          margin: 'auto',
+          color: 'grey',
+          backgroundColor: 'rgba(0,0,0,0)',
+          fontSize: '6em',
+   //       border: '1px solid white',
+          verticalAlign: 'top',
+          transition: 'all 0.2s ease-in',
+          cursor: 'pointer' 
+       
+        }).hover(function(e){ 
+           $(this).css({
+               color: (e.type=="mouseenter" && !$(e.target).hasClass('disabled'))?'white':'grey'
+           });
+           $(this.opposite).css({
+               color: (e.type=="mouseenter" || (e.type!="mouseenter" && $(this.opposite).hasClass('disabled')))?'grey':'white'
+           });
+
+
+       }).on('click.gallery',function(e){
+
+         var leftArrow=$(e.target);
+
+         if (leftArrow.hasClass('disabled')) {
+           return false;
+         }
+
+         gallery.dispatch('prev');
+
+         if (leftArrow.hasClass('disabled')) {
+            leftArrow.css('color','grey');
+         }
+
+         return false;
+
+       });
+
+       gallery.rightArrow=$('<a class="fa fa-angle-right">').css({
+          position: 'absolute',
+          height: '10em',
+          width: '10em',
+          lineHeight: '10em',
+          top: -99999,
+          bottom: -99999,
+          right: 0,
+          paddingRight: '1em',
+          margin: 'auto',
+          color: 'grey',
+          backgroundColor: 'rgba(0,0,0,0)',
+          fontSize: '6em',
+//              border: '1px solid white',
+          verticalAlign: 'top',
+          textAlign: 'right',
+          transition: 'all 0.2s ease-in',
+          cursor: 'pointer' 
+       }).hover(function(e){
+           $(this).css({
+               color: (e.type=="mouseenter" && !$(e.target).hasClass('disabled'))?'white':'grey'
+           });
+
+       }).on('click.gallery',function(e){
+
+         var rightArrow=$(e.target);
+         
+         if (rightArrow.hasClass('disabled')) {
+           return false;
+         }
+
+         gallery.dispatch('next');
+
+         if (rightArrow.hasClass('disabled')) {
+             rightArrow.css('color','grey');
+         }
+
+         return false;
+
+       });
+
+       gallery.leftArrow[0].opposite=gallery.rightArrow;
+       gallery.rightArrow[0].opposite=gallery.leftArrow
+       gallery.overlay.append(gallery.leftArrow);
+       gallery.overlay.append(gallery.rightArrow);
+
+       // hide gallery on click on overlay
+       gallery.overlay.on('click.gallery',function(e){
+         $('.gallery',gallery.container).hide(0);
+         gallery.overlay.hide(0);
+       });
+
+     }, // gallery_initOverlay
+
+     initEventHandlers: function gallery_initEventHandlers() {
+         var gallery=this;
+         $(gallery.container).on('mousemove.gallery click.gallery',function(e){
+             return gallery.dispatch(e);
+         });
+     }, // gallery_initEventHandlers
+
+     onmousemove: function gallery_onmousemove(e) {
+         var gallery=this;
+      //   console.log(e);
+     }, // gallery_onmousemove
+
+     onclick: function gallery_onclick(e) {
+         var gallery=this;
+
+     }, // gallery_onclick
+
+     // copy specified canvas in the gallery.canvas
      copyCanvas: function gallery_copyCanvas(canvas) {
 
        var gallery=this;
 
        if (!gallery.canvas) {
-         gallery.canvas=document.createElement('canvas');
-         gallery.canvas.className='gallery';
-         $(gallery.canvas).appendTo(gallery.container);
+         gallery.initCanvas();
        }
 
        gallery.canvas.width=canvas.width;
@@ -997,6 +951,24 @@ $(document).on('filesloaded', function(){
        ctx.drawImage(canvas,0,0);
 
      }, // gallery_copyCanvas
+
+     initCanvas: function gallery_initCanvas() {
+       var gallery=this;
+       gallery.canvas=document.createElement('canvas');
+       gallery.canvas.className='gallery';
+       $(gallery.canvas).css({
+           cursor: 'pointer'
+       }).hover(function(e){
+         if (e.type=='mouseenter' && !gallery.rightArrow.hasClass('disabled')) {
+            $(gallery.rightArrow).css('color','white');
+         }
+       });
+
+       $('<div class="gallery">')
+       .append(gallery.canvas)
+       .appendTo(gallery.container);
+
+     }, // gallery_initCanvas
 
      // set gallery canvas dimensions and position
      // according to source canvas and container dimensions 
@@ -1031,7 +1003,7 @@ $(document).on('filesloaded', function(){
          }
        }
 
-       $(canvas).css({
+       $(canvas).add($(canvas).parent()).css({
          position: 'absolute',
          width: width,
          height: height,
@@ -1045,6 +1017,9 @@ $(document).on('filesloaded', function(){
      } // gallery_centerAndFitCanvas
 
    } // gallery
+   
+   setupEventDispatcher(gallery);
+   gallery.dispatchEventsTo(Panorama.prototype.snapshot);
 
   function toggleEffect(effect){
     effect.pass.enabled=!effect.pass.enabled;
@@ -1087,14 +1062,377 @@ Panorama.prototype.snapshot={
   size: 128,
   list: [],
   dom: "#snapshot_bar",
-  on_panorama_init: function() {
+  toggle_button_id: "#snapshot_toggle",
+
+  on_panorama_init: function snapshot_on_panorama_init() {
+    $('a').each(function(){this.draggable=false;});
     var panorama=this;
     var snapshot=panorama.snapshot;
     snapshot.panorama=panorama;
     if (!snapshot.bar) {
       snapshot.bar=$(snapshot.dom);
     }
-  },
+    if (!snapshot.button) {
+        snapshot.button=$(snapshot.toggle_button_id);
+        snapshot.button.on('click',function(e){
+            if (snapshot.panorama.ias) {
+              snapshot.toggleEdit({
+                keepThumb: false
+              });
+            } else {
+              snapshot.toggleEdit();
+            }
+        });
+    }
+  }, // snapshot_on_panorama_init
+
+  on_panorama_mousemove: function snapshot_on_panorama_mousemove(e) {
+    var panorama=this;
+    if (panorama.ias) {
+      return false;
+    }
+  }, // snapshot_on_panorama_mousemove
+
+
+  on_gallery_show: function snapshot_on_gallery_show(e) {
+    var gallery=this;
+    var panorama=gallery.panorama;
+    
+    // hide map
+    gallery._mapActive=panorama.map.instance.active;
+    panorama.map.instance.active=false;
+
+    // hide toggle_button
+    $(gallery.toogle_button_id).hide(0);
+ 
+    gallery.canvas_index=$(e.canvas).data('snapshot_index');
+
+    // update gallery next button    
+    if (gallery.canvas_index+1 >= panorama.snapshot.list.length) {
+      gallery.rightArrow.addClass('disabled');
+    } else {
+      gallery.rightArrow.removeClass('disabled');
+    }
+
+    // update gallery prev button    
+    if (gallery.canvas_index <= 0) {
+      gallery.leftArrow.addClass('disabled');
+    } else {
+      gallery.leftArrow.removeClass('disabled');
+    }
+
+  }, // snapshot_on_gallery_show
+
+
+  on_gallery_next: function snapshot_on_gallery_next(e) {
+
+    var gallery=this;
+    var panorama=gallery.panorama;
+
+    if (gallery.canvas_index+1 >= panorama.snapshot.list.length) {
+      return;
+    }
+   
+   ++gallery.canvas_index;
+   gallery.show($('#'+panorama.snapshot.list[gallery.canvas_index].canvas_id)[0]);
+
+  }, // snapshot_on_gallery_next
+
+  on_gallery_prev: function snapshot_on_gallery_prev(e) {
+
+    var gallery=this;
+    var panorama=gallery.panorama;
+
+    if (gallery.canvas_index <= 0) {
+      return;
+    }
+
+   --gallery.canvas_index;
+   gallery.show($('#'+panorama.snapshot.list[gallery.canvas_index].canvas_id)[0]);
+
+  }, // snapshot_on_gallery_next
+
+  /**
+  * snapshot.toggleEdit()
+  *
+  * toggle rectangle selection mode
+  *
+  * - without options:
+  *     - when imageAreaSelect is not instantiated (ie: we are not in edit
+  *     mode), enter selection mode
+  *     - else discard selection and remove thumbnail
+  *
+  * @param options.save   keep selection and dispose imageAreaSelect instance
+  * @param options.cancel  discard selection and dispose imageAreaSelect instance
+  * @param options.keepThumb  dispose thumbnail on cancel 
+  */
+
+  toggleEdit: function snapshot_toggleEdit(options) {
+   var snapshot=this;
+   var panorama=snapshot.panorama;
+   var map=panorama.map;
+
+   if (panorama.ias) {
+
+      var canvas_id='snap'+snapshot.current;
+      if (options.save) {
+
+        // copy filtered canvas
+        var canvas=$('#'+canvas_id)[0];
+        var ctx=canvas.getContext('2d');
+        drawGlImage(ctx,filters.glfx.canvas._.gl);
+        $(canvas).css({
+          transform: 'none'
+        })
+        // save thumbnail
+    //    snapshot.save();
+        panorama.ias.cancelSelection({keepThumb: true});
+
+      } else if (options.cancel||true) {
+          // remove thumbnail and cancel selection
+          if (!options.keepThumb) {
+            var canvas=$('canvas#'+canvas_id);
+            if (canvas.length) {
+              canvas.closest('.snapshot').remove();
+              snapshot.list[snapshot.current-1].deleted=true;
+            }
+          }        
+          panorama.ias.cancelSelection({keepThumb: options.keepThumb});
+      } 
+
+      // restore map state
+      map.instance.active=panorama._mapActive;
+      panorama.ias=null;
+      $('div.freepano canvas').css('cursor','default');
+      return;
+   }
+   
+   $('div.freepano canvas').css('cursor','crosshair');
+
+   // save map state 
+   panorama._mapActive=map.instance.active;
+
+   // hide map
+   map.instance.active=false;
+
+   // show bar
+   snapshot.bar.css('visibility','visible');
+      
+   // set current snapshot number
+   snapshot.current=snapshot.list.length+1;
+
+   // instantiate imgAreaSelect
+   panorama.ias=$(panorama.container).imgAreaSelect({
+
+     fadeSpeed: 400,
+
+     handles: true,
+
+     instance: true,
+
+     onSelectCancel: function ias_onSelectCancel(keepThumb) {
+
+        if (snapshot.list[snapshot.current-1]) {
+          // remove thumbnail
+          var canvas_id='snap'+snapshot.current;
+          var canvas=$('canvas#'+canvas_id);
+          if (canvas.length && !keepThumb) {
+            canvas.closest('.snapshot').remove();
+            snapshot.list[snapshot.current-1].deleted=true;
+          }
+        }
+
+        // remove imgAreaSelect instance
+        $(panorama.container).imgAreaSelect({remove: true});
+        panorama.ias=null;
+
+        // restore map state
+        map.instance.active=panorama._mapActive;
+
+        // remove filter controls
+        $('#imagefilters').remove();
+
+        // remove snapshot
+        if (filters && filters.glfx) {
+          $(filters.glfx.canvas).remove();
+        }
+
+        // show snapshot button
+        $('#snapshot_toggle').show(0);
+
+        // restore cursor
+        $('div.freepano canvas').css('cursor','default');
+
+
+     },
+
+     onSelectChange: function ias_onSelectChange(img,rect) {
+       if (rect.x1==rect.x2 || rect.y1==rect.y2) return;
+       this.onSelectEnd.apply(this,[img,rect]);
+       $('#snapshot_toggle').hide(0);
+     },
+
+     onSelectEnd: function ias_onSelectEnd(img,rect) {
+
+        var canvas;
+        var div;
+        var isnew;
+
+        var canvas_id='snap'+snapshot.current;
+
+        // create or update thumbnail bar element
+        canvas=$('canvas#'+canvas_id);
+        if (!canvas.length) {
+
+          // wrapper
+          div=$('<div class="snapshot">)');
+
+          // get canvas from selection
+          canvas=panorama.getCanvas(panorama.renderer,rect.x1,$(panorama.container).height()-rect.y1-rect.height,rect.width,rect.height);
+          if (!canvas) return;
+          canvas.id=canvas_id;
+          isnew=true;
+
+        } else {
+
+          // wrapper
+          div=$(canvas).closest('.snapshot');
+
+          // update canvas from selection
+          panorama.getCanvas(panorama.renderer,rect.x1,$(panorama.container).height()-rect.y1-rect.height,rect.width,rect.height,canvas[0]);
+
+        }
+
+        /* show canvas center in thumbnail div */
+
+        var displayRatio=5/4;
+        var imageRatio=rect.width/rect.height;
+        var div_width=snapshot.size*displayRatio;
+        if (imageRatio>displayRatio) {
+           $(canvas).css({
+              position: 'absolute',
+              width: snapshot.size*imageRatio,
+              height: snapshot.size,
+              top: -99999,
+              bottom: -99999,
+              left: -99999,
+              right: -99999,
+              margin: 'auto'
+           });
+
+        } else {
+           $(canvas).css({
+              position: 'absolute',
+              width: snapshot.size*displayRatio,
+              height: (snapshot.size*displayRatio)/imageRatio,
+              top: -99999,
+              bottom: -99999,
+              left: -99999,
+              right: -99999,
+              margin: 'auto'
+           });
+        }
+
+        $(div).css({
+           width: snapshot.size*displayRatio,
+           height: snapshot.size,
+           marginTop: 0,
+           marginBottom: 8,
+           position: 'relative',
+           float: 'left',
+           overflow: 'hidden'
+        });
+
+        /**/
+
+
+/*
+          // compute canvas display size
+          var ratio=rect.width/rect.height;
+          if (ratio>1) {                
+            $(canvas).add(div).css({
+              width: snapshot.size*ratio,
+              height: snapshot.size,
+              marginTop:0,
+              marginBottom:0
+            });
+/*                
+            $(canvas).add(div).css({
+              width: snapshot.size,
+              height: snapshot.size/ratio
+            });
+            console.log('xo')
+            $(canvas).css('margin-bottom',(snapshot.size-snapshot.size/ratio)/2);
+            $(canvas).css('margin-top',(snapshot.size-snapshot.size/ratio)/2);
+*//*
+          } else {
+            $(canvas).add(div).css({
+              width: snapshot.size*ratio,
+              height: snapshot.size,
+              marginTop: 0,
+              marginBottom: 0
+            });
+          }
+*/
+
+        // new thumbnail
+
+        if (isnew) {
+
+          $(div).append(canvas);
+          
+          // custom scrollbar not instantiated ? 
+          if (!$('.mCSB_container',snapshot.bar).length) {
+
+            // add new thumb to snapshot bar container
+            $(div).appendTo(snapshot.bar);
+
+            // instantiate custom scrollbar on snapshot bar container
+            snapshot.bar.mCustomScrollbar({
+              axis: 'y',
+              mouseWheel: {        
+                  scrollAmount: 250
+              }    
+            });
+
+          } else {
+
+            // add new thumb to custom scrollbar container
+            $(div).appendTo('.mCSB_container',snapshot.bar);
+            snapshot.bar.mCustomScrollbar('update');
+          }
+
+          // store snapshot metadata
+          snapshot.list.push({
+              canvas_id: canvas_id,
+              image: panorama.list.currentImage,
+              rect: rect,
+              lon: panorama.lon,
+              lat: panorama.lat,
+              zoom: panorama.camera.zoom.current
+          });
+
+          // instantiate image filters controls
+          snapshot.imageFilters();
+
+        } else {
+
+          // update snapshot metadata
+          snapshot.list[snapshot.list.length-1].rect=rect;
+
+          // update and filter canvas over selection
+          $('#imagefilters input:first').change();
+
+        }
+
+        $('#'+canvas_id).data('snapshot_index',snapshot.list.length-1);
+                  
+     } // ias_onSelectEnd
+
+   });
+
+  }, // snapshot_toogleEdit
+
   // save current snapshot bitmmap and info
   save: function snapshot_save() {
     var snapshot=this;
@@ -1140,7 +1478,7 @@ Panorama.prototype.snapshot={
     // create container for image filter widgets
     if (!container.length) {
       container=$('<div id="imagefilters">').appendTo('body').css({
-        top: 10,
+        top: 10,// $(snapshot.button).offset().top+$(snapshot.button).height()+16,
         left: 10,
         position: 'absolute',
         color: 'white',
@@ -1186,7 +1524,6 @@ Panorama.prototype.snapshot={
       addFilter('glfx','vignette');
 
 
-  
       // get ImageFilters list
       var filters=window.filters=$(canvas_id).parent().data('filters');
       
@@ -1216,9 +1553,9 @@ Panorama.prototype.snapshot={
     
     }
 
-  }
+  } // snapshot_imageFilters
 
-}
+} // snapshot
 
 /*
 * drawGlImage()
