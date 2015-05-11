@@ -940,11 +940,6 @@ $(document).on('filesloaded', function(){
        gallery.overlay.append(gallery.leftArrow);
        gallery.overlay.append(gallery.rightArrow);
        gallery.overlay.append(gallery.closeButton);
-
-       gallery.overlay
-       .on('click.gallery',function(e){
-         gallery.hide();
-       });
  
      }, // gallery_initOverlay
 
