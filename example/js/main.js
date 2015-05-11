@@ -720,6 +720,8 @@ $(document).on('filesloaded', function(){
         panorama.snapshot.toggleEdit({
           keepThumb:false
         });
+      } else if ($(panorama.gallery.overlay).is(':visible')) {
+          panorama.gallery.hide();
       }
       break;
     case 13: // enter
@@ -759,7 +761,7 @@ $(document).on('filesloaded', function(){
    /**
    * gallery
    */
-   var gallery = {
+   var gallery = panorama.gallery = {
 
      // object type for event dispatcher
      object_type: 'gallery',
@@ -811,20 +813,45 @@ $(document).on('filesloaded', function(){
        var gallery=this;
 
        gallery.overlay=$('<div class="gallery_overlay">').appendTo(gallery.container).css({
-         backgroundColor: 'rgba(0,0,0,0.7)',
+         backgroundColor: 'rgba(0,0,0,0.8)',
          position: 'absolute',
          width: '100%',
          height: '100%',
          top: 0,
          left: 0
-
        });
+
+       gallery.closeButton=$('<a class="gallery_close">').css({
+         position: 'absolute',
+         top: 10,
+         right: 16,
+         fontSize: '3em',
+         zIndex: 3,
+       }).append($('<div class="fa fa-close">').css({
+         color: 'grey',
+         transition: 'all 0.2s ease-in',
+         textAlign: 'center'
+       }).hover(function(e){
+
+           if (e.type=='mouseenter') {
+               $(this).css({
+                   color: 'white'
+               })
+
+           } else {
+               $(this).css({
+                   color: 'gray'
+               })
+           } 
+
+       }));
+       
 
        gallery.leftArrow=$('<a class="fa fa-angle-left">').css({
           position: 'absolute',
           height: '10em',
           lineHeight: '10em',
-          width: '10em',
+          width: '50%',
           top: -99999,
           bottom: -99999,
           left: 0,
@@ -836,7 +863,8 @@ $(document).on('filesloaded', function(){
    //       border: '1px solid white',
           verticalAlign: 'top',
           transition: 'all 0.2s ease-in',
-          cursor: 'pointer' 
+          cursor: 'pointer',
+          zIndex: 2 
        
         }).hover(function(e){ 
            $(this).css({
@@ -868,7 +896,7 @@ $(document).on('filesloaded', function(){
        gallery.rightArrow=$('<a class="fa fa-angle-right">').css({
           position: 'absolute',
           height: '10em',
-          width: '10em',
+          width: '50%',
           lineHeight: '10em',
           top: -99999,
           bottom: -99999,
@@ -882,7 +910,8 @@ $(document).on('filesloaded', function(){
           verticalAlign: 'top',
           textAlign: 'right',
           transition: 'all 0.2s ease-in',
-          cursor: 'pointer' 
+          cursor: 'pointer',
+          zIndex: 2 
        }).hover(function(e){
            $(this).css({
                color: (e.type=="mouseenter" && !$(e.target).hasClass('disabled'))?'white':'grey'
@@ -910,14 +939,21 @@ $(document).on('filesloaded', function(){
        gallery.rightArrow[0].opposite=gallery.leftArrow
        gallery.overlay.append(gallery.leftArrow);
        gallery.overlay.append(gallery.rightArrow);
+       gallery.overlay.append(gallery.closeButton);
 
-       // hide gallery on click on overlay
-       gallery.overlay.on('click.gallery',function(e){
-         $('.gallery',gallery.container).hide(0);
-         gallery.overlay.hide(0);
+       gallery.overlay
+       .on('click.gallery',function(e){
+         gallery.hide();
        });
-
+ 
      }, // gallery_initOverlay
+
+     hide: function gallery_hide() {
+       var gallery=this;
+       $('.gallery',gallery.container).hide(0);
+       gallery.overlay.hide(0);
+       $('#snapshot_toggle').show(0);
+     }, // gallery_hide
 
      initEventHandlers: function gallery_initEventHandlers() {
          var gallery=this;
@@ -1086,13 +1122,16 @@ Panorama.prototype.snapshot={
     }
   }, // snapshot_on_panorama_init
 
+  on_panorama_ready: function snapshot_on_panorama_ready() {
+      $('#snapshot_toggle').show(0);
+  }, // snapshot_on_panorama_ready
+
   on_panorama_mousemove: function snapshot_on_panorama_mousemove(e) {
     var panorama=this;
     if (panorama.ias) {
       return false;
     }
   }, // snapshot_on_panorama_mousemove
-
 
   on_gallery_show: function snapshot_on_gallery_show(e) {
     var gallery=this;
@@ -1103,7 +1142,7 @@ Panorama.prototype.snapshot={
     panorama.map.instance.active=false;
 
     // hide toggle_button
-    $(gallery.toogle_button_id).hide(0);
+    $('#snapshot_toggle').hide(0);
  
     gallery.canvas_index=$(e.canvas).data('snapshot_index');
 
@@ -1202,8 +1241,15 @@ Panorama.prototype.snapshot={
 
       // restore map state
       map.instance.active=panorama._mapActive;
-      panorama.ias=null;
+
+      // show toggle_button
+      $('#snapshot_toggle').show(0);
+
+      // restor cursor
       $('div.freepano canvas').css('cursor','default');
+
+      panorama.ias=null;
+
       return;
    }
    
@@ -1442,8 +1488,6 @@ Panorama.prototype.snapshot={
     var ctx=canvas.getContext('2d');
     var imageData=ctx.getImageData(0,0,canvas.width,canvas.height);
     var buffer=new Uint8Array(imageData.data);
-    //snapshot.list[snapshot.current-1];
-    console.log(buffer.length);
     var metadata=snapshot.list[snapshot.current-1];   
 
     var xhr = new XMLHttpRequest();
@@ -1517,10 +1561,7 @@ Panorama.prototype.snapshot={
 
       addFilter('glfx','vibrance');
       addFilter('glfx','sepia');
-
       addFilter('glfx','brightnessContrast');
-  //    addFilter('caman','gamma');
-    //  addFilter('glfx','denoise');
       addFilter('glfx','vignette');
 
 
@@ -1580,7 +1621,6 @@ function drawGlImage(ctx,gl,x,y,w,h,destx,desty) {
     canvas.height=h;
     ctx=canvas.getContext('2d');
   }
-
 
   // allocate memory for image
   var imageData=ctx.createImageData(w,h);

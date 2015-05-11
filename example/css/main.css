@@ -264,7 +264,7 @@ footer .logo {
   bottom: 64px;
   padding-top: 12px;
   background-color: rgba(255,255,255,0.1);
-  z-index: 2;
+  z-index: 9;
   display: block;
   -webkit-user-select: none;
   visibility: hidden;
