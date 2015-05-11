@@ -270,6 +270,7 @@ footer .logo {
   -webkit-user-select: none;
   transition: all 0.5s ease-in;
   visibility: hidden;
+  opacity: 0
 }
 
 #snapshot_bar canvas {
