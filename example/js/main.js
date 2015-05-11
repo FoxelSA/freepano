@@ -734,7 +734,8 @@ $(document).on('filesloaded', function(){
       break;    
     case 80: // p
       panorama.snapshot.toggleEdit({
-        keepThub: false,
+        cancel: true,
+        keepThumb: false,
       });
       break;
     }
@@ -746,7 +747,13 @@ $(document).on('filesloaded', function(){
 
   // apply clicked snapshot image filter parameters to current selection
   $('#snapshot_bar').on('click','canvas',function(e){
-    if (!panorama.ias) {
+    if (!panorama.ias || panorama.ias.getSelection().width==0 || panorama.ias.getSelection().height==0) {
+      if (panorama.ias) {
+        panorama.snapshot.toggleEdit({
+          cancel: true,
+          keepThumb: false,
+        });  
+      }
       gallery.show(e.target);
       return;
     }
@@ -952,6 +959,7 @@ $(document).on('filesloaded', function(){
          $(gallery.container).on('mousemove.gallery click.gallery',function(e){
              return gallery.dispatch(e);
          });
+ 
      }, // gallery_initEventHandlers
 
      onmousemove: function gallery_onmousemove(e) {
@@ -1056,6 +1064,9 @@ $(document).on('filesloaded', function(){
 
 }); // filesloaded
 
+/**
+* Panorama.getCanvas()
+*/
 Panorama.prototype.getCanvas=function(renderer,x,y,w,h,canvas) {
   var panorama=this;
 
@@ -1091,6 +1102,7 @@ Panorama.prototype.snapshot={
   list: [],
   dom: "#snapshot_bar",
   toggle_button_id: "#snapshot_toggle",
+  close_button_id: "#snapshot_close",
 
   on_panorama_init: function snapshot_on_panorama_init() {
     $('a').each(function(){this.draggable=false;});
@@ -1099,6 +1111,9 @@ Panorama.prototype.snapshot={
     snapshot.panorama=panorama;
     if (!snapshot.bar) {
       snapshot.bar=$(snapshot.dom);
+      $(snapshot.close_button_id).on('click.gallery',function(e){
+          snapshot.dispatch('hidebar');
+      })
     }
     if (!snapshot.button) {
         snapshot.button=$(snapshot.toggle_button_id);
@@ -1112,12 +1127,27 @@ Panorama.prototype.snapshot={
             }
         });
     }
+
   }, // snapshot_on_panorama_init
 
   on_panorama_ready: function snapshot_on_panorama_ready() {
       $('#snapshot_toggle').show(0);
   }, // snapshot_on_panorama_ready
 
+  onhidebar: function snapshot_onhidebar(e) {
+      var snapshot=this;
+      var panorama=snapshot.panorama;
+      snapshot.bar.css({
+        opacity: 0,
+        visibility: 'hidden'
+      });
+
+    //  snapshot.bar.css('bottom',-snapshot.bar.outerHeight());
+      if (panorama.ias) {
+          snapshot.toggleEdit({keepThumb:false});
+      }
+  }, // snapshot_onhidebar
+   
   on_panorama_mousemove: function snapshot_on_panorama_mousemove(e) {
     var panorama=this;
     if (panorama.ias) {
@@ -1194,8 +1224,8 @@ Panorama.prototype.snapshot={
   *     - else discard selection and remove thumbnail
   *
   * @param options.save   keep selection and dispose imageAreaSelect instance
-  * @param options.cancel  discard selection and dispose imageAreaSelect instance
-  * @param options.keepThumb  dispose thumbnail on cancel 
+  * @param options.cancel  (default) discard selection and dispose imageAreaSelect instance
+  * @param options.keepThumb  dont dispose thumbnail on cancel 
   */
 
   toggleEdit: function snapshot_toggleEdit(options) {
@@ -1203,10 +1233,10 @@ Panorama.prototype.snapshot={
    var panorama=snapshot.panorama;
    var map=panorama.map;
 
-   if (panorama.ias) {
+   if (panorama.ias) {  // save or cancel edition 
 
       var canvas_id='snap'+snapshot.current;
-      if (options.save) {
+      if (options.save) { // save
 
         // copy filtered canvas
         var canvas=$('#'+canvas_id)[0];
@@ -1219,7 +1249,7 @@ Panorama.prototype.snapshot={
     //    snapshot.save();
         panorama.ias.cancelSelection({keepThumb: true});
 
-      } else if (options.cancel||true) {
+      } else if (options.cancel||true) { // cancel
           // remove thumbnail and cancel selection
           if (!options.keepThumb) {
             var canvas=$('canvas#'+canvas_id);
@@ -1244,7 +1274,9 @@ Panorama.prototype.snapshot={
 
       return;
    }
-   
+
+   // enter edit mode
+
    $('div.freepano canvas').css('cursor','crosshair');
 
    // save map state 
@@ -1254,7 +1286,15 @@ Panorama.prototype.snapshot={
    map.instance.active=false;
 
    // show bar
-   snapshot.bar.css('visibility','visible');
+   snapshot.bar.css({
+       transition: 'none',
+       visibility: 'visible'
+    });
+ 
+   snapshot.bar.css({
+       transition: '',
+       opacity: 1
+   });
       
    // set current snapshot number
    snapshot.current=snapshot.list.length+1;
@@ -1301,14 +1341,14 @@ Panorama.prototype.snapshot={
         // restore cursor
         $('div.freepano canvas').css('cursor','default');
 
-
-     },
+     }, // ias_onSelectCancel
 
      onSelectChange: function ias_onSelectChange(img,rect) {
        if (rect.x1==rect.x2 || rect.y1==rect.y2) return;
        this.onSelectEnd.apply(this,[img,rect]);
        $('#snapshot_toggle').hide(0);
-     },
+       
+     }, // ias_onSelectChange
 
      onSelectEnd: function ias_onSelectEnd(img,rect) {
 
@@ -1589,6 +1629,9 @@ Panorama.prototype.snapshot={
   } // snapshot_imageFilters
 
 } // snapshot
+
+
+setupEventDispatcher(Panorama.prototype.snapshot);
 
 /*
 * drawGlImage()
