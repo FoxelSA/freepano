@@ -831,7 +831,10 @@ $(document).on('filesloaded', function(){
          color: 'grey',
          transition: 'all 0.2s ease-in',
          textAlign: 'center'
-       }).hover(function(e){
+       }).on('click.gallery',function(e){
+         gallery.hide();
+       })
+       .hover(function(e){
 
            if (e.type=='mouseenter') {
                $(this).css({
@@ -940,7 +943,7 @@ $(document).on('filesloaded', function(){
        gallery.overlay.append(gallery.leftArrow);
        gallery.overlay.append(gallery.rightArrow);
        gallery.overlay.append(gallery.closeButton);
- 
+
      }, // gallery_initOverlay
 
      hide: function gallery_hide() {
