@@ -776,13 +776,7 @@ $(document).on('filesloaded', function(){
        var gallery=this;
 
        gallery.showOverlay();
-     
-       if (gallery.canvas) {
-         if (gallery.canvas.id==canvas.id) {
-           return;
-         }
-       }
-   
+        
        gallery.copyCanvas(canvas);
        gallery.centerAndFitCanvas();
 
