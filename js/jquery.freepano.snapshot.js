@@ -283,6 +283,7 @@ Panorama.prototype.snapshot={
           if (canvas.length && !keepThumb) {
             canvas.closest('.snapshot').remove();
             snapshot.list[snapshot.current-1].deleted=true;
+            snapshot.list.pop();
           }
         }
 
