@@ -189,7 +189,7 @@ function setupEventDispatcher(emitter) {
     $.each(emitter.receivers,function(i,receiver){
 
       // THREE.js constructors are unnamed
-      var receiver_constructor_name=(receiver.constructor.name||receiver.type);
+      var receiver_constructor_name=(receiver.object_type||receiver.constructor.name||receiver.type);
 
       // if suscriber event handler exists for this event type
       if (receiver[method] && typeof(receiver[method]=="function")) {
