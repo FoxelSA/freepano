@@ -1,0 +1,7 @@
+[submodule "js/thirdparty/malihu-custom-scrollbar-plugin"]
+	path = js/thirdparty/malihu-custom-scrollbar-plugin
+	url = https://github.com/malihu/malihu-custom-scrollbar-plugin.git
+	branch = 3.x
+[submodule "js/thirdparty/CamanJS"]
+	path = js/thirdparty/CamanJS
+	url = https://github.com/meltingice/CamanJS.git

@@ -124,7 +124,9 @@ $.extend(true, Map.prototype, {
         }
 
         // Append map
+        map.wrapper = $('<div class="wrapper">');
         map.container = $('<div>',{'class':'map'});
+        map.wrapper.append(map.container);
         $(panorama.container).append(map.container);
 
         // Create leaflet map object
@@ -294,6 +296,8 @@ $.extend(true, Map.prototype, {
 
     updateCurrentMarker: function(){
       var map=this;
+      if (map.currentMarker===undefined)
+        return;
       var currentImage=map.panorama.list.currentImage;
       map.currentMarker.setIcon(map.markerIcon);
       $.each(map.markers,function(){

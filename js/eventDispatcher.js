@@ -128,11 +128,20 @@ function setupEventDispatcher(emitter) {
    * @return undefined
    *
    */
-  emitter.dispatchEventsTo=function eventDispatcher_dispatchEventsTo(receiver_obj){
+  emitter.dispatchEventsTo=function eventDispatcher_dispatchEventsTo(receiver_obj,options){
     var emitter=this;
     // dont add receiver_obj twice
-    if (emitter.receivers.indexOf(receiver_obj)<0) {
-      emitter.receivers.push(receiver_obj);
+    var index=emitter.receivers.indexOf(receiver_obj);
+    if (index<0) {
+      if (options && options.prepend) {
+        emitter.receivers.unshift(receiver_obj);
+      } else {
+        emitter.receivers.push(receiver_obj);
+      }
+    } else {
+        if (options && options.dispose) {
+           emitter.receivers.splice(index,1);
+        }
     }
   } // eventDispatcher_dispatchEventsTo
 
@@ -163,7 +172,7 @@ function setupEventDispatcher(emitter) {
     }
 
     // THREE.js constructors are unnamed
-    var emitter_constructor_name=(emitter.constructor.name||emitter.type);
+    var emitter_constructor_name=emitter.object_type||emitter.constructor.name||emitter.type;
 
     if (eventDispatcherDebug) {
       var serial=window.eventDispatcherSerial++;
@@ -180,7 +189,7 @@ function setupEventDispatcher(emitter) {
     $.each(emitter.receivers,function(i,receiver){
 
       // THREE.js constructors are unnamed
-      var receiver_constructor_name=(receiver.constructor.name||receiver.type);
+      var receiver_constructor_name=(receiver.object_type||receiver.constructor.name||receiver.type);
 
       // if suscriber event handler exists for this event type
       if (receiver[method] && typeof(receiver[method]=="function")) {

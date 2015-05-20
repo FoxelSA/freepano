@@ -119,3 +119,20 @@ This program includes works distributed under the terms of another license(s) an
     <[https://github.com/alexeyten/qr-image](https://github.com/alexeyten/qr-image)><br />
     Copyright (c) 2013 Yandex LLC<br />
     qr-image is licensed under the [MIT license](http://opensource.org/licenses/MIT).
+
+*   __imgAreaSelect jQuery plugin 0.9.11-rc.1__<br />
+    <[http://odyniec.net/projects/imgareaselect/](http://odyniec.net/projects/imgareaselect/)><br />
+    Copyright (c) 2008-2013 Michal Wojciechowski<br />
+    Dual licensed under the [MIT-LICENSE]<br />
+    and GPL [GPL-LICENSE] licenses.
+
+*   __Font Awesome 4.3.0__<br />                                                
+    <[http://fontawesome.io](http://fontawesome.io)><br />
+    Font Awesome by Dave Gandy - http://fontawesome.io<br />
+    Font Awesome is licensed under the [SIL OFL 1.1 license](http://scripts.sil.org/OFL).
+
+*   __Malihu custom scrollbar plugin__<br />
+    <[http://manos.malihu.gr](http://manos.malihu.gr)><br />
+    Copyright (c) 2014 Manos Malihutsakis, http://manos.malihu.gr<br />
+    Malihu custom scrollbar plugin is licensed under the [MIT license](http://opensource.org/licenses/MIT).
+

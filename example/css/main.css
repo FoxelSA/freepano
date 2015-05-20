@@ -47,9 +47,12 @@ html, body, canvas {
     height:100%;
     width:100%;
     overflow:hidden;
+    font-size:15px;
+    font-family:arial,helvetica,sans;
+
 }
 
-html, body {
+canvas#snap1 {
     font-size:15px;
     font-family:arial,helvetica,sans;
     line-height:150%;
@@ -98,8 +101,8 @@ html, body {
 .map {
     position:absolute;
     box-shadow: 10px 10px 20px 0px rgba(0,0,0,0.2);
-    bottom:60px;
-    left:10px;
+    top: 20px;
+    right: 20px;
     width:350px;
     height:250px;
 }
@@ -132,6 +135,7 @@ footer .caption {
     position:absolute;
     top:15px;
     left:10px;
+    color:#fff;
 }
 
     footer .caption > div {
@@ -248,3 +252,150 @@ footer .logo {
     }
 
 }
+
+#snapshot_toggle {
+  display: none; 
+}
+
+#snapshot_bar {
+  width: 100%;
+  height: 144px;
+  position: absolute;
+  bottom: 64px;
+  padding-top: 12px;
+  background-color: rgba(255,255,255,0.2);
+  box-shadow: 5px 5px 2px rgba(0,0,0,0.2);
+  z-index: 9;
+  display: block;
+  -webkit-user-select: none;
+  transition: all 0.5s ease-in;
+  visibility: hidden;
+  opacity: 0
+}
+
+#snapshot_bar canvas {
+    transform: scaleY(-1);
+    display: block;
+    cursor: pointer;
+}
+
+div.snapshot {
+  display: block;
+  float: left;
+  margin: auto 4px;
+  box-shadow: 5px 5px 5px 0px rgba(0,0,0,0.25);
+  border: 2px solid white;
+}
+
+div.snapshot.current {
+  border: 2px solid yellow;
+}
+
+.parameter_widget {
+  float: left;
+}
+
+.parameter_value {
+  vertical-align: super;
+  margin-left: 16px
+}
+
+.parameter_name {
+  margin-top: 2px;
+  float: left;
+  width: 100px;
+}
+
+.parameter_name:first-letter {
+  text-transform: uppercase;
+}
+
+#imagefilters > fieldset {
+  background-color: rgba(0,0,0,0.8);
+  border-radius: 8px;
+  margin-bottom: 8px;
+  box-shadow: 5px 5px 5px 0px rgba(0,0,0,0.4);
+
+}
+
+#imagefilters {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+
+.gallery_overlay {
+  background-color: rgba(0,0,0,0.5);
+  position: absolute;
+  width: 100%;
+  height: 100%;
+}
+
+
+canvas.gallery {
+  border: 8px solid white
+}
+
+a.button {
+  box-shadow: 6px 6px 12px rgba(0,0,0,0.4);
+  position: absolute;
+  top: 0;
+  left: 0;
+  color: black;
+  margin: 1em;
+  border: 1px solid black;
+  border-radius: 0.5em;
+  background-color: rgba(255,255,255,0.6);
+  -webkit-user-select: none;
+  user-select: none;
+  cursor: pointer;
+  transition: all 0.2s ease-in;
+}
+
+a.button:hover {
+  background-color: rgba(255,255,255,0.7);
+}
+
+a.button:active {
+  box-shadow: 3px 3px 6px rgba(0,0,0,0.5);
+  transform: scale(0.98);
+}
+
+a.button div {
+  position: relative;
+  font-size: 3em;
+  margin: 0.2em;
+}
+
+.imgareaselect-outer {
+  cursor: crosshair;
+}
+
+.gallery {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#snapshot_close {
+  width: 16px;
+  height: 16px;
+  color: gray;
+  position: fixed;
+  right: 16px;
+  transition: all 0.2s ease-in;
+  background-color: white;
+  border: 1px solid gray;
+  text-align: center;
+  border-radius: 1px;
+  box-shadow: 3px 3px 6px rgba(0,0,0,0.4);
+}
+
+#snapshot_close:hover {
+  color: black;
+}
+
+#snapshot_close:active {
+  box-shadow: 1px 1px 3px rgba(0,0,0,0.5);  
+  transform: scale(0.9);
+}
+

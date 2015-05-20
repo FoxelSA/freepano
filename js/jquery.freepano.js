@@ -1911,7 +1911,51 @@ $.extend(true,Panorama.prototype,{
 
       },0);
 
-    } // panorama_onresize
+    }, // panorama_onresize
+
+    /**
+    * Panorama.screenCapture()
+    *
+    * Return the specified screen region from the rendered panorama
+    * scene in a new 2D canvas or an existing one, if specified.
+    *
+    * @param x,y      top left screen coordinates
+    * @param w,h      dimensions
+    * @param canvas   (optional) existing canvas
+    * @return canvas  new or input canvas
+    */
+    screenCapture: function panorama_screenCapture(x,y,w,h,canvas) {
+      var panorama=this;
+
+      if (w==0 || h==0) return canvas;
+
+      panorama.renderer.render(panorama.scene,panorama.camera.instance);
+
+      // create or update canvas
+      if (!canvas) {
+        canvas=document.createElement('canvas');
+      }
+
+      canvas.width=w;
+      canvas.height=h;
+
+      var ctx=canvas.getContext('2d');
+
+      // allocate memory for image
+      var imageData=ctx.createImageData(w,h);
+      var bitmap=new Uint8Array(w*h*4);
+
+      // read bitmap from webgl buffer
+      var gl=panorama.renderer.getContext();
+      gl.readPixels(x,y,w,h,gl.RGBA,gl.UNSIGNED_BYTE,bitmap);
+
+      // write bitmap to canvas
+      imageData.data.set(bitmap);
+      ctx.putImageData(imageData,0,0);
+  
+      return canvas;
+  
+    } // panorama_screenCapture
 
 }); // Panorama Prototype
 
