@@ -118,6 +118,10 @@ $.extend(true,PanoList.prototype,{
   overrideSettings: function panoList_overrideSettings(imageId) {
 
     var pano_list=this;
+    if (!pano_list.images[imageId]) {
+      $.notify('Error: panorama with id "'+imageId+'" not found !');
+      return;
+    }
 
     // store current state
     if (pano_list.overrided===null) {
