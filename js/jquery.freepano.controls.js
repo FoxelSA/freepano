@@ -43,9 +43,23 @@
  */
 
 
+//// fix: hammer event handlers registered multiple times (on panorama change)
+Hammer.prototype._on=Hammer.prototype.on;
+
+Hammer.prototype.on=function(events, handler) {
+
+  var hammer=this;
+
+  hammer.off(events,handler);
+  hammer._on(events,handler);
+
+  return this;
+
+}
+////
+
 // closure
 (function($,Panorama) {
-
 
 /*
  * Controls
