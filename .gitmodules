@@ -5,3 +5,6 @@
 [submodule "js/thirdparty/CamanJS"]
 	path = js/thirdparty/CamanJS
 	url = https://github.com/meltingice/CamanJS.git
+[submodule "js/thirdparty/jquery.transit"]
+	path = js/thirdparty/jquery.transit
+	url = https://github.com/rstacruz/jquery.transit.git
