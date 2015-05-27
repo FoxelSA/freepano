@@ -136,3 +136,18 @@ This program includes works distributed under the terms of another license(s) an
     Copyright (c) 2014 Manos Malihutsakis, http://manos.malihu.gr<br />
     Malihu custom scrollbar plugin is licensed under the [MIT license](http://opensource.org/licenses/MIT).
 
+*   __Transit__<br />
+    <[http://ricostacruz.com/jquery.transit](http://ricostacruz.com/jquery.transit)><br />
+    Copyright (c) 2011-2014 Rico Sta. Cruz, http://ricostacruz.com/jquery.transit<br />
+    jQuery Transit plugin is licensed under the [MIT license](http://opensource.org/licenses/MIT).
+
+*   __glfx.js<br />
+    <[http://evanw.github.com/glfx.js](http://evanw.github.com/glfx.js)><br />
+    Copyright (c) 2011 Evan Wallace, http://evanw.github.com/glfx.js/<br />
+    glfx is licensed under the [MIT license](http://opensource.org/licenses/MIT).
+
+*   __CamanJS<br />
+    <[http://camanjs.com](http://camanjs.com)><br />
+    Copyright (c) 2010 Ryan LeFevre, http://camanjs.com<br />
+    CamanJS is licensed under the [BSD license](http://opensource.org/licenses/BSD-2-Clause).
+
