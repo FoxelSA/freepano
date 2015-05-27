@@ -682,7 +682,8 @@ $.extend(true,Sphere.prototype,{
                     mesh.material = sphere.tileSet.defaultMaterial.clone();
                 }
             }
-            mesh.visible = mesh._visible = false;
+            mesh.visible=!sphere.dynamicTileLoading;
+            mesh._visible=false;
         });
 
         // reset sphere.updateTile() related properties
