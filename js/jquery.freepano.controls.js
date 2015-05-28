@@ -42,22 +42,6 @@
  *      Attribution" section of <http://foxel.ch/license>.
  */
 
-
-//// fix: hammer event handlers registered multiple times (on panorama change)
-Hammer.prototype._on=Hammer.prototype.on;
-
-Hammer.prototype.on=function(events, handler) {
-
-  var hammer=this;
-
-  hammer.off(events,handler);
-  hammer._on(events,handler);
-
-  return this;
-
-}
-////
-
 // closure
 (function($,Panorama) {
 
@@ -300,8 +284,25 @@ $.extend(true,Controls.prototype, {
         window._controls_touch = controls;
 
         // instantiate hammer.js
-        if (controls.touch.internal.hammer == null)
-            controls.touch.internal.hammer = new Hammer($('canvas:first',controls.panorama.container).get(0));
+        if (controls.touch.internal.hammer == null) {
+            var hammer = controls.touch.internal.hammer = new Hammer($('canvas:first',controls.panorama.container).get(0));
+
+            //// fix: hammer event handlers registered multiple times (on panorama change)
+            hammer._on = hammer.on;
+
+            hammer.on = function(events, handler) {
+
+              var hammer = this;
+
+              try { hammer.off(events,handler); } catch(e) {}
+              hammer._on(events,handler);
+
+              return this;
+
+            }
+            ////
+
+        }
 
     }, // controls_touchInstance
 
