@@ -254,7 +254,7 @@ footer .logo {
 }
 
 #snapshot_toggle {
-  display: none; 
+  /* display: none; */ 
 }
 
 #snapshot_bar {
@@ -340,7 +340,7 @@ a.button {
   box-shadow: 6px 6px 12px rgba(0,0,0,0.4);
   position: absolute;
   top: 0;
-  left: 0;
+  /* left: 0; */
   color: black;
   margin: 1em;
   border: 1px solid black;
@@ -398,4 +398,13 @@ a.button div {
   box-shadow: 1px 1px 3px rgba(0,0,0,0.5);  
   transform: scale(0.9);
 }
+
+#imagefilters {
+  top: 10;
+  left: 10;
+  position: 'absolute';
+  color: 'white';
+  width: 340;
+}
+
 
