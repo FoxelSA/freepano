@@ -39,7 +39,7 @@
 Panorama.prototype.gallery = {
 
    // object type for event dispatcher
-   object_type: 'gallery',
+   _object_type: 'gallery',
 
    container: 'body',
    margin: 8,
