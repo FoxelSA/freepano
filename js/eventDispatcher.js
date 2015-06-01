@@ -172,30 +172,30 @@ function setupEventDispatcher(emitter) {
     }
 
     // THREE.js constructors are unnamed
-    var emitter_constructor_name=emitter.object_type||emitter.constructor.name||emitter.type;
+    var emitter_object_type=emitter._object_type||emitter.constructor.name||emitter.type;
 
     if (eventDispatcherDebug) {
       var serial=window.eventDispatcherSerial++;
-      console.log(serial+' dispatching '+emitter_constructor_name+' "'+e.type+'"');
+      console.log(serial+' dispatching '+emitter_object_type+' "'+e.type+'"');
     }
 
     // forward also additional arguments, if any
     var args=Array.prototype.slice.apply(arguments,[1]);
 
     // run suscribers handler for this event type, if any
-    var method='on_'+emitter_constructor_name.toLowerCase()+'_'+e.type;
+    var method='on_'+emitter_object_type.toLowerCase()+'_'+e.type;
     var stopPropagation=false;
 
     $.each(emitter.receivers,function(i,receiver){
 
       // THREE.js constructors are unnamed
-      var receiver_constructor_name=(receiver.object_type||receiver.constructor.name||receiver.type);
+      var receiver_object_type=(receiver._object_type||receiver.constructor.name||receiver.type);
 
       // if suscriber event handler exists for this event type
       if (receiver[method] && typeof(receiver[method]=="function")) {
 
         if (eventDispatcherDebug) {
-          console.log(serial+' '+method+' -> '+receiver_constructor_name);
+          console.log(serial+' '+method+' -> '+receiver_object_type);
         }
 
         // run receiver event handler
@@ -205,7 +205,7 @@ function setupEventDispatcher(emitter) {
           stopPropagation=true;
 
           if (eventDispatcherDebug) {
-            console.log(serial+' '+method+' -> '+'propagation stopped by: '+receiver_constructor_name);
+            console.log(serial+' '+method+' -> '+'propagation stopped by: '+receiver_object_type);
           }
 
           return false;
@@ -214,7 +214,7 @@ function setupEventDispatcher(emitter) {
       } else {
         // receiver event handler doesnt exist for this event type
         if (eventDispatcherDebug>1){
-          console.log(serial+' '+method+' -> '+'warning: '+receiver_constructor_name+'.'+method+' is undefined');
+          console.log(serial+' '+method+' -> '+'warning: '+receiver_object_type+'.'+method+' is undefined');
         }
       }
     });
@@ -229,7 +229,7 @@ function setupEventDispatcher(emitter) {
     if (emitter[method] && typeof(emitter[method]=="function")) {
 
       if (eventDispatcherDebug) {
-        console.log(serial+' '+method+' -> '+emitter_constructor_name);
+        console.log(serial+' '+method+' -> '+emitter_object_type);
       }
 
       // run self handler
@@ -238,7 +238,7 @@ function setupEventDispatcher(emitter) {
         // stop propagation if any receiver handler return false
         //
         if (eventDispatcherDebug) {
-          console.log(serial+' '+method+' -> '+'propagation stopped by: '+emitter_constructor_name);
+          console.log(serial+' '+method+' -> '+'propagation stopped by: '+emitter_object_type);
         }
 
         return false;
@@ -246,7 +246,7 @@ function setupEventDispatcher(emitter) {
 
     } else {
       if (eventDispatcherDebug>1){
-        console.log(serial+' '+method+' -> '+'warning: '+emitter_constructor_name+'.'+method+' is undefined');
+        console.log(serial+' '+method+' -> '+'warning: '+emitter_object_type+'.'+method+' is undefined');
       }
     }
 
