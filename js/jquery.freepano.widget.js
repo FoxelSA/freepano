@@ -566,9 +566,7 @@ function WidgetFactory(options) {
             var meshes=widgetList_elem.instance.camera.meshes;
 
             if (meshes && meshes[Widget.name.toLowerCase()]) {
-              $.each(widgetList_elem.instance.object3D.children,function(index,mesh){
-                meshes[Widget.name.toLowerCase()].push(this);
-              });
+              meshes[Widget.name.toLowerCase()].push(widgetList_elem.instance.object3D);
             }
 
           });
@@ -695,6 +693,11 @@ function WidgetFactory(options) {
           if (!hover_elem.object.parent) {
                 console.log('fixme',hover_elem.object);
                 return true; // continue
+          }
+
+          if (!widgetList.list[hover_elem.object.parent.name]) {
+            console.log('fixme: widgetList.list.'+hover_elem.object.parent.name+' undefined', hover_elem.object);
+            return true; // continue
           }
 
           var widget=widgetList.list[hover_elem.object.parent.name].instance;
@@ -862,7 +865,6 @@ function WidgetFactory(options) {
       }, // widgetList_on_panorama_mouseevent
 
       get_mouseover_list: function widgetList_get_mouseover_list(e) {
-
         var widgetList=this;
         var panorama=widgetList.panorama;
         var container=$(panorama.container);
@@ -894,7 +896,7 @@ function WidgetFactory(options) {
             // find meshes intersecting with this ray
             var objects=camera.meshes[Widget.name.toLowerCase()];
             if (!objects) return;
-            var meshes=camera.raycaster.intersectObjects(objects);
+            var meshes=camera.raycaster.intersectObjects(objects,true);
 
             // and append them to mouseover_list
             if (meshes.length) {
