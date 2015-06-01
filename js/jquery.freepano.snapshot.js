@@ -38,12 +38,16 @@
 
 
 Panorama.prototype.snapshot={
+
+  // since snapshot is a generic object, specify _object_type for event dispatcher
   _object_type: 'snapshot',
+
   size: 128,
   list: [],
   dom: "#snapshot_bar",
   toggle_button_id: "#snapshot_toggle",
   close_button_id: "#snapshot_close",
+  sliders_container: 'body',
 
   on_panorama_init: function snapshot_on_panorama_init() {
     $('a').each(function(){this.draggable=false;});
@@ -232,6 +236,14 @@ Panorama.prototype.snapshot={
           panorama.ias.cancelSelection({keepThumb: options.keepThumb});
       } 
 
+      snapshot.dispatch({
+        type: 'mode',
+        mode: {
+          name: 'edit',
+          value: false
+        }
+      });
+
       snapshot.restoreMapState();
 
       // show toggle_button
@@ -246,6 +258,13 @@ Panorama.prototype.snapshot={
    }
 
    // enter edit mode
+   snapshot.dispatch({
+     type: 'mode',
+     mode: {
+       name: 'edit',
+       value: true
+     }
+   });
 
    $('div.freepano canvas').css('cursor','crosshair');
 
@@ -519,17 +538,11 @@ Panorama.prototype.snapshot={
 
   imageFilters: function snapshot_imageFilters(action) {
     var snapshot=this;
-    var container=snapshot.imageFilters.container=$('#imagefilters');
+    var container=snapshot.imageFilters.container=$('#imagefilters',snapshot.sliders_container);
 
     // create container for image filter widgets
     if (!container.length) {
-      container=$('<div id="imagefilters">').appendTo('body').css({
-        top: 10,// $(snapshot.button).offset().top+$(snapshot.button).height()+16,
-        left: 10,
-        position: 'absolute',
-        color: 'white',
-        width: 340
-      });
+      container=$('<div id="imagefilters">').appendTo(snapshot.sliders_container).style('#imagefilters');
     }
 
     // 
@@ -590,7 +603,7 @@ Panorama.prototype.snapshot={
         
       }
 
-      $('input').trigger('change');
+      $('input',snapshot.sliders_container).trigger('change');
 //      addSlider('exposure');
 //      addSlider('vibrance');
     
