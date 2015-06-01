@@ -1930,9 +1930,13 @@ $.extend(true,Panorama.prototype,{
 
       if (w==0 || h==0) return canvas;
 
+      // render main scene
       panorama.renderer.render(panorama.scene,panorama.camera.instance);
 
-      // create or update canvas
+      // allow receivers to render secondary scenes
+      panorama.dispatch('render');
+
+      // create or update destination canvas
       if (!canvas) {
         canvas=document.createElement('canvas');
       }
@@ -1967,12 +1971,10 @@ $.extend(true,Panorama.prototype,{
  */
 $.fn.panorama = function jQuery_panorama(options) {
     return this.each(function() {
-        if ($(this).data('pano')) {
-            // void
-        } else {
-            var panorama = new Panorama($.extend(true,{},options,{
-                container: this
-            }));
+        if (!$(this).data('pano')) {
+          var panorama = new Panorama($.extend(true,{},options,{
+            container: this
+          }));
         }
     });
 }; // jQuery_panorama
@@ -1984,7 +1986,7 @@ $.fn.panorama = function jQuery_panorama(options) {
  * @return  Boolean     True if the left button is down, false otherwise.
  */
 window.isLeftButtonDown=function isLeftButtonDown(e) {
-     return ((e.buttons!==undefined && e.buttons==1) || (e.buttons===undefined && e.which==1));
+     return ((e.which!==undefined && e.which==1) || (e.buttons!==undefined && e.buttons==1));
  }, // isLeftButtonDown
 
 /*
