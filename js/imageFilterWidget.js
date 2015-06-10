@@ -120,6 +120,21 @@ $.extend(true,ImageFilter.prototype,{
     return $(imageFilter.target).parent().data(imageFilter.group) || $.extend(true,{},imageFilter.staticData);
   }, // imageFilter_getStaticData
 
+  processFilters: function imageFilter_processFilters() {
+    var imageFilter=this;
+    var staticData=imageFilter.getStaticData();
+    $.each(staticData,function() {
+      if (!this.list || !this.list.length || !(this.list[0] instanceof ImageFilter)) {
+        return;
+      }
+      var imageFilters=this;
+      if (imageFilters.process) {
+        imageFilters.process(staticData);
+      }
+    });
+
+  }, // imageFilter_processFilters
+
   
   // available filter types
   filterTypeAvailable: ['caman','glfx'],
@@ -130,9 +145,9 @@ $.extend(true,ImageFilter.prototype,{
 
      caman: {
       list: [],
-      process: function(staticData,widget) {
+      process: function(staticData) {
         var caman=staticData.caman.instance;
-        var canvas=$(widget.imageFilter.target)[0];
+        var canvas=$(staticData.widget[0].imageFilter.target)[0];
         var isupdate;
       
         if (!caman) {
@@ -192,7 +207,7 @@ $.extend(true,ImageFilter.prototype,{
         }
 
         if (caman.canvasNeedsUpdate) {
-          caman.canvas.textureCopy($(widget.imageFilter.target)[0]);
+          caman.canvas.textureCopy($(staticData.widget[0].imageFilter.target)[0]);
           caman.reloadCanvasData();
           caman.canvasNeedsUpdate=false;
         }
@@ -224,7 +239,7 @@ $.extend(true,ImageFilter.prototype,{
 
     glfx: {
       list: [],
-      process: function(staticData,widget) {
+      process: function(staticData) {
         var glfx=staticData.glfx;
         var isupdate=(glfx.canvas);
 
@@ -260,7 +275,7 @@ $.extend(true,ImageFilter.prototype,{
         }
 
         if (!glfx.texture) {
-          glfx.texture=glfx.canvas.texture($(widget.imageFilter.target)[0]);
+          glfx.texture=glfx.canvas.texture($(staticData.widget[0].imageFilter.target)[0]);
         }
 
         var texture;
@@ -571,9 +586,11 @@ $.extend(true,ImageFilterWidget.prototype,{
     $('.'+widget.name,widget.imageFilter.container).html(widget.html[widget.type].call(widget));
 
 
-    $('.'+widget.name+' input',widget.imageFilter.container)
+    $$$('.'+widget.name+' input',widget.imageFilter.container)
     .off('.imageFilterWidget')
-    .on('input.imageFilterWidget change.imageFilterWidget', widget.onchange)
+    .on('input.imageFilterWidget change.imageFilterWidget', widget.onchange);
+
+    $('.'+widget.name+' input',widget.imageFilter.container)
     .closest('div.parameter')
     .data('imageFilterWidget',widget);
 
@@ -587,16 +604,23 @@ $.extend(true,ImageFilterWidget.prototype,{
   }, // imageFilterWidget_dispose
 
   onchange: function imageFilterWidget_onchange(e){
-    var div=$(e.target).closest('div.parameter');
-    var widget=div.data('imageFilterWidget');
-    var panel=$(div).closest('#imagefilters');
+    var control=this;
+    var div=$(control).closest('div.parameter');
+    var widget=$(control).closest('div.parameter').data('imageFilterWidget');
 
-    var value=$(e.target).val();
+    var value=$(control).val();
 
     widget.value=value;    
     
     $('.parameter_value',div).text(widget.value);
 
+    widget.imageFilter.processFilters();
+
+  }, // imageFilterWidget_onchange
+
+    /*
+  processFilters: function imageFilterWidget_processFilters() {
+    var widget=this;
     var staticData=widget.imageFilter.getStaticData();
 
     $.each(staticData,function() {
@@ -606,7 +630,8 @@ $.extend(true,ImageFilterWidget.prototype,{
       }
     });
         
-  },
+  }, // imageFilterWidget_processFilters
+  */
   
   html: {
       slider: function imageFilterWidget_sliderHtml() {
