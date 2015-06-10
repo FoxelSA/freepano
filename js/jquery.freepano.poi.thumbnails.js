@@ -52,6 +52,7 @@ $.extend(POI_thumb.prototype,{
     defaults: {
       width: 64,
       height: 64,
+      flipY: false,  // note: when flipY is true, canvas is replaced
       renderTargetOptions: {
         minFilter: THREE.LinearFilter,
         stencilBuffer: false,
@@ -103,11 +104,11 @@ $.extend(POI_thumb.prototype,{
       var poiThumb=this;
       var panorama=poiThumb.panorama;
 
-      var list;
+      var poilist;
       if (name){
         // if poiThumb.image exists, update
         if (panorama.poi.list[name].thumb) {
-          panorama.poi.list[name].thumb.init('update');
+          panorama.poi.list[name].thumb.init();
           return;
         }
         poilist={};
@@ -122,10 +123,11 @@ $.extend(POI_thumb.prototype,{
       $.each(poilist,function(name){
         var poi=this;
         if (!poi.thumb) {
-          canvas=document.createElement('canvas');
+          var canvas=document.createElement('canvas');
           canvas.className='poithumb';
           panorama.poi.list[name].thumb=new poiThumb.image({
             panorama: panorama,
+            poiThumb: poiThumb,            
             poiname: name,
             canvas: canvas
           });
@@ -135,6 +137,29 @@ $.extend(POI_thumb.prototype,{
       panorama.scene.add(panorama.sphere.object3D);
 
     }, // poiThumb_update
+
+    getImage: function poiThumb_getImage(name){
+
+      var poiThumb=this;
+      var panorama=poiThumb.panorama;
+      var poi=panorama.poi.list[name];
+    
+      // borrow panorama sphere
+      poiThumb.scene.add(panorama.sphere.object3D);
+
+      var canvas=poiThumb.canvas||document.createElement('canvas');
+      var image=new poiThumb.image({
+            panorama: panorama,
+            poiThumb: poiThumb,
+            poiname: name,
+            canvas: canvas
+       });
+       
+      panorama.scene.add(panorama.sphere.object3D);
+
+      return image;
+
+    }, // poiThumb_getImage
 
     image: function poiThumb_image(options){
       if (!this instanceof poiThumb_image) {
@@ -158,10 +183,10 @@ $.extend(true,POI_thumb.prototype.image.prototype,{
     defaults: {
     },
 
-    init: function poiThumb_image_init(update) {
+    init: function poiThumb_image_init() {
       var image=this;
       var panorama=this.panorama;
-      var poiThumb=panorama.poiThumb;
+      var poiThumb=this.poiThumb;
 
       var vector;
       if (panorama.poi.list[image.poiname].instance) {
@@ -187,7 +212,6 @@ $.extend(true,POI_thumb.prototype.image.prototype,{
       image.canvas.width=w;
       image.canvas.height=h;
       var ctx=image.canvas.getContext('2d');
-      ctx.scale(1,-1); // flip context vertically
 
       var bitmap=new Uint8Array(w*h*4);
       image.imageData=ctx.createImageData(w,h);
@@ -199,6 +223,19 @@ $.extend(true,POI_thumb.prototype.image.prototype,{
 
       // draw thumbnail
       ctx.putImageData(image.imageData,0,0);
+
+      if (poiThumb.flipY) {
+        // flip image vertically
+        var canvas=document.createElement('canvas');
+        canvas.height=h;
+        canvas.width=w;
+        ctx=canvas.getContext('2d');
+        ctx.scale(1,-1);
+        ctx.drawImage(image.canvas,0,0,w,-h);
+        image.canvas=canvas;   
+      }
+      
+      image.ctx=ctx;
 
     } // POIThumb.image_init
 
