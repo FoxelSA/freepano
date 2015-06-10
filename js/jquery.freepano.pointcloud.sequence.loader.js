@@ -85,7 +85,7 @@ $.extend(ParticleSequence_loader.prototype,{
 
       // load particle sequences
       $.ajax({
-          url: seq_loader.poi_path+panorama.list.currentImage+'_seq.json',
+          url: seq_loader.poi_path+panorama.list.currentImage+'_seq.json?t='+new Date().getTime(),
 
           // network or server error
           error: function() {

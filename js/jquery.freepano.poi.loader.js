@@ -76,7 +76,7 @@ $.extend(POI_loader.prototype,{
       }
 
       $.ajax({
-          url: poiLoader.poi_path+panorama.list.currentImage+'.json',
+          url: poiLoader.poi_path+panorama.list.currentImage+'.json?t='+new Date().getTime(),
           error: function() {
 /*            $.notify('Aucunes données à afficher',{
               sticky: false,
