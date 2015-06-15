@@ -760,8 +760,10 @@ $(document).on('filesloaded', function(){
     var filters=$(e.target).parent().data('filters');
     $.each(filters.widget,function(){
       var widget=this;
-      $('#imagefilters .filter.'+widget.imageFilter.filter+' '+'.parameter.'+widget.name+' input').val(widget.value).trigger('change');
+      $('#imagefilters .filter.'+widget.imageFilter.filter+' '+'.parameter.'+widget.name+' input').val(widget.value).change();
+//      widget.imageFilter.processFilters();
     });
+    panorama.snapshot._imageFilter.processFilters();
 
   });
 

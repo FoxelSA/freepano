@@ -52,6 +52,7 @@ Panorama.prototype.gallery = {
    }, // gallery_on_panorama_init
 
    show: function gallery_show(canvas) {
+           console.log('gallery_show',canvas.id)
    
      var gallery=this;
 
@@ -223,7 +224,7 @@ Panorama.prototype.gallery = {
    hide: function gallery_hide() {
      var gallery=this;
      $('.gallery',gallery.container).hide(0);
-     gallery.overlay.hide(0);
+     $(gallery.overlay):.hide(0);
      $('#snapshot_toggle').show(0);
      gallery.dispatch('hide');
    }, // gallery_hide
@@ -312,7 +313,8 @@ Panorama.prototype.gallery = {
          height=width/canvasRatio;
        }
      }
-
+     
+     // center canvas
      $(canvas).add($(canvas).parent()).css({
        position: 'absolute',
        width: width,

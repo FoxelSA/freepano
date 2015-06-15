@@ -331,7 +331,6 @@ div.snapshot.current {
   height: 100%;
 }
 
-
 canvas.gallery {
   border: 8px solid white
 }
@@ -400,11 +399,11 @@ a.button div {
 }
 
 #imagefilters {
-  top: 10;
-  left: 10;
-  position: 'absolute';
-  color: 'white';
-  width: 340;
+  top: 10px;
+  left: 10px;
+  position: absolute;
+  color: white;
+  width: 340px;
 }
 
 

@@ -48,6 +48,13 @@ Panorama.prototype.snapshot={
   toggle_button_id: "#snapshot_toggle",
   close_button_id: "#snapshot_close",
   sliders_container: 'body',
+  filter_list: [
+    [ 'glfx', 'vibrance' ],
+    [ 'glfx', 'sepia' ],
+    [ 'glfx', 'brightnessContrast' ],
+    [ 'glfx', 'vignette' ]
+  ],
+
 
   on_panorama_init: function snapshot_on_panorama_init() {
     $('a').each(function(){this.draggable=false;});
@@ -80,6 +87,7 @@ Panorama.prototype.snapshot={
 
   on_panorama_ready: function snapshot_on_panorama_ready() {
     var panorama=this;
+    // show snapshot mode toggle button
     $(panorama.snapshot.toggle_button_id).show(0);
   }, // snapshot_on_panorama_ready
 
@@ -107,16 +115,36 @@ Panorama.prototype.snapshot={
   onhidebar: function snapshot_onhidebar(e) {
       var snapshot=this;
       var panorama=snapshot.panorama;
-      snapshot.bar.css({
-        opacity: 0,
-        visibility: 'hidden'
-      });
+
+      snapshot.hideBar();
 
       if (panorama.ias) {
           snapshot.toggleEdit({keepThumb:false});
       }
   }, // snapshot_onhidebar
    
+  showBar: function snapshot_showBar() {
+     var snapshot=this;
+     snapshot.bar.css({
+         transition: 'none',
+         visibility: 'visible'
+      });
+     snapshot.bar.css({
+         transition: '',
+         opacity: 1
+     });
+
+  }, // snapshot_showbar
+
+  hideBar: function snapshot_hideBar() {
+      var snapshot=this;
+      snapshot.bar.css({
+        opacity: 0,
+        visibility: 'hidden'
+      });
+
+  }, // snapshot_hideBar
+
   on_panorama_mousemove: function snapshot_on_panorama_mousemove(e) {
     var panorama=this;
     if (panorama.ias) {
@@ -134,7 +162,7 @@ Panorama.prototype.snapshot={
     $(snapshot.toggle_button_id).hide(0);
  
     // get current snapshot index
-    gallery.canvas_index=$(e.canvas).data('snapshot_index');
+    gallery.canvas_index=snapshot.indexOf(e.canvas);
 
     // update gallery next button    
     if (gallery.canvas_index+1 >= panorama.snapshot.list.length) {
@@ -210,7 +238,7 @@ Panorama.prototype.snapshot={
 
    if (panorama.ias) {  // save or cancel edition 
 
-      var canvas_id='snap'+snapshot.current;
+      var canvas_id=snapshot.canvas_id;
       if (options.save) { // save
 
         // copy filtered canvas
@@ -220,9 +248,14 @@ Panorama.prototype.snapshot={
         $(canvas).css({
           transform: 'none'
         })
-        // save thumbnail
-    //    snapshot.save();
+        // download thumbnail
+    //    snapshot.download();
         panorama.ias.cancelSelection({keepThumb: true});
+
+        snapshot.dispatch({
+          type: 'saved',
+          canvas: canvas
+        });
 
       } else if (options.cancel||true) { // cancel
           // remove thumbnail and cancel selection
@@ -230,7 +263,7 @@ Panorama.prototype.snapshot={
             var canvas=$('canvas#'+canvas_id);
             if (canvas.length) {
               canvas.closest('.snapshot').remove();
-              snapshot.list[snapshot.current-1].deleted=true;
+              snapshot.list.pop();
             }
           }        
           panorama.ias.cancelSelection({keepThumb: options.keepThumb});
@@ -270,20 +303,11 @@ Panorama.prototype.snapshot={
 
    snapshot.hideMap();
 
-   // show bar
-   snapshot.bar.css({
-       transition: 'none',
-       visibility: 'visible'
-    });
- 
-   snapshot.bar.css({
-       transition: '',
-       opacity: 1
-   });
-      
-   // set current snapshot number
-   snapshot.current=snapshot.list.length+1;
+   snapshot.showBar();
 
+   // set index for ias
+   snapshot.index=snapshot.list.length;
+      
    // instantiate imgAreaSelect
    panorama.ias=$(panorama.container).imgAreaSelect({
 
@@ -295,13 +319,12 @@ Panorama.prototype.snapshot={
 
      onSelectCancel: function ias_onSelectCancel(keepThumb) {
 
-        if (snapshot.list[snapshot.current-1]) {
+        if (snapshot.list.length) {
           // remove thumbnail
-          var canvas_id='snap'+snapshot.current;
+          var canvas_id=snapshot.list[snapshot.list.length-1].canvas_id;
           var canvas=$('canvas#'+canvas_id);
           if (canvas.length && !keepThumb) {
             canvas.closest('.snapshot').remove();
-            snapshot.list[snapshot.current-1].deleted=true;
             snapshot.list.pop();
           }
         }
@@ -313,7 +336,7 @@ Panorama.prototype.snapshot={
         snapshot.restoreMapState;
 
         // remove filter controls
-        $('#imagefilters').remove();
+        $('#imagefilters',snapshot.sliders_container).remove();
 
         // remove snapshot
         try {
@@ -345,11 +368,27 @@ Panorama.prototype.snapshot={
         var div;
         var isnew;
 
-        var canvas_id='snap'+snapshot.current;
+        if (snapshot.index<snapshot.list.length) {
+          canvas_id=snapshot.list[snapshot.index].canvas_id;
+          canvas=$('canvas#'+canvas_id);
+        }  else {
+          canvas_id=snapshot.canvas_id='snap'+new Date().getTime();
+          canvas=[];
+        }
 
         // create or update thumbnail bar element
-        canvas=$('canvas#'+canvas_id);
         if (!canvas.length) {
+
+          if (rect.x1==rect.x2 && rect.y1==rect.y2) {
+            // simple click, exit edit mode
+            snapshot.dispatch({
+              type: 'mode',
+              mode: {
+                name: 'edit',
+                value: false
+              }
+            });
+          }
 
           // wrapper
           div=$('<div class="snapshot">)');
@@ -414,6 +453,8 @@ Panorama.prototype.snapshot={
 
 
 /*
+          // preserve ratio, use max thumbnail height
+        
           // compute canvas display size
           var ratio=rect.width/rect.height;
           if (ratio>1) {                
@@ -462,6 +503,8 @@ Panorama.prototype.snapshot={
               }    
             });
 
+            snapshot.dispatch('bar_init');
+
           } else {
 
             // add new thumb to custom scrollbar container
@@ -470,17 +513,23 @@ Panorama.prototype.snapshot={
           }
 
           // store snapshot metadata
-          snapshot.list.push({
+          var metadata= {
               canvas_id: canvas_id,
               image: panorama.list.currentImage,
               rect: rect,
               lon: panorama.lon,
               lat: panorama.lat,
               zoom: panorama.camera.zoom.current
-          });
-
+          };
+          snapshot.list.push(metadata);
+ 
           // instantiate image filters controls
           snapshot.imageFilters();
+
+          snapshot.dispatch({
+            type: 'selection_start',
+            metadata: metadata
+          });
 
         } else {
 
@@ -488,41 +537,84 @@ Panorama.prototype.snapshot={
           snapshot.list[snapshot.list.length-1].rect=rect;
 
           // update and filter canvas over selection
-          $('#imagefilters input:first').change();
+//          $$$('#imagefilters input:first',snapshot.sliders_container).change();
+          snapshot.processFilters();
 
         }
 
-        $('#'+canvas_id).data('snapshot_index',snapshot.list.length-1);
+        if (rect.x1==rect.x2 && rect.y1==rect.y2) {
+          // simple click, exit edit mode
+          snapshot.dispatch({
+            type: 'mode',
+            mode: {
+              name: 'edit',
+              value: false
+            }
+          });
+        }
                   
      } // ias_onSelectEnd
 
    });
 
   }, // snapshot_toogleEdit
-
-  // save current snapshot bitmmap and info
+  
   save: function snapshot_save() {
     var snapshot=this;
+    // trigger save event(allow receivers to cancel save, eg validation)
+    snapshot.dispatch('save');
+  }, // snapshot_save
+
+  // keep snapshot
+  onsave: function snapshot_onsave() {
+    var snapshot=this;  
+    snapshot.toggleEdit({
+      save: true,
+      keepThumb: true
+    });
+  }, // snapshot_onsave
+
+  /** 
+   * snapshot.getDownloadLink()
+   *
+   * Convert flipped raw canvas data to jpg and return download link
+   * On error, a message is notified and the callback is called without url
+   *
+   * @param options.canvas  defaults to current snapshot canvas (last of snapshot.list)
+   * @param options.callback function receiving url (can specify '&filename=')
+   *
+   */
+  getDownloadLink: function snapshot_getDownloadLink(options) {
+    var snapshot=this;
     var panorama=snapshot.panorama;
-    var canvas_id='snap'+snapshot.current;
-    var canvas=$('canvas#'+canvas_id)[0];
+    var canvas=options.canvas||$('canvas#'+snapshot.list[snapshot.list.length-1].canvas_id)[0];
+
     var ctx=canvas.getContext('2d');
     var imageData=ctx.getImageData(0,0,canvas.width,canvas.height);
     var buffer=new Uint8Array(imageData.data);
-    var metadata=snapshot.list[snapshot.current-1];   
 
     var xhr = new XMLHttpRequest();
-    xhr.open('POST', 'savethumb.php?index='+snapshot.current+'&image='+metadata.image+'&h='+metadata.rect.height+'&w='+metadata.rect.width+'&z='+metadata.zoom+'&lon='+metadata.lon+'&lat='+metadata.lat, true);
+    xhr.open('POST', 'image.php?action=convert&h='+canvas.height+'&w='+canvas.width+'&flipY='+(options.flipY?'1':'0'), options.async);
     xhr.onload = function() {
-      console.log('load',arguments,xhr); 
+      var response=JSON.parse(xhr.response);
+      if (response.status!="ok") {
+        $.notify('Error: could not convert image');
+        console.log('load',arguments,xhr);
+        options.callback();
+        return;
+      }
+      options.callback('image.php?action=download&image='+response.filename);
     };
     xhr.onerror=function(){
       console.log('loaderror',arguments);
+      $.notify('Error: server request failed');
+      options.callback();
     }
     xhr.send(buffer);
 
-  },
+  }, // getDownloadLink
 
+/*
   load: function snapshot_load() {
     var xhr = new XMLHttpRequest();
     xhr.open('GET', 'listthumbs.php', true);
@@ -535,20 +627,109 @@ Panorama.prototype.snapshot={
     xhr.send();
 
   },
+*/
 
-  imageFilters: function snapshot_imageFilters(action) {
+  // return snapshot.list index for specified canvas or canvas id
+  indexOf: function snapshot_indexOf(canvas) {
+    var snapshot=this;
+    var canvas_id=(typeof(canvas)=="string")?canvas:$(canvas)[0].id;
+    var index;
+
+    $.each(snapshot.list,function(k,properties){
+        if (properties.canvas_id==canvas_id) {
+          index=k;
+          return false;
+        }
+    });
+    return index;
+  }, // snapshot_indexOf
+
+ // remove specified canvas or canvas id
+  remove: function snapshot_remove(canvas) {
+    var snapshot=this;
+    var gallery=snapshot.panorama.gallery;
+
+    var index=snapshot.indexOf(canvas);
+    if (index==undefined) {
+      console.log('error: canvas not referenced',canvas);
+      return;
+    }
+   
+   // get snapshot canvas id
+   var canvas_id=snapshot.list[index].canvas_id;
+    
+   // remove snapshot from list
+   snapshot.list.splice(index,1);
+
+   // remove snapshot from bar
+   $('canvas#'+canvas_id,snapshot.bar).closest('.snapshot').remove();
+
+   // gallery is visible
+   if (gallery.overlay.is(':visible')) {
+     // removed the current gallery snapshot
+     if (gallery.canvas_index==index) {
+     
+       // last snapshot removed ?
+       if (!snapshot.list.length) {
+         // close gallery and hide bar
+         gallery.hide();
+         snapshot.dispatch('hidebar');
+         return;
+       }
+
+       // removed snapshot in the middle of the list
+       if (snapshot.list.length>gallery.canvas_index) {
+         // display next snapshot
+         gallery.show($('#'+snapshot.list[gallery.canvas_index].canvas_id)[0]);
+         return;
+       }
+
+       // removed snapshot at the end of the list
+       if (snapshot.list.length==gallery.canvas_index) {
+         // display previous snapshot
+         --gallery.canvas_index;
+         gallery.show($('#'+snapshot.list[gallery.canvas_index].canvas_id)[0]);
+         return;       
+       }
+
+     } else {
+       if (gallery.canvas_index>index) {
+         --gallery.canvas_index;
+       }
+     }
+
+   }
+
+  }, // snapshot_remove
+  
+  // return snapshot metadata for canvas or canvas_id
+  getMetadata: function snapshot_getMetadata(canvas) {
+    var snapshot=this;
+    var index=snapshot.indexOf(canvas);
+ 
+    return index!=undefined?snapshot.list[index]:null;
+
+  }, // snapshot_getMetadata
+
+  imageFilters: function snapshot_imageFilters() {
     var snapshot=this;
     var container=snapshot.imageFilters.container=$('#imagefilters',snapshot.sliders_container);
 
     // create container for image filter widgets
     if (!container.length) {
-      container=$('<div id="imagefilters">').appendTo(snapshot.sliders_container).style('#imagefilters');
+      container=$('<div id="imagefilters">').appendTo(snapshot.sliders_container).css({
+      //  backgroundColor: 'rgba(0,0,0,0.8)',
+        borderRadius: 8,
+        marginBottom: 24 
+      //  boxShadow: '5px 5px 5px 0px rgba(0,0,0,0.4)'
+      });
+      //.style('#imagefilters');
     }
 
     // 
-    if ($(container).data('snapshot')!=snapshot.current) {
+    if ($(container).data('snapshot')!=snapshot.list[snapshot.list.length-1].canvas_id) {
 
-      var canvas_id='#snap'+snapshot.current;
+      var canvas_id=snapshot.list[snapshot.list.length-1].canvas_id;
  
       /**
       * addFilter()
@@ -563,35 +744,41 @@ Panorama.prototype.snapshot={
           margin: 10
         });
         
-        return new ImageFilter({
-          target: canvas_id,
+        var imageFilter=new ImageFilter({
+          target: '#'+canvas_id,
           container: $('.filter.'+filter, container),
           filter: filter,
           filterType: filterType
         });
 
+        snapshot._imageFilter=imageFilter;
+        snapshot.processFilters=function() {
+          this._imageFilter.processFilters();
+        }
+
       } // addFilter
 
+
+      // display filter controls
       container.empty();
-
-      addFilter('glfx','vibrance');
-      addFilter('glfx','sepia');
-      addFilter('glfx','brightnessContrast');
-      addFilter('glfx','vignette');
-
+      $.each(snapshot.filter_list,function(){
+        addFilter(this[0],this[1]);
+      });
 
       // get ImageFilters list
-      var filters=window.filters=$(canvas_id).parent().data('filters');
+      var filters=window.filters=$('#'+canvas_id).parent().data('filters');
       
-      // 
+      // overlay canvas setup setup procedure
       filters.canvas_setup=function(canvas,isupdate){
 
-        var rect=snapshot.list[snapshot.current-1].rect;
+        var rect=snapshot.list[snapshot.list.length-1].rect;
         
+        // adding
         if (!isupdate) {
           $(canvas).appendTo('body');
         }
 
+        // positioning
         $(canvas).css({
           position: 'absolute',
           left: rect.x1,
@@ -601,12 +788,11 @@ Panorama.prototype.snapshot={
           transform: 'scaleY(-1)'
         });
         
-      }
+      } // canvas_setup
 
+      // apply filters
       $('input',snapshot.sliders_container).trigger('change');
-//      addSlider('exposure');
-//      addSlider('vibrance');
-    
+
     }
 
   } // snapshot_imageFilters
@@ -664,5 +850,17 @@ function drawGlImage(ctx,gl,x,y,w,h,destx,desty) {
 } // drawGlImage
 
 
+// return the parent window object of the first element matching the specified jquery selector and optional context
+function getWindow(selector,context) {
+  var elem=$.apply($,Array.prototype.slice.apply(arguments));
+  var doc=elem[0].ownerDocument;
+  return doc.defaultView||doc.parentWindow;
+}
 
+// return the jquery object reference of the first element matching selector and optional context 
+function $$$(selector,context) {
+  var args=Array.prototype.slice.apply(arguments);
+  var $=getWindow.apply(window,args).$;
+  return $.apply($,args);
+}
 
