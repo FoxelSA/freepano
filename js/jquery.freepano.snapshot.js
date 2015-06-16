@@ -85,6 +85,63 @@ Panorama.prototype.snapshot={
 
   }, // snapshot_on_panorama_init
 
+  add: function snapshot_add(options) {
+    var snapshot=this;
+    var div=$('<div class="snapshot">)');
+    var canvas=options.canvas;
+
+    snapshot.showCanvasCenterInDiv(div,canvas);
+    snapshot.addToBar($.extend(true,{},options,{
+      div: div
+    }));
+
+  },   // snapshot_add
+
+  addToBar: function snapshot_addToBar(options) {
+
+    var snapshot=this;
+    var canvas=options.canvas;
+    var div=options.div;
+
+    div.append(canvas);
+
+    // custom scrollbar not instantiated ? 
+    if (!$('.mCSB_container',snapshot.bar).length) {
+
+      // add new thumb to snapshot bar container
+      $(div).appendTo(snapshot.bar);
+
+      // instantiate custom scrollbar on snapshot bar container
+      snapshot.bar.mCustomScrollbar({
+        axis: 'y',
+        mouseWheel: {        
+            scrollAmount: 250
+        }    
+      });
+
+      snapshot.dispatch('bar_init');
+
+    } else {
+
+      // add new thumb to custom scrollbar container
+      $(div).appendTo('.mCSB_container',snapshot.bar);
+      snapshot.bar.mCustomScrollbar('update');
+    }
+
+    // store snapshot metadata
+    var metadata= {
+        canvas_id: options.canvas.id,
+        image: options.image,
+        rect: options.rect,
+        lon: options.lon,
+        lat: options.lat,
+        zoom: options.zoom,
+        url: options.url
+    };
+    snapshot.list.push(metadata);
+
+  }, // snapshot_addToBar
+
   on_panorama_ready: function snapshot_on_panorama_ready() {
     var panorama=this;
     // show snapshot mode toggle button
@@ -248,8 +305,6 @@ Panorama.prototype.snapshot={
         $(canvas).css({
           transform: 'none'
         })
-        // download thumbnail
-    //    snapshot.download();
         panorama.ias.cancelSelection({keepThumb: true});
 
         snapshot.dispatch({
@@ -411,43 +466,7 @@ Panorama.prototype.snapshot={
 
         /* show canvas center in thumbnail div */
 
-        var displayRatio=5/4;
-        var imageRatio=rect.width/rect.height;
-        var div_width=snapshot.size*displayRatio;
-        if (imageRatio>displayRatio) {
-           $(canvas).css({
-              position: 'absolute',
-              width: snapshot.size*imageRatio,
-              height: snapshot.size,
-              top: -99999,
-              bottom: -99999,
-              left: -99999,
-              right: -99999,
-              margin: 'auto'
-           });
-
-        } else {
-           $(canvas).css({
-              position: 'absolute',
-              width: snapshot.size*displayRatio,
-              height: (snapshot.size*displayRatio)/imageRatio,
-              top: -99999,
-              bottom: -99999,
-              left: -99999,
-              right: -99999,
-              margin: 'auto'
-           });
-        }
-
-        $(div).css({
-           width: snapshot.size*displayRatio,
-           height: snapshot.size,
-           marginTop: 0,
-           marginBottom: 8,
-           position: 'relative',
-           float: 'left',
-           overflow: 'hidden'
-        });
+        snapshot.showCanvasCenterInDiv(div,canvas);
 
         /**/
 
@@ -487,48 +506,23 @@ Panorama.prototype.snapshot={
 
         if (isnew) {
 
-          $(div).append(canvas);
-          
-          // custom scrollbar not instantiated ? 
-          if (!$('.mCSB_container',snapshot.bar).length) {
+          // add to snapshot bar
+          snapshot.addToBar({
+            div: div,
+            canvas: canvas,
+            image: panorama.list.currentImage,
+            rect: rect,
+            lon: panorama.lon,
+            lat: panorama.lat,
+            zoom: panorama.camera.zoom.current
+          });
 
-            // add new thumb to snapshot bar container
-            $(div).appendTo(snapshot.bar);
-
-            // instantiate custom scrollbar on snapshot bar container
-            snapshot.bar.mCustomScrollbar({
-              axis: 'y',
-              mouseWheel: {        
-                  scrollAmount: 250
-              }    
-            });
-
-            snapshot.dispatch('bar_init');
-
-          } else {
-
-            // add new thumb to custom scrollbar container
-            $(div).appendTo('.mCSB_container',snapshot.bar);
-            snapshot.bar.mCustomScrollbar('update');
-          }
-
-          // store snapshot metadata
-          var metadata= {
-              canvas_id: canvas_id,
-              image: panorama.list.currentImage,
-              rect: rect,
-              lon: panorama.lon,
-              lat: panorama.lat,
-              zoom: panorama.camera.zoom.current
-          };
-          snapshot.list.push(metadata);
- 
           // instantiate image filters controls
           snapshot.imageFilters();
 
           snapshot.dispatch({
             type: 'selection_start',
-            metadata: metadata
+            metadata: snapshot.getMetadata(canvas)
           });
 
         } else {
@@ -558,6 +552,53 @@ Panorama.prototype.snapshot={
    });
 
   }, // snapshot_toogleEdit
+
+  showCanvasCenterInDiv: function snapshot_showCanvasCenterInDiv(thumbnail_div,canvas) {
+
+    var snapshot=this;
+    var div=thumbnail_div;
+
+    /* show canvas center in thumbnail div */
+
+    var displayRatio=5/4;
+    var imageRatio=$(canvas)[0].width/$(canvas)[0].height;
+    var div_width=snapshot.size*displayRatio;
+    if (imageRatio>displayRatio) {
+       $(canvas).css({
+          position: 'absolute',
+          width: snapshot.size*imageRatio,
+          height: snapshot.size,
+          top: -99999,
+          bottom: -99999,
+          left: -99999,
+          right: -99999,
+          margin: 'auto'
+       });
+
+    } else {
+       $(canvas).css({
+          position: 'absolute',
+          width: snapshot.size*displayRatio,
+          height: (snapshot.size*displayRatio)/imageRatio,
+          top: -99999,
+          bottom: -99999,
+          left: -99999,
+          right: -99999,
+          margin: 'auto'
+       });
+    }
+
+    $(div).css({
+       width: snapshot.size*displayRatio,
+       height: snapshot.size,
+       marginTop: 0,
+       marginBottom: 8,
+       position: 'relative',
+       float: 'left',
+       overflow: 'hidden'
+    });
+    
+  }, // snapshot_showCanvasCenterInDiv
   
   save: function snapshot_save() {
     var snapshot=this;
@@ -577,57 +618,100 @@ Panorama.prototype.snapshot={
   /** 
    * snapshot.getDownloadLink()
    *
-   * Convert flipped raw canvas data to jpg and return download link
+   * Upload canvas data and return download link
    * On error, a message is notified and the callback is called without url
    *
    * @param options.canvas  defaults to current snapshot canvas (last of snapshot.list)
+   * @param options.metadata 
    * @param options.callback function receiving url (can specify '&filename=')
    *
    */
   getDownloadLink: function snapshot_getDownloadLink(options) {
     var snapshot=this;
     var panorama=snapshot.panorama;
-    var canvas=options.canvas||$('canvas#'+snapshot.list[snapshot.list.length-1].canvas_id)[0];
+    var canvas;
+    var query_string=options.query_string||"image.php?action=upload";
+    
+    if (options.canvas) {
+      // specified snapshot
+      canvas=options.canvas;
 
-    var ctx=canvas.getContext('2d');
-    var imageData=ctx.getImageData(0,0,canvas.width,canvas.height);
-    var buffer=new Uint8Array(imageData.data);
+    } else {
+      // else current snapshot
+      canvas=$('canvas#'+snapshot.list[snapshot.list.length-1].canvas_id)[0];
+
+    }
+    var canvas_id=canvas.id;
+
+    // mirror vertically if requested
+    if (options.flipY) {
+      canvas=flipCanvas(canvas);
+    }
+
+    var raw;
+    var buffer;
+
+    // try converting dataURL to ArrayBuffer
+    try {
+
+      var marker=';base64,';
+      var dataURL=canvas.toDataURL();
+      var markerPos=dataURL.search(marker);
+      var contentType=dataURL.substr(0,markerPos).split(':')[1];
+      var dataOffset=markerPos+marker.length;
+
+      buffer=new Uint8Array(dataURL.length-dataOffset);
+      dataURL=atob(dataURL.substr(dataOffset));
+      for (var i=0; i<dataURL.length; ++i) {
+        buffer[i]=dataURL.charCodeAt(i);
+      }
+
+      query_string+='&type='+encodeURIComponent(contentType)+'&encoding=binary';
+
+    // send raw image as failover
+    } catch(e) {
+
+      var ctx=canvas.getContext('2d');
+      var imageData=ctx.getImageData(0,0,canvas.width,canvas.height);
+
+      buffer=new Uint8Array(imageData.data);
+
+      query_string+=
+        '&type='+encodeURIComponent('image/raw')
+      + '&h='+canvas.height
+      + '&w='+canvas.width;
+
+    }
 
     var xhr = new XMLHttpRequest();
-    xhr.open('POST', 'image.php?action=convert&h='+canvas.height+'&w='+canvas.width+'&flipY='+(options.flipY?'1':'0'), options.async);
+
+    if (options.store) {
+      var metadata=options.metadata||snapshot.getMetadata(canvas_id);
+      query_string+='&store=1&metadata='+btoa(JSON.stringify(metadata));
+    }
+
+    xhr.open('POST', query_string, options.async);
+
     xhr.onload = function() {
       var response=JSON.parse(xhr.response);
       if (response.status!="ok") {
-        $.notify('Error: could not convert image');
+        $.notify('Error: could not process image');
         console.log('load',arguments,xhr);
         options.callback();
         return;
       }
       options.callback('image.php?action=download&image='+response.filename);
     };
+
     xhr.onerror=function(){
       console.log('loaderror',arguments);
       $.notify('Error: server request failed');
       options.callback();
     }
+
     xhr.send(buffer);
 
   }, // getDownloadLink
-
-/*
-  load: function snapshot_load() {
-    var xhr = new XMLHttpRequest();
-    xhr.open('GET', 'listthumbs.php', true);
-    xhr.onload = function() {
-      console.log('load',arguments,xhr); 
-    };
-    xhr.onerror=function(){
-      console.log('loaderror',arguments);
-    }
-    xhr.send();
-
-  },
-*/
 
   // return snapshot.list index for specified canvas or canvas id
   indexOf: function snapshot_indexOf(canvas) {
@@ -862,5 +946,27 @@ function $$$(selector,context) {
   var args=Array.prototype.slice.apply(arguments);
   var $=getWindow.apply(window,args).$;
   return $.apply($,args);
+}
+
+/**
+* flipCanvas(canvas)
+*
+* mirror specified canvas vertically
+* 
+* @param canvas the canvas to flip
+* @return flipped new canvas
+*/
+function flipCanvas(canvas) {
+
+  var flipped=document.createElement('canvas');
+  flipped.height=canvas.height;
+  flipped.width=canvas.width;
+
+  var ctx=flipped.getContext('2d');
+  ctx.scale(1,-1);   
+  ctx.drawImage(canvas,0,0,canvas.width,-canvas.height);
+
+  return flipped;
+
 }
 

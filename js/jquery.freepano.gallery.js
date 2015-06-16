@@ -224,7 +224,7 @@ Panorama.prototype.gallery = {
    hide: function gallery_hide() {
      var gallery=this;
      $('.gallery',gallery.container).hide(0);
-     $(gallery.overlay):.hide(0);
+     $(gallery.overlay).hide(0)
      $('#snapshot_toggle').show(0);
      gallery.dispatch('hide');
    }, // gallery_hide
