@@ -105,7 +105,7 @@ Panorama.prototype.snapshot={
 
     div.append(canvas);
 
-    // custom scrollbar not instantiated ? 
+    // custom scrollbar not instantiated ?
     if (!$('.mCSB_container',snapshot.bar).length) {
 
       // add new thumb to snapshot bar container
@@ -114,9 +114,9 @@ Panorama.prototype.snapshot={
       // instantiate custom scrollbar on snapshot bar container
       snapshot.bar.mCustomScrollbar({
         axis: 'y',
-        mouseWheel: {        
+        mouseWheel: {
             scrollAmount: 250
-        }    
+        }
       });
 
       snapshot.dispatch('bar_init');
@@ -169,7 +169,7 @@ Panorama.prototype.snapshot={
        delete panorama._mapActive;
     }
   }, // snapshot_restoreMapState
-  
+
   onhidebar: function snapshot_onhidebar(e) {
       var snapshot=this;
       var panorama=snapshot.panorama;
@@ -180,7 +180,7 @@ Panorama.prototype.snapshot={
           snapshot.toggleEdit({keepThumb:false});
       }
   }, // snapshot_onhidebar
-   
+
   showBar: function snapshot_showBar() {
      var snapshot=this;
      snapshot.bar.css({
@@ -218,18 +218,18 @@ Panorama.prototype.snapshot={
     // hide map and toggle_button
     snapshot.hideMap();
     $(snapshot.toggle_button_id).hide(0);
- 
+
     // get current snapshot index
     gallery.canvas_index=snapshot.indexOf(e.canvas);
 
-    // update gallery next button    
+    // update gallery next button
     if (gallery.canvas_index+1 >= panorama.snapshot.list.length) {
       gallery.rightArrow.addClass('disabled');
     } else {
       gallery.rightArrow.removeClass('disabled');
     }
 
-    // update gallery prev button    
+    // update gallery prev button
     if (gallery.canvas_index <= 0) {
       gallery.leftArrow.addClass('disabled');
     } else {
@@ -243,7 +243,7 @@ Panorama.prototype.snapshot={
     var panorama=gallery.panorama;
 
     panorama.snapshot.restoreMapState();
-     
+
   }, // snapshot_on_gallery_hide
 
   on_gallery_next: function snapshot_on_gallery_next(e) {
@@ -254,7 +254,7 @@ Panorama.prototype.snapshot={
     if (gallery.canvas_index+1 >= panorama.snapshot.list.length) {
       return;
     }
-   
+
    ++gallery.canvas_index;
    gallery.show($('#'+panorama.snapshot.list[gallery.canvas_index].canvas_id)[0]);
 
@@ -286,7 +286,7 @@ Panorama.prototype.snapshot={
   *
   * @param options.save   keep selection and dispose imageAreaSelect instance
   * @param options.cancel  (default) discard selection and dispose imageAreaSelect instance
-  * @param options.keepThumb  dont dispose thumbnail on cancel 
+  * @param options.keepThumb  dont dispose thumbnail on cancel
   */
 
   toggleEdit: function snapshot_toggleEdit(options) {
@@ -294,7 +294,7 @@ Panorama.prototype.snapshot={
    var panorama=snapshot.panorama;
    var map=panorama.map;
 
-   if (panorama.ias) {  // save or cancel edition 
+   if (panorama.ias) {  // save or cancel edition
 
       var canvas_id=snapshot.canvas_id;
       if (options.save) { // save
@@ -321,9 +321,9 @@ Panorama.prototype.snapshot={
               canvas.closest('.snapshot').remove();
               snapshot.list.pop();
             }
-          }        
+          }
           panorama.ias.cancelSelection({keepThumb: options.keepThumb});
-      } 
+      }
 
       snapshot.dispatch({
         type: 'mode',
@@ -363,7 +363,7 @@ Panorama.prototype.snapshot={
 
    // set index for ias
    snapshot.index=snapshot.list.length;
-      
+
    // instantiate imgAreaSelect
    panorama.ias=$(panorama.container).imgAreaSelect({
 
@@ -415,7 +415,7 @@ Panorama.prototype.snapshot={
        if (rect.x1==rect.x2 || rect.y1==rect.y2) return;
        this.onSelectEnd.apply(this,[img,rect]);
        $(panorama.snapshot.toggle_button_id).hide(0);
-       
+
      }, // ias_onSelectChange
 
      onSelectEnd: function ias_onSelectEnd(img,rect) {
@@ -474,17 +474,17 @@ Panorama.prototype.snapshot={
 
 /*
           // preserve ratio, use max thumbnail height
-        
+
           // compute canvas display size
           var ratio=rect.width/rect.height;
-          if (ratio>1) {                
+          if (ratio>1) {
             $(canvas).add(div).css({
               width: snapshot.size*ratio,
               height: snapshot.size,
               marginTop:0,
               marginBottom:0
             });
-/*                
+/*
             $(canvas).add(div).css({
               width: snapshot.size,
               height: snapshot.size/ratio
@@ -547,7 +547,7 @@ Panorama.prototype.snapshot={
             }
           });
         }
-                  
+
      } // ias_onSelectEnd
 
    });
@@ -598,9 +598,9 @@ Panorama.prototype.snapshot={
        float: 'left',
        overflow: 'hidden'
     });
-    
+
   }, // snapshot_showCanvasCenterInDiv
-  
+
   save: function snapshot_save() {
     var snapshot=this;
     // trigger save event(allow receivers to cancel save, eg validation)
@@ -609,21 +609,21 @@ Panorama.prototype.snapshot={
 
   // keep snapshot
   onsave: function snapshot_onsave() {
-    var snapshot=this;  
+    var snapshot=this;
     snapshot.toggleEdit({
       save: true,
       keepThumb: true
     });
   }, // snapshot_onsave
 
-  /** 
+  /**
    * snapshot.getDownloadLink()
    *
    * Upload canvas data and return download link
    * On error, a message is notified and the callback is called without url
    *
    * @param options.canvas  defaults to current snapshot canvas (last of snapshot.list)
-   * @param options.metadata 
+   * @param options.metadata
    * @param options.callback function receiving url (can specify '&filename=')
    *
    */
@@ -632,7 +632,7 @@ Panorama.prototype.snapshot={
     var panorama=snapshot.panorama;
     var canvas;
     var query_string=options.query_string||"image.php?action=upload";
-    
+
     if (options.canvas) {
       // specified snapshot
       canvas=options.canvas;
@@ -739,10 +739,10 @@ Panorama.prototype.snapshot={
       console.log('error: canvas not referenced',canvas);
       return;
     }
-   
+
    // get snapshot canvas id
    var canvas_id=snapshot.list[index].canvas_id;
-    
+
    // remove snapshot from list
    snapshot.list.splice(index,1);
 
@@ -753,7 +753,7 @@ Panorama.prototype.snapshot={
    if (gallery.overlay.is(':visible')) {
      // removed the current gallery snapshot
      if (gallery.canvas_index==index) {
-     
+
        // last snapshot removed ?
        if (!snapshot.list.length) {
          // close gallery and hide bar
@@ -774,7 +774,7 @@ Panorama.prototype.snapshot={
          // display previous snapshot
          --gallery.canvas_index;
          gallery.show($('#'+snapshot.list[gallery.canvas_index].canvas_id)[0]);
-         return;       
+         return;
        }
 
      } else {
@@ -786,12 +786,12 @@ Panorama.prototype.snapshot={
    }
 
   }, // snapshot_remove
-  
+
   // return snapshot metadata for canvas or canvas_id
   getMetadata: function snapshot_getMetadata(canvas) {
     var snapshot=this;
     var index=snapshot.indexOf(canvas);
- 
+
     return index!=undefined?snapshot.list[index]:null;
 
   }, // snapshot_getMetadata
@@ -805,21 +805,21 @@ Panorama.prototype.snapshot={
       container=$('<div id="imagefilters">').appendTo(snapshot.sliders_container).css({
       //  backgroundColor: 'rgba(0,0,0,0.8)',
         borderRadius: 8,
-        marginBottom: 24 
+        marginBottom: 24
       //  boxShadow: '5px 5px 5px 0px rgba(0,0,0,0.4)'
       });
       //.style('#imagefilters');
     }
 
-    // 
+    //
     if ($(container).data('snapshot')!=snapshot.list[snapshot.list.length-1].canvas_id) {
 
       var canvas_id=snapshot.list[snapshot.list.length-1].canvas_id;
- 
+
       /**
       * addFilter()
       *
-      */     
+      */
       function addFilter(filterType,filter) {
 
         $('<fieldset><div class="filter '+filter+'"></div></fieldset>')
@@ -828,7 +828,7 @@ Panorama.prototype.snapshot={
         $('.filter.'+filter, container).css({
           margin: 10
         });
-        
+
         var imageFilter=new ImageFilter({
           target: '#'+canvas_id,
           container: $('.filter.'+filter, container),
@@ -852,12 +852,12 @@ Panorama.prototype.snapshot={
 
       // get ImageFilters list
       var filters=window.filters=$('#'+canvas_id).parent().data('filters');
-      
+
       // overlay canvas setup setup procedure
       filters.canvas_setup=function(canvas,isupdate){
 
         var rect=snapshot.list[snapshot.list.length-1].rect;
-        
+
         // adding
         if (!isupdate) {
           $(canvas).appendTo('body');
@@ -872,7 +872,7 @@ Panorama.prototype.snapshot={
           height: rect.y2-rect.y1+1,
           transform: 'scaleY(-1)'
         });
-        
+
       } // canvas_setup
 
       // apply filters
@@ -899,19 +899,19 @@ Panorama.prototype.gallery.dispatchEventsTo(Panorama.prototype.snapshot);
 * drawGlImage()
 *
 * copy the specified rect from a WebGL canvas to the 2d canvas context specified
-* 
-* returns a new canvas if ctx is null 
+*
+* returns a new canvas if ctx is null
 *
 */
 function drawGlImage(ctx,gl,x,y,w,h,destx,desty) {
- 
+
   if (x==undefined) x=0;
   if (y==undefined) y=0;
   if (w==undefined) w=gl.drawingBufferWidth;
   if (h==undefined) h=gl.drawingBufferHeight;
   if (destx==undefined) destx=0;
   if (desty==undefined) desty=0;
-  
+
   if (!ctx) {
     var canvas=document.createElement('canvas');
     canvas.width=w;
@@ -929,9 +929,9 @@ function drawGlImage(ctx,gl,x,y,w,h,destx,desty) {
   // write bitmap to canvas
   imageData.data.set(bitmap);
   ctx.putImageData(imageData,destx,desty);
-  
+
   return canvas;
-  
+
 } // drawGlImage
 
 
@@ -942,7 +942,7 @@ function getWindow(selector,context) {
   return doc.defaultView||doc.parentWindow;
 }
 
-// return the jquery object reference of the first element matching selector and optional context 
+// return the jquery object reference of the first element matching selector and optional context
 function $$$(selector,context) {
   var args=Array.prototype.slice.apply(arguments);
   var $=getWindow.apply(window,args).$;
@@ -953,19 +953,38 @@ function $$$(selector,context) {
 * flipCanvas(canvas)
 *
 * mirror specified canvas vertically
-* 
+*
 * @param canvas the canvas to flip
 * @return flipped new canvas
 */
 function flipCanvas(canvas) {
 
-  var flipped=document.createElement('canvas');
-  flipped.height=canvas.height;
-  flipped.width=canvas.width;
+  try {
+    var flipped=document.createElement('canvas');
+    flipped.height=canvas.height;
+    flipped.width=canvas.width;
 
-  var ctx=flipped.getContext('2d');
-  ctx.scale(1,-1);   
-  ctx.drawImage(canvas,0,0,canvas.width,-canvas.height);
+    var ctx=flipped.getContext('2d');
+    ctx.scale(1,-1);
+    ctx.drawImage(canvas,0,0,canvas.width,-canvas.height);
+
+  } catch(e) {
+    console.log(e);
+
+    // calling drawImage with negative height is broken in Firefox (2015-06-19)
+    // https://bugzilla.mozilla.org/show_bug.cgi?id=974367
+
+    var flipped=document.createElement('canvas');
+    flipped.height=canvas.height;
+    flipped.width=canvas.width;
+
+    var ctx=flipped.getContext('2d');
+    var lastLine=canvas.height-1;
+    for(var y = 0; y < canvas.height; ++y) {
+      ctx.drawImage(canvas, 0, y, canvas.width, 1, 0, lastLine-y, canvas.width, 1);
+    }
+
+  }
 
   return flipped;
 
