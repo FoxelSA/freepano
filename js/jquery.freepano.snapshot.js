@@ -132,6 +132,7 @@ Panorama.prototype.snapshot={
     var metadata= {
         canvas_id: options.canvas.id,
         image: options.image,
+        description: options.description,
         rect: options.rect,
         lon: options.lon,
         lat: options.lat,
