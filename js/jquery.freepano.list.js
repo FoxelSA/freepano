@@ -180,7 +180,7 @@ $.extend(true,PanoList.prototype,{
   },
 
   // show panorama image
-  show: function panoList_show(imageId,callback) {
+  show: function panoList_show(imageId) {
     var pano_list=this;
 
     if (pano_list.currentImage==imageId || !pano_list.images[imageId]) {
@@ -198,7 +198,7 @@ $.extend(true,PanoList.prototype,{
     $.extend(true, panorama, pano_list.images[imageId]);
     $.extend(true, panorama.sphere.tileSet, pano_list.getTileSetOptions(imageId));
     pano_list.overrideSettings(imageId);
-    panorama.sphere.tileSetChanged(callback);
+    panorama.sphere.tileSetChanged();
   },
 
   getPathTo: function panoList_getPathTo(imageId) {
