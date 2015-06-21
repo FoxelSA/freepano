@@ -137,7 +137,8 @@ Panorama.prototype.snapshot={
         lon: options.lon,
         lat: options.lat,
         zoom: options.zoom,
-        url: options.url
+        url: options.url,
+        saved: options.saved
     };
     snapshot.list.push(metadata);
 
@@ -652,7 +653,7 @@ Panorama.prototype.snapshot={
    *
    * @param options.canvas  defaults to current snapshot canvas (last of snapshot.list)
    * @param options.metadata
-   * @param options.callback function receiving url (can specify '&filename=')
+   * @param options.callback function receiving image.php url (add '&filename=' to specify destination)
    *
    */
   getDownloadLink: function snapshot_getDownloadLink(options) {
