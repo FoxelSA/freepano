@@ -297,6 +297,15 @@ Panorama.prototype.snapshot={
    if (panorama.ias) {  // save or cancel edition
 
       var canvas_id=snapshot.canvas_id;
+
+      var metadata=snapshot.getMetadata(canvas_id);
+      if (!canvas_id || !metadata || metadata.saved) {
+        // imageAreaSelect was canceled and no selection was made
+        // then no canvas was created, then dont delete the last
+        // canvas added (iywsdr->diy)
+        return
+      }
+
       if (options.save) { // save
 
         // copy filtered canvas
@@ -312,6 +321,8 @@ Panorama.prototype.snapshot={
           type: 'saved',
           canvas: canvas
         });
+
+        snapshot.getMetadata(canvas_id).saved=true;
 
       } else if (options.cancel||true) { // cancel
           // remove thumbnail and cancel selection
@@ -377,11 +388,14 @@ Panorama.prototype.snapshot={
 
         if (snapshot.list.length) {
           // remove thumbnail
-          var canvas_id=snapshot.list[snapshot.list.length-1].canvas_id;
-          var canvas=$('canvas#'+canvas_id);
-          if (canvas.length && !keepThumb) {
-            canvas.closest('.snapshot').remove();
-            snapshot.list.pop();
+          var metadata=snapshot.list[snapshot.list.length-1];
+          if (!metadata.saved) {
+            var canvas_id=metadata.canvas_id;
+            var canvas=$('canvas#'+canvas_id);
+            if (canvas.length && !keepThumb) {
+              canvas.closest('.snapshot').remove();
+              snapshot.list.pop();
+            }
           }
         }
 
@@ -795,6 +809,16 @@ Panorama.prototype.snapshot={
     return index!=undefined?snapshot.list[index]:null;
 
   }, // snapshot_getMetadata
+
+  setMetadata: function snapshot_setMetadata(canvas,metadata) {
+    var snapshot=this;
+    var index=snapshot.indexOf(canvas);
+
+    if (index!=undefined) {
+      snapshot.list[index]=metadata;
+    }
+
+  }, // snapshot_setMetadata
 
   imageFilters: function snapshot_imageFilters() {
     var snapshot=this;
