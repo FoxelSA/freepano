@@ -297,43 +297,56 @@ Panorama.prototype.snapshot={
    if (panorama.ias) {  // save or cancel edition
 
       var canvas_id=snapshot.canvas_id;
+      var abort;
 
-      var metadata=snapshot.getMetadata(canvas_id);
-      if (!canvas_id || !metadata || metadata.saved) {
-        // imageAreaSelect was canceled and no selection was made
-        // then no canvas was created, then dont delete the last
-        // canvas added (iywsdr->diy)
-        return
+      // imageAreaSelect was canceled and no selection was made
+      // then no canvas was created, then dont delete the last
+      // canvas added (iywsdr->diy) and just abort edit mode
+      if (!canvas_id) {
+        abort=true;
+
+      } else {
+        var metadata=snapshot.getMetadata(canvas_id);
+        if (!canvas_id || !metadata || metadata.saved) {
+          abort=true;
+        }
+
       }
 
-      if (options.save) { // save
+      if (!abort) {
 
-        // copy filtered canvas
-        var canvas=$('#'+canvas_id)[0];
-        var ctx=canvas.getContext('2d');
-        drawGlImage(ctx,filters.glfx.canvas._.gl);
-        $(canvas).css({
-          transform: 'none'
-        })
-        panorama.ias.cancelSelection({keepThumb: true});
+        if (options.save) {
 
-        snapshot.dispatch({
-          type: 'saved',
-          canvas: canvas
-        });
+          // copy filtered canvas
+          var canvas=$('#'+canvas_id)[0];
+          var ctx=canvas.getContext('2d');
+          drawGlImage(ctx,filters.glfx.canvas._.gl);
+          $(canvas).css({
+            transform: 'none'
+          })
+          panorama.ias.cancelSelection({keepThumb: true});
 
-        snapshot.getMetadata(canvas_id).saved=true;
+          snapshot.dispatch({
+            type: 'saved',
+            canvas: canvas
+          });
 
-      } else if (options.cancel||true) { // cancel
-          // remove thumbnail and cancel selection
-          if (!options.keepThumb) {
-            var canvas=$('canvas#'+canvas_id);
-            if (canvas.length) {
-              canvas.closest('.snapshot').remove();
-              snapshot.list.pop();
+          snapshot.getMetadata(canvas_id).saved=true;
+
+        } else if (options.cancel||true) {
+            // remove thumbnail and cancel selection
+            if (!options.keepThumb) {
+              var canvas=$('canvas#'+canvas_id);
+
+              if (canvas.length) {
+                canvas.closest('.snapshot').remove();
+                snapshot.list.pop();
+              }
+
             }
-          }
-          panorama.ias.cancelSelection({keepThumb: options.keepThumb});
+
+            panorama.ias.cancelSelection({keepThumb: options.keepThumb});
+        }
       }
 
       snapshot.dispatch({
@@ -352,6 +365,7 @@ Panorama.prototype.snapshot={
       // restor cursor
       $('div.freepano canvas').css('cursor','default');
 
+      panorama.ias.remove();
       panorama.ias=null;
 
       return;
@@ -726,7 +740,7 @@ Panorama.prototype.snapshot={
 
     xhr.send(buffer);
 
-  }, // getDownloadLink
+  }, // snapshot_getDownloadLink
 
   // return snapshot.list index for specified canvas or canvas id
   indexOf: function snapshot_indexOf(canvas) {
