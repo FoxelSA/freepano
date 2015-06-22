@@ -380,7 +380,7 @@ Panorama.prototype.snapshot={
 
       if (panorama.ias) {
         // remove ias instance
-        panorama.ias.remove();
+        $(panorama.container).imgAreaSelect({remove: true});
       }
 
       panorama.ias=null;
