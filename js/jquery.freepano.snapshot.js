@@ -128,21 +128,32 @@ Panorama.prototype.snapshot={
       snapshot.bar.mCustomScrollbar('update');
     }
 
+    // complete metadata
+    var metadata=$.extend(true,{},options,{
+      canvas_id: options.canvas.id
+    });
+    
+    // strip metadata 
+    metadata=snapshot.stripMetadata(metadata);
+
     // store snapshot metadata
-    var metadata= {
-        canvas_id: options.canvas.id,
-        image: options.image,
-        description: options.description,
-        rect: options.rect,
-        lon: options.lon,
-        lat: options.lat,
-        zoom: options.zoom,
-        url: options.url,
-        saved: options.saved
-    };
     snapshot.list.push(metadata);
 
   }, // snapshot_addToBar
+
+  stripMetadata: function snapshot_stripMetadata(metadata) {
+    return {
+        canvas_id: metadata.canvas_id,
+        image: metadata.image,
+        description: metadata.description,
+        rect: metadata.rect,
+        lon: metadata.lon,
+        lat: metadata.lat,
+        zoom: metadata.zoom,
+        url: metadata.url,
+        saved: metadata.saved
+    };
+  }, // snapshot_stripMetadata
 
   on_panorama_ready: function snapshot_on_panorama_ready() {
     var panorama=this;
@@ -350,6 +361,7 @@ Panorama.prototype.snapshot={
         }
       }
 
+      // exit snapshot edit mode
       snapshot.dispatch({
         type: 'mode',
         mode: {
@@ -366,7 +378,11 @@ Panorama.prototype.snapshot={
       // restor cursor
       $('div.freepano canvas').css('cursor','default');
 
-      panorama.ias.remove();
+      if (panorama.ias) {
+        // remove ias instance
+        panorama.ias.remove();
+      }
+
       panorama.ias=null;
 
       return;
@@ -755,7 +771,9 @@ Panorama.prototype.snapshot={
           return false;
         }
     });
+
     return index;
+
   }, // snapshot_indexOf
 
  // remove specified canvas or canvas id
@@ -825,15 +843,40 @@ Panorama.prototype.snapshot={
 
   }, // snapshot_getMetadata
 
-  setMetadata: function snapshot_setMetadata(canvas,metadata) {
+  uploadMetadata: function snapshot_uploadMetadata(options) {
     var snapshot=this;
-    var index=snapshot.indexOf(canvas);
+    var metadata=options.metadata||snapshot.stripMetadata(snapshot.getMetadata(options.canvas));
 
-    if (index!=undefined) {
-      snapshot.list[index]=metadata;
+    if (!metadata) {
+      $.notify("Error: could not upload snapshot metadata");
+      return;
     }
 
-  }, // snapshot_setMetadata
+    $.ajax({
+
+      type: 'POST',
+      url: options.url||'image.php?action=metadata',
+      data: btoa(JSON.stringify(metadata)),
+      dataType: 'json',
+
+      success: function(response) {
+        if (response.status!='ok') {
+          $.notify('Error: could not upload snapshot metadata');
+          console.log(arguments);
+          return;
+        }
+
+      },
+
+      error: function() {
+        $.notify('Error: could not upload snapshot metadata');
+        console.log(arguments);
+        return;
+      }
+
+    });
+
+  }, // snapshot_uploadMetadata
 
   imageFilters: function snapshot_imageFilters() {
     var snapshot=this;
