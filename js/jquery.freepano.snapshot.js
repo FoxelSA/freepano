@@ -378,11 +378,6 @@ Panorama.prototype.snapshot={
       // restor cursor
       $('div.freepano canvas').css('cursor','default');
 
-      if (panorama.ias) {
-        // remove ias instance
-        $(panorama.container).imgAreaSelect({remove: true});
-      }
-
       panorama.ias=null;
 
       return;
