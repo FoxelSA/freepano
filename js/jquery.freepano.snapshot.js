@@ -856,7 +856,7 @@ Panorama.prototype.snapshot={
 
       type: 'POST',
       url: options.url||'image.php?action=metadata',
-      data: btoa(JSON.stringify(metadata)),
+      data: encodeURIComponent(JSON.stringify(metadata)),
       dataType: 'json',
 
       success: function(response) {
