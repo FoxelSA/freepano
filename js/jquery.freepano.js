@@ -1986,9 +1986,7 @@ $.fn.panorama = function jQuery_panorama(options) {
  * @return  Boolean     True if the left button is down, false otherwise.
  */
 window.isLeftButtonDown=function isLeftButtonDown(e) {
-     if (e.buttons!==undefined) return (e.buttons==1);
-     if (e.which!==undefined) return (e.which==1);
-     return false;
+  return ((e.which || e.button) == 1);
  }, // isLeftButtonDown
 
 /*
