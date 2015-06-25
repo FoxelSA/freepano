@@ -122,18 +122,21 @@ Panorama.prototype.snapshot={
       snapshot.dispatch('bar_init');
 
     } else {
-
       // add new thumb to custom scrollbar container
       $(div).appendTo('.mCSB_container',snapshot.bar);
       snapshot.bar.mCustomScrollbar('update');
+
+      // scroll to new item position
+      snapshot.bar.mCustomScrollbar('scrollTo','bottom');
+
     }
 
     // complete metadata
     var metadata=$.extend(true,{},options,{
       canvas_id: options.canvas.id
     });
-    
-    // strip metadata 
+
+    // strip metadata
     metadata=snapshot.stripMetadata(metadata);
 
     // store snapshot metadata
@@ -247,6 +250,8 @@ Panorama.prototype.snapshot={
     } else {
       gallery.leftArrow.removeClass('disabled');
     }
+
+    snapshot.bar.mCustomScrollbar('scrollTo',$(e.canvas).closest('.snapshot').position().top);
 
   }, // snapshot_on_gallery_show
 
