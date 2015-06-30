@@ -130,7 +130,8 @@ int main(int argc, char **argv) {
       lat=(180-lat)%180;
 
       // reference particle in sector lon,lat
-      sector[lon][lat].push_back(point_index);
+      unsigned long k=point_index*3;
+      sector[lon][lat].push_back(k);
 
       // compute cartesian webgl coordinates
       phi=(phi-M_PI/2);
@@ -140,7 +141,6 @@ int main(int argc, char **argv) {
       fy=-depth*cos(phi);
 
       // store cartesian coordinates
-      unsigned long k=point_index*3;
       positions[k]=fx;
       positions[k+1]=fy;
       positions[k+2]=fz;
@@ -168,7 +168,7 @@ int main(int argc, char **argv) {
 
   // output positions formatted as list of x,y,z for each [lon][lat] pair
   // and prepare a 360x180 array index formatted as offset,count
- 
+
   std::list<uint32_t> array_index;
 
   for (lat=0; lat<180; ++lat) {
@@ -214,7 +214,6 @@ int main(int argc, char **argv) {
       if (!_sector->size()) {
         continue;
       }
-
       // output mn95 positions for sector[lon][lat]
       for (std::list<uint32_t>::iterator it=_sector->begin(); it!=_sector->end(); ++it) {
         uint32_t index=*it;
