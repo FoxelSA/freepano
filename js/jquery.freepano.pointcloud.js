@@ -440,13 +440,59 @@ $.extend(true,PointCloud.prototype,{
     var panorama=pointCloud.panorama;
     var buffer=e.data;
 
-    console.log('points count:',(buffer.byteLength-8*360*180)/12);
 
     switch(e.dataType) {
       case 'sectors':
+
+        if (buffer.byteLength<8) {
+          break;
+        }
+
+        var buf=new Uint8Array(buffer);
+        var marker_byteCount=2;
+
+        // check file marker
+        if (buf[0]!=parseInt('F0',16) || buf[0]!=buf[buffer.byteLength-2] || buf[1]!=parseInt('E1',16) || buf[1]!=buf[buffer.byteLength-1]) {
+          console.log('Invalid file marker');
+          break;
+        }
+
+        // get file type and version
+        var VERSION_NUMBER='';
+        for (var i=0; i<10; ++i) {
+          VERSION_NUMBER+=String.fromCharCode(buf[marker_byteCount+i]);
+        }
+
+        // check file type and version
+        if (VERSION_NUMBER.split('.')[0]!="fpcl") {
+          console.log('Invalid file type');
+          break;
+        }
+        if (VERSION_NUMBER.split('.')[1]!="00001") {
+          console.log('Invalid file version');
+          break;
+        }
+
+        // length in bytes of the sectors array index
+        var buf_index_byteCount=8*360*180;
+
+        var buf_data_offset=marker_byteCount+VERSION_NUMBER.length;
+
+        // length in bytes of the coordinates arrays
+        var buf_coordinates_byteCount = buffer.byteLength
+                                      - buf_data_offset
+                                      - buf_index_byteCount
+                                      - marker_byteCount;
+
+        // theres two subseqent sets of coordinates in the buffer (WebGL followedi by MN95), sharing the same index
+        buf_coordinates_byteCount/=2;
+
+        console.log('points count:',buf_coordinates_byteCount/12);
+
         pointCloud.sector={
-          data: new Float32Array(buffer,0,(buffer.byteLength-8*360*180)/4+1),
-          index: new Uint32Array(buffer,buffer.byteLength-8*360*180)
+          data: new Float32Array(buffer, buf_data_offset, buf_coordinates_byteCount/4),
+          mn95: new Float32Array(buffer, buf_data_offset + buf_coordinates_byteCount, buf_coordinates_byteCount/4),
+          index: new Uint32Array(buffer, buffer.byteLength - marker_byteCount - buf_index_byteCount, buf_index_byteCount/4)
         }
         break;
     }
@@ -769,13 +815,19 @@ $.extend(true,PointCloud.prototype,{
   getParticlePosition: function pointCloud_getParticlePosition(index) {
     var pointCloud=this;
     var data=pointCloud.sector.data;
+    var mn95=pointCloud.sector.mn95;
 
     index*=3;
 
     return {
       x: data[index],
       y: data[index+1],
-      z: data[index+2]
+      z: data[index+2],
+      mn95: {
+        n: mn95[index],
+        e: mn95[index+1],
+        h: mn95[index+2]
+      }
     }
   }, // pointCloud_getParticlePosition
 
@@ -786,31 +838,24 @@ $.extend(true,PointCloud.prototype,{
 
     var div = $('#info');
     if (!div.length) {
-
         // create #info div
         div = $('<div id="info"><div id="particle"></div></div>')
-
-        div.appendTo(panorama.container).css({
-            position: 'absolute',
-            top: 10,
-            left: 10,
-            width: 160,
-            padding: 10,
-            backgroundColor: "rgba(0,0,0,.4)",
-            color: 'white'
-        });
-
+        div.appendTo(panorama.container);
+        $('div#info',panorama.container).addClass('particle_info');
     }
 
     // particle info
     var pos=pointCloud.getParticlePosition(index);
     var depth=Math.sqrt(pos.x*pos.x+pos.y*pos.y+pos.z*pos.z);
     var html = '<div style="width: 100%; position: relative; margin-left: 10px;">'
-    + '<b>Particle info:</b><br />'
+//    + '<b>Particle info:</b><br />'
 //    + 'theta: ' + points[index+offset.theta].toPrecision(6) + '<br />'
 //    + 'phi: ' + points[index+offset.phi].toPrecision(6) + '<br />'
-    + 'distance: ' + depth.toPrecision(6) + '<br />'
-    + 'index: ' + index + '<br />';
+//    + 'distance: ' + depth.toPrecision(6) + '<br />'
+//    + 'index: ' + index + '<br />'
+      + 'N: <span class="mn95">'+ pos.mn95.n.toFixed(6) + '</span><br />'
+      + 'E: <span class="mn95">'+ pos.mn95.e.toFixed(6) + '</span><br />'
+      + 'H: <span class="mn95">'+ pos.mn95.h.toFixed(6) + '</span><br />';
 
     $('#particle',div).html(html);
 

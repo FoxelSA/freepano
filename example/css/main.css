@@ -254,7 +254,7 @@ footer .logo {
 }
 
 #snapshot_toggle {
-  /* display: none; */ 
+  /* display: none; */
 }
 
 #snapshot_bar {
@@ -394,7 +394,7 @@ a.button div {
 }
 
 #snapshot_close:active {
-  box-shadow: 1px 1px 3px rgba(0,0,0,0.5);  
+  box-shadow: 1px 1px 3px rgba(0,0,0,0.5);
   transform: scale(0.9);
 }
 
@@ -406,4 +406,21 @@ a.button div {
   width: 340px;
 }
 
+#pano .particle_info {
+  width: 190px;
+  position: absolute;
+  top: 10px;
+  padding: 10px;
+  background-color: rgba(0,0,0,.4);
+  color: white;
+}
+
+#pano .particle_info span.mn95 {
+  float: right;
+  margin-right: 10px;
+}
+
+#pano .particle_info #particle {
+  white-space: nowrap;
+}
 
