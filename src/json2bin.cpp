@@ -7,6 +7,9 @@
 #include <list>
 #include <cmath>
 
+#define FILE_MARKER "\xF0\xE1"
+#define FILE_VERSION "fpcl.00001" // increment this number file format change !
+
 std::stringstream *linestream;
 std::string token = "";
 const char *filename;
@@ -41,13 +44,13 @@ int main(int argc, char **argv) {
 
   std::string line = "";
   unsigned int index;
-  float depth, theta, phi;
+  float depth, theta, phi, mn95_x, mn95_y, mn95_z;
   int lon, lat;
   float r=150.0; // webgl sphere radius
   float fx,fy,fz;
-  std::list<float> sector[360][180];
+  std::list<uint32_t> sector[360][180];
   float step=M_PI/180.0;
-  unsigned long i=0;
+  uint32_t point_index=0;
   unsigned long nb_points=0;
 
   if (argc!=2) {
@@ -91,43 +94,77 @@ int main(int argc, char **argv) {
   std::cerr << filename << ": parsing " << nb_points << " points" << std::endl;
 
   // 1. parse lines beginning with [0-9] as a csv formatted as:
-  // "depth, index, theta, phi," (floats)
+  // "depth, index, theta, phi, mn95-x, mn95-y, mn95-z" (floats)
   // 2. store cartesian coordinates in "sector" array as:
   // float x, float y, float z
 
+  float *mn95=new float[nb_points*3];
+  float *positions=new float[nb_points*3];
+
   while (getline(fs, line)) {
 
+      // skip line not beginning with [0-9]
       if (line[0]<'0' || line[0]>'9') continue;
+
+      if (point_index>= nb_points) {
+        std::cerr << filename << ": error: nb_points is invalid ! " << std::endl;
+        return 1;
+      }
+
+      // read line
       linestream=new std::stringstream(line);
+
+      // extract fields
       depth=getFloat();
       index=getUlong();
       theta=getFloat();
       phi=getFloat();
+      mn95_x=getFloat();
+      mn95_y=getFloat();
+      mn95_z=getFloat();
 
-      // convert to degrees
+      // compute sector location
       lon=((int)round(theta/step)+180)%360;
       lat=round(phi/step);
       if (lat<0) lat+=180;
-
-      lat=180-lat;
+      lat=(180-lat)%180;
 
       // reference particle in sector lon,lat
-      std::list<float> *_sector=&sector[lon][lat];
+      sector[lon][lat].push_back(point_index);
 
+      // compute cartesian webgl coordinates
       phi=(phi-M_PI/2);
       theta=theta-M_PI/2;
-      // compute cartesian coordinates
       fx=depth*sin(phi)*cos(theta);
       fz=depth*sin(phi)*sin(theta);
       fy=-depth*cos(phi);
 
       // store cartesian coordinates
-      _sector->push_back(fx);
-      _sector->push_back(fy);
-      _sector->push_back(fz);
+      unsigned long k=point_index*3;
+      positions[k]=fx;
+      positions[k+1]=fy;
+      positions[k+2]=fz;
 
+      // store mn95 coordinates
+      mn95[k]=mn95_x;
+      mn95[k+1]=mn95_y;
+      mn95[k+2]=mn95_z;
+
+      ++point_index;
   }
 
+  if (point_index!=nb_points) {
+    std::cerr << filename << ": error: nb_points is invalid !" << std::endl;
+    return 1;
+  }
+
+  // output file marker and version number
+  outf.write((char*)FILE_MARKER,strlen(FILE_MARKER));
+  outf.write((char*)FILE_VERSION,strlen(FILE_VERSION));
+
+  std::cerr << filename << ": converting to file version " << FILE_VERSION << std::endl;
+
+  long int data_offset=outf.tellp();
 
   // output positions formatted as list of x,y,z for each [lon][lat] pair
   // and prepare a 360x180 array index formatted as offset,count
@@ -137,13 +174,13 @@ int main(int argc, char **argv) {
   for (lat=0; lat<180; ++lat) {
     for (lon=0; lon<360; ++lon) {
 
-      std::list<float> *positions=&sector[lon][lat];
+      std::list<uint32_t> *_sector=&sector[lon][lat];
 
       // update array index
-      uint32_t particle_count=positions->size()/3;
+      uint32_t particle_count=_sector->size();
       if (particle_count) {
         // particles in this sector: store offset and particle count
-        array_index.push_back(outf.tellp()/sizeof(fx));
+        array_index.push_back((outf.tellp()-data_offset)/sizeof(fx));
         array_index.push_back(particle_count);
       } else {
         // no particles here
@@ -153,16 +190,46 @@ int main(int argc, char **argv) {
       }
 
       // output particle positions for sector[lon][lat]
-      for (std::list<float>::iterator it=positions->begin(); it!=positions->end(); ++it) {
-        float value=*it;
-        outf.write((char*)&value,sizeof(value));
+      for (std::list<uint32_t>::iterator it=_sector->begin(); it!=_sector->end(); ++it) {
+        uint32_t index=*it;
+        outf.write((char*)&positions[index*3],sizeof(*positions)*3);
       }
     }
   }
 
   // check integrity
-  unsigned long positions_byteCount=outf.tellp();
-  std::cerr << filename << ": positions -> " << positions_byteCount << " bytes" << ((positions_byteCount%4)?" not a multiple of 4 !":"") << std::endl;
+  unsigned long positions_byteCount=outf.tellp()-data_offset;
+  int failure=(positions_byteCount/nb_points!=sizeof(*positions)*3);
+  std::cerr << filename << ": positions -> " << positions_byteCount << " bytes" << (failure?" -> Invalid count !":"") << std::endl;
+  if (failure) {
+    return 1;
+  }
+
+  // output mn95 coordinates
+  for (lat=0; lat<180; ++lat) {
+    for (lon=0; lon<360; ++lon) {
+
+      std::list<uint32_t> *_sector=&sector[lon][lat];
+
+      if (!_sector->size()) {
+        continue;
+      }
+
+      // output mn95 positions for sector[lon][lat]
+      for (std::list<uint32_t>::iterator it=_sector->begin(); it!=_sector->end(); ++it) {
+        uint32_t index=*it;
+        outf.write((char*)&mn95[index],sizeof(*mn95)*3);
+      }
+    }
+  }
+
+  // check integrity
+  long unsigned int mn95_byteCount=(unsigned long)outf.tellp()-data_offset-positions_byteCount;
+  failure=(mn95_byteCount!=positions_byteCount);
+  std::cerr << filename << ": mn95 -> " << mn95_byteCount << " bytes" << (failure?" -> Invalid count !":"") << std::endl;
+  if (failure) {
+    return 1;
+  }
 
   // output index formatted as:
   // offset, particle_count
@@ -172,11 +239,23 @@ int main(int argc, char **argv) {
   }
 
   // check integrity
-  long unsigned int index_byteCount=(unsigned long)outf.tellp()-positions_byteCount;
-  std::cerr << filename << ": index -> " << index_byteCount << " bytes" << ((index_byteCount%4)?" not a multiple of 4 !":"") << std::endl;
+  flush(outf);
+  long unsigned int index_byteCount=(unsigned long)outf.tellp()-data_offset-positions_byteCount-mn95_byteCount;
+  failure=(index_byteCount%4);
+  std::cerr << filename << ": index -> " << index_byteCount << " bytes" << ((index_byteCount%4)?" -> not a multiple of 4 !":"") << std::endl;
+  if (failure) {
+    return 1;
+  }
 
+  outf.write((char*)FILE_MARKER,strlen(FILE_MARKER));
   outf.close();
-  return (positions_byteCount%4 + index_byteCount%4);
+
+  if (mn95_byteCount!=positions_byteCount) {
+    std::cerr << "error: mn95_byteCount != positions_byteCount ! " << std::endl;
+    return 1;
+  }
+
+  return 0;
 
 }
 
