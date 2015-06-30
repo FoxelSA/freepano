@@ -55,7 +55,6 @@ Panorama.prototype.snapshot={
     [ 'glfx', 'vignette' ]
   ],
 
-
   on_panorama_init: function snapshot_on_panorama_init() {
     $('a').each(function(){this.draggable=false;});
     var panorama=this;
@@ -64,12 +63,15 @@ Panorama.prototype.snapshot={
     // reference panorama instance for events receivers
     snapshot.panorama=panorama;
 
+    // instantiate snapshot bar
     if (!snapshot.bar) {
       snapshot.bar=$(snapshot.dom);
       $(snapshot.close_button_id).on('click.gallery',function(e){
           snapshot.dispatch('hidebar');
       })
     }
+
+    // instantiate snapshot toggle button
     if (!snapshot.button) {
         snapshot.button=$(snapshot.toggle_button_id);
         snapshot.button.on('click',function(e){
@@ -85,6 +87,16 @@ Panorama.prototype.snapshot={
 
   }, // snapshot_on_panorama_init
 
+  /**
+  * snapshot.add()
+  *
+  * instantiate a div, center specified canvas in it
+  * (zoom) and add it to snapshot bar
+  *
+  * @param options.canvas the canvas
+  * @param options.* other properties are stripped down then added to snapshot metadata
+  *
+  */
   add: function snapshot_add(options) {
     var snapshot=this;
     var div=$('<div class="snapshot">)');
@@ -97,6 +109,14 @@ Panorama.prototype.snapshot={
 
   },   // snapshot_add
 
+  /**
+  * snapshot.addToBar()
+  *
+  * add snapshot to snapshot bar
+  *
+  * @param options.canvas  the canvas to add
+  * @param options.* other properties are stripped then added to snapshot metadata
+  */
   addToBar: function snapshot_addToBar(options) {
 
     var snapshot=this;
@@ -144,6 +164,14 @@ Panorama.prototype.snapshot={
 
   }, // snapshot_addToBar
 
+  /**
+  * snapshot.stripMetadata()
+  *
+  * strip down the specified object poperties to the
+  * minimum needed
+  *
+  * @param metadata the object to strip down
+  */
   stripMetadata: function snapshot_stripMetadata(metadata) {
     return {
         canvas_id: metadata.canvas_id,
@@ -190,10 +218,12 @@ Panorama.prototype.snapshot={
       var panorama=snapshot.panorama;
 
       snapshot.hideBar();
-
+      
+      // cancel current selection
       if (panorama.ias) {
           snapshot.toggleEdit({keepThumb:false});
       }
+
   }, // snapshot_onhidebar
 
   showBar: function snapshot_showBar() {
@@ -220,9 +250,12 @@ Panorama.prototype.snapshot={
 
   on_panorama_mousemove: function snapshot_on_panorama_mousemove(e) {
     var panorama=this;
+
+    // disable panorama rotation in select mode
     if (panorama.ias) {
       return false;
     }
+
   }, // snapshot_on_panorama_mousemove
 
   on_gallery_show: function snapshot_on_gallery_show(e) {
@@ -251,6 +284,7 @@ Panorama.prototype.snapshot={
       gallery.leftArrow.removeClass('disabled');
     }
 
+    // show current gallery image in snapshot bar
     snapshot.bar.mCustomScrollbar('scrollTo',$(e.canvas).closest('.snapshot').position().top);
 
   }, // snapshot_on_gallery_show
@@ -268,10 +302,12 @@ Panorama.prototype.snapshot={
     var gallery=this;
     var panorama=gallery.panorama;
 
+    // dont try to display past last snapshot
     if (gallery.canvas_index+1 >= panorama.snapshot.list.length) {
       return;
     }
 
+   // display next snapshot
    ++gallery.canvas_index;
    gallery.show($('#'+panorama.snapshot.list[gallery.canvas_index].canvas_id)[0]);
 
@@ -415,26 +451,43 @@ Panorama.prototype.snapshot={
 
      instance: true,
 
+     /**
+     * ias_onSelectCancel()
+     *
+     * imgAreaSelect selectCancel event handler
+     *
+     * @param keepThumb (in the snapshot bar)
+     */
      onSelectCancel: function ias_onSelectCancel(keepThumb) {
 
-        if (snapshot.list.length) {
-          // remove thumbnail
+        // maybe a thumbnail must be removed
+        if (!keepThumb && snapshot.list.length) {
+
+          // get thumbnail metadata
           var metadata=snapshot.list[snapshot.list.length-1];
+
+          // saved thumbnail cant be target of selectCancel event
           if (!metadata.saved) {
+
+            // maybe nothing has been selected yet so
+            // checkthe thumbnail is already instantiated
+            // before removing the last in the bar
             var canvas_id=metadata.canvas_id;
             var canvas=$('canvas#'+canvas_id);
             if (canvas.length && !keepThumb) {
               canvas.closest('.snapshot').remove();
               snapshot.list.pop();
             }
+
           }
+
         }
 
         // remove imgAreaSelect instance
         $(panorama.container).imgAreaSelect({remove: true});
         panorama.ias=null;
 
-        snapshot.restoreMapState;
+        snapshot.restoreMapState();
 
         // remove filter controls
         $('#imagefilters',snapshot.sliders_container).remove();
@@ -456,6 +509,15 @@ Panorama.prototype.snapshot={
 
      }, // ias_onSelectCancel
 
+     /**
+     * ias_onSelectCancel()
+     *
+     * imgAreaSelect selectCancel event handler
+     *
+     * @param img image
+     * @param rect selection rectangle
+     *
+     */
      onSelectChange: function ias_onSelectChange(img,rect) {
        if (rect.x1==rect.x2 || rect.y1==rect.y2) return;
        this.onSelectEnd.apply(this,[img,rect]);
@@ -469,19 +531,27 @@ Panorama.prototype.snapshot={
         var div;
         var isnew;
 
+        // if we are returning here for this snapshot.index
         if (snapshot.index<snapshot.list.length) {
+
+          // get the snapshot canvas
           canvas_id=snapshot.list[snapshot.index].canvas_id;
           canvas=$('canvas#'+canvas_id);
+
         }  else {
+          // instantiate a new one
           canvas_id=snapshot.canvas_id='snap'+new Date().getTime();
           canvas=[];
         }
 
-        // create or update thumbnail bar element
+        /* create or update thumbnail bar element */
+
         if (!canvas.length) {
+          // creating new thumbnail
 
           if (rect.x1==rect.x2 && rect.y1==rect.y2) {
             // simple click, exit edit mode
+  
             snapshot.dispatch({
               type: 'mode',
               mode: {
@@ -489,20 +559,22 @@ Panorama.prototype.snapshot={
                 value: false
               }
             });
+
           }
 
-          // wrapper
+          // wrapper div
           div=$('<div class="snapshot">)');
 
-          // get canvas from selection
+          // new canvas from selection
           canvas=panorama.screenCapture(rect.x1,$(panorama.container).height()-rect.y1-rect.height,rect.width,rect.height);
           if (!canvas) return;
           canvas.id=canvas_id;
           isnew=true;
 
         } else {
+          // updating existing thumbnail
 
-          // wrapper
+          // wrapper div
           div=$(canvas).closest('.snapshot');
 
           // update canvas from selection
