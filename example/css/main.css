@@ -410,17 +410,25 @@ a.button div {
   width: 190px;
   position: absolute;
   top: 10px;
-  padding: 10px;
+  left: 10px;
+  padding-top: 10px;
+  padding-bottom: 10px;
   background-color: rgba(0,0,0,.4);
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.4);
   color: white;
 }
 
 #pano .particle_info span.mn95 {
   float: right;
-  margin-right: 10px;
+  margin-right: 20px;
 }
 
 #pano .particle_info #particle {
   white-space: nowrap;
 }
+
+#pano .particle_info .left {
+  float: left;
+}
+
 
