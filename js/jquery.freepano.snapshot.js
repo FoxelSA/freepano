@@ -218,7 +218,7 @@ Panorama.prototype.snapshot={
       var panorama=snapshot.panorama;
 
       snapshot.hideBar();
-      
+
       // cancel current selection
       if (panorama.ias) {
           snapshot.toggleEdit({keepThumb:false});
@@ -551,7 +551,7 @@ Panorama.prototype.snapshot={
 
           if (rect.x1==rect.x2 && rect.y1==rect.y2) {
             // simple click, exit edit mode
-  
+
             snapshot.dispatch({
               type: 'mode',
               mode: {
@@ -1016,6 +1016,9 @@ Panorama.prototype.snapshot={
         if (!isupdate) {
           $(canvas).appendTo('body');
         }
+
+        // referencing
+        filters.canvas=canvas;
 
         // positioning
         $(canvas).css({
