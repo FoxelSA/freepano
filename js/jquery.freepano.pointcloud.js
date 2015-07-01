@@ -853,9 +853,9 @@ $.extend(true,PointCloud.prototype,{
 //    + 'phi: ' + points[index+offset.phi].toPrecision(6) + '<br />'
 //    + 'distance: ' + depth.toPrecision(6) + '<br />'
 //    + 'index: ' + index + '<br />'
-      + '<span class="left">N:</span><span class="mn95">'+ pos.mn95.e.toFixed(6) + ' (m)</span><br />'
       + '<span class="left">E:</span><span class="mn95">'+ pos.mn95.n.toFixed(6) + ' (m)</span><br />'
-      + '<span class="left">A:</span><span class="mn95">'+ pos.mn95.h.toFixed(6) + ' (m)</span><br />';
+      + '<span class="left">N:</span><span class="mn95">'+ pos.mn95.e.toFixed(6) + ' (m)</span><br />'
+      + '<span class="left">H:</span><span class="mn95">'+ pos.mn95.h.toFixed(6) + ' (m)</span><br />';
 
     $('#particle',div).html(html);
 
