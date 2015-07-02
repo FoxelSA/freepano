@@ -23,7 +23,7 @@ inline float getFloat() {
   return atof(token.c_str());
 }
 
-// return float from linestream
+// return double from linestream
 inline double getDouble() {
   if (!getline(*linestream, token, ',')) {
     std::cerr << "error: could not parse " << filename << std::endl ;
