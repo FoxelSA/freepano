@@ -8,7 +8,7 @@
 #include <cmath>
 
 #define FILE_MARKER "\xF0\xE1"
-#define FILE_VERSION "fpcl.00001" // increment this number file format change !
+#define FILE_VERSION "fpcl.00002" // increment this number when file format change !
 
 std::stringstream *linestream;
 std::string token = "";
@@ -21,6 +21,15 @@ inline float getFloat() {
     exit(1);
   }
   return atof(token.c_str());
+}
+
+// return float from linestream
+inline double getDouble() {
+  if (!getline(*linestream, token, ',')) {
+    std::cerr << "error: could not parse " << filename << std::endl ;
+    exit(1);
+  }
+  return strtod(token.c_str(), NULL);
 }
 
 // return unsigned long from linestream
@@ -74,7 +83,7 @@ int main(int argc, char **argv) {
     }
   }
   if (!nb_points) {
-    std::cerr << "error: could not parse" << filename << std::endl ;
+    std::cerr << "error: could not parse " << filename << std::endl ;
     return 1;
   }
 
@@ -98,7 +107,7 @@ int main(int argc, char **argv) {
   // 2. store cartesian coordinates in "sector" array as:
   // float x, float y, float z
 
-  float *mn95=new float[nb_points*3];
+  double *mn95=new double[nb_points*3];
   float *positions=new float[nb_points*3];
 
   while (getline(fs, line)) {
@@ -119,9 +128,9 @@ int main(int argc, char **argv) {
       index=getUlong();
       theta=getFloat();
       phi=getFloat();
-      mn95_x=getFloat();
-      mn95_y=getFloat();
-      mn95_z=getFloat();
+      mn95_x=getDouble();
+      mn95_y=getDouble();
+      mn95_z=getDouble();
 
       // compute sector location
       lon=((int)round(theta/step)+180)%360;
@@ -224,7 +233,7 @@ int main(int argc, char **argv) {
 
   // check integrity
   long unsigned int mn95_byteCount=(unsigned long)outf.tellp()-data_offset-positions_byteCount;
-  failure=(mn95_byteCount!=positions_byteCount);
+  failure=(mn95_byteCount!=2*positions_byteCount);
   std::cerr << filename << ": mn95 -> " << mn95_byteCount << " bytes" << (failure?" -> Invalid count !":"") << std::endl;
   if (failure) {
     return 1;
@@ -249,8 +258,8 @@ int main(int argc, char **argv) {
   outf.write((char*)FILE_MARKER,strlen(FILE_MARKER));
   outf.close();
 
-  if (mn95_byteCount!=positions_byteCount) {
-    std::cerr << "error: mn95_byteCount != positions_byteCount ! " << std::endl;
+  if (mn95_byteCount!=2*positions_byteCount) {
+    std::cerr << "error: mn95_byteCount != 2*positions_byteCount ! " << std::endl;
     return 1;
   }
 

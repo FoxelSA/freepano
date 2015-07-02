@@ -440,7 +440,6 @@ $.extend(true,PointCloud.prototype,{
     var panorama=pointCloud.panorama;
     var buffer=e.data;
 
-
     switch(e.dataType) {
       case 'sectors':
 
@@ -453,7 +452,7 @@ $.extend(true,PointCloud.prototype,{
 
         // check file marker
         if (buf[0]!=parseInt('F0',16) || buf[0]!=buf[buffer.byteLength-2] || buf[1]!=parseInt('E1',16) || buf[1]!=buf[buffer.byteLength-1]) {
-          console.log('Invalid file marker');
+          $.notify('Point cloud: Invalid file marker');
           break;
         }
 
@@ -465,11 +464,11 @@ $.extend(true,PointCloud.prototype,{
 
         // check file type and version
         if (VERSION_NUMBER.split('.')[0]!="fpcl") {
-          console.log('Invalid file type');
+          $.notify('Point cloud: Invalid file type');
           break;
         }
-        if (VERSION_NUMBER.split('.')[1]!="00001") {
-          console.log('Invalid file version');
+        if (VERSION_NUMBER.split('.')[1]!="00002") {
+          $.notify('Point cloud: Invalid file version');
           break;
         }
 
@@ -484,14 +483,14 @@ $.extend(true,PointCloud.prototype,{
                                       - buf_index_byteCount
                                       - marker_byteCount;
 
-        // theres two subseqent sets of coordinates in the buffer (WebGL followedi by MN95), sharing the same index
-        buf_coordinates_byteCount/=2;
+        // theres two subseqent sets of coordinates in the buffer (WebGL/32bits followed by MN95/64bits), sharing the same index
+        var buf_webgl_coordinates_byteCount=buf_coordinates_byteCount/3;
 
-        console.log('points count:',buf_coordinates_byteCount/12);
+        console.log('points count:',buf_webgl_coordinates_byteCount/12);
 
         pointCloud.sector={
-          data: new Float32Array(buffer, buf_data_offset, buf_coordinates_byteCount/4),
-          mn95: new Float32Array(buffer, buf_data_offset + buf_coordinates_byteCount, buf_coordinates_byteCount/4),
+          data: new Float32Array(buffer, buf_data_offset, buf_webgl_coordinates_byteCount/4),
+          mn95: new Float64Array(buffer, buf_data_offset + buf_webgl_coordinates_byteCount, (buf_coordinates_byteCount-buf_webgl_coordinates_byteCount)/8),
           index: new Uint32Array(buffer, buffer.byteLength - marker_byteCount - buf_index_byteCount, buf_index_byteCount/4)
         }
         break;
