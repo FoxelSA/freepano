@@ -215,6 +215,12 @@ int main(int argc, char **argv) {
     return 1;
   }
 
+  // align start of double array on 8 bytes
+  unsigned long positions_filler=positions_byteCount%8;
+  if (positions_filler) {
+    outf.write("fill",4);
+  }
+
   // output mn95 coordinates
   for (lat=0; lat<180; ++lat) {
     for (lon=0; lon<360; ++lon) {
@@ -233,11 +239,17 @@ int main(int argc, char **argv) {
   }
 
   // check integrity
-  long unsigned int mn95_byteCount=(unsigned long)outf.tellp()-data_offset-positions_byteCount;
+  long unsigned int mn95_byteCount=(unsigned long)outf.tellp()-data_offset-positions_byteCount-positions_filler;
   failure=(mn95_byteCount!=2*positions_byteCount);
   std::cerr << filename << ": mn95 -> " << mn95_byteCount << " bytes" << (failure?" -> Invalid count !":"") << std::endl;
   if (failure) {
     return 1;
+  }
+
+  // if alignment was needed before mn95 array, add it twice after (for proper table size computation in js) 
+  if (positions_filler) {
+    outf.write("fill",4);
+    outf.write("fill",4);
   }
 
   // output index formatted as:
@@ -249,7 +261,7 @@ int main(int argc, char **argv) {
 
   // check integrity
   flush(outf);
-  long unsigned int index_byteCount=(unsigned long)outf.tellp()-data_offset-positions_byteCount-mn95_byteCount;
+  long unsigned int index_byteCount=(unsigned long)outf.tellp()-data_offset-positions_byteCount-mn95_byteCount-positions_filler*3;
   failure=(index_byteCount%4);
   std::cerr << filename << ": index -> " << index_byteCount << " bytes" << ((index_byteCount%4)?" -> not a multiple of 4 !":"") << std::endl;
   if (failure) {
