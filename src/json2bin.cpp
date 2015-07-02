@@ -53,7 +53,8 @@ int main(int argc, char **argv) {
 
   std::string line = "";
   unsigned int index;
-  float depth, theta, phi, mn95_x, mn95_y, mn95_z;
+  float depth, theta, phi;
+  double mn95_x, mn95_y, mn95_z;
   int lon, lat;
   float r=150.0; // webgl sphere radius
   float fx,fy,fz;
