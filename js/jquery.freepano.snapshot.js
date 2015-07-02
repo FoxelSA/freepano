@@ -168,23 +168,33 @@ Panorama.prototype.snapshot={
   * snapshot.stripMetadata()
   *
   * strip down the specified object poperties to the
-  * minimum needed
+  * properties listed in snapshot.metadata_properties
   *
   * @param metadata the object to strip down
   */
   stripMetadata: function snapshot_stripMetadata(metadata) {
-    return {
-        canvas_id: metadata.canvas_id,
-        image: metadata.image,
-        description: metadata.description,
-        rect: metadata.rect,
-        lon: metadata.lon,
-        lat: metadata.lat,
-        zoom: metadata.zoom,
-        url: metadata.url,
-        saved: metadata.saved
-    };
+    var snapshot=this;
+    var obj={};
+
+    $.each(metadata,function(property_name){
+      obj[property_name]=metadata[property_name];
+    });
+
+    return obj;
+
   }, // snapshot_stripMetadata
+
+  metadata_properties: [
+    'canvas_id',
+    'image',
+    'description',
+    'rect',
+    'lon',
+    'lat',
+    'zoom',
+    'url',
+    'saved'
+  ],
 
   on_panorama_ready: function snapshot_on_panorama_ready() {
     var panorama=this;
