@@ -8,7 +8,10 @@
 #include <cmath>
 
 #define FILE_MARKER "\xF0\xE1"
-#define FILE_VERSION "fpcl.00002" // increment this number when file format change !
+#define FILE_VERSION "fpcl.0003" // increment this number when file format change !
+#define FILE_HEADER_SIZE 16 // multiple of 8
+
+char file_header[FILE_HEADER_SIZE];
 
 std::stringstream *linestream;
 std::string token = "";
@@ -168,9 +171,10 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  // output file marker and version number
-  outf.write((char*)FILE_MARKER,strlen(FILE_MARKER));
-  outf.write((char*)FILE_VERSION,strlen(FILE_VERSION));
+  // file header
+  strncpy(file_header,FILE_MARKER,2);
+  strncat(file_header,FILE_VERSION,FILE_HEADER_SIZE-2);
+  outf.write((char*)file_header,FILE_HEADER_SIZE);
 
   std::cerr << filename << ": converting to file version " << FILE_VERSION << std::endl;
 
@@ -218,7 +222,7 @@ int main(int argc, char **argv) {
   // align start of double array on 8 bytes
   unsigned long positions_filler=positions_byteCount%8;
   if (positions_filler) {
-    outf.write("fill",4);
+    outf.write("fillfill",positions_filler);
   }
 
   // output mn95 coordinates
@@ -248,8 +252,8 @@ int main(int argc, char **argv) {
 
   // if alignment was needed before mn95 array, add it twice after (for proper table size computation in js) 
   if (positions_filler) {
-    outf.write("fill",4);
-    outf.write("fill",4);
+    outf.write("fillfill",positions_filler);
+    outf.write("fillfill",positions_filler);
   }
 
   // output index formatted as:

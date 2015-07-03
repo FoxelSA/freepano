@@ -449,6 +449,7 @@ $.extend(true,PointCloud.prototype,{
 
         var buf=new Uint8Array(buffer);
         var marker_byteCount=2;
+        var FILE_HEADER_SIZE=16;
 
         // check file marker
         if (buf[0]!=parseInt('F0',16) || buf[0]!=buf[buffer.byteLength-2] || buf[1]!=parseInt('E1',16) || buf[1]!=buf[buffer.byteLength-1]) {
@@ -458,7 +459,7 @@ $.extend(true,PointCloud.prototype,{
 
         // get file type and version
         var VERSION_NUMBER='';
-        for (var i=0; i<10; ++i) {
+        for (var i=0; i<9; ++i) {
           VERSION_NUMBER+=String.fromCharCode(buf[marker_byteCount+i]);
         }
 
@@ -467,7 +468,7 @@ $.extend(true,PointCloud.prototype,{
           $.notify('Point cloud: Invalid file type');
           break;
         }
-        if (VERSION_NUMBER.split('.')[1]!="00002") {
+        if (VERSION_NUMBER.split('.')[1]!="0003") {
           $.notify('Point cloud: Invalid file version');
           break;
         }
@@ -475,7 +476,7 @@ $.extend(true,PointCloud.prototype,{
         // length in bytes of the sectors array index
         var buf_index_byteCount=8*360*180;
 
-        var buf_data_offset=marker_byteCount+VERSION_NUMBER.length;
+        var buf_data_offset=FILE_HEADER_SIZE;
 
         // length in bytes of the coordinates arrays
         var buf_coordinates_byteCount = buffer.byteLength
