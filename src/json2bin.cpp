@@ -222,7 +222,7 @@ int main(int argc, char **argv) {
   // align start of double array on 8 bytes
   unsigned long positions_filler=positions_byteCount%8;
   if (positions_filler) {
-    outf.write("fillfill",positions_filler);
+    outf.write("fillfill",8-positions_filler);
   }
 
   // output mn95 coordinates
@@ -252,8 +252,8 @@ int main(int argc, char **argv) {
 
   // if alignment was needed before mn95 array, add it twice after (for proper table size computation in js) 
   if (positions_filler) {
-    outf.write("fillfill",positions_filler);
-    outf.write("fillfill",positions_filler);
+    outf.write("fillfill",8-positions_filler);
+    outf.write("fillfill",8-positions_filler);
   }
 
   // output index formatted as:
