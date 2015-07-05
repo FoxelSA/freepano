@@ -703,6 +703,7 @@ $.imgAreaSelect = function (img, options) {
      */
     function cancelSelection(param) {
         $(document).unbind('mousemove', startSelection)
+            .unbind('mousemove', selectingMouseMove)
             .unbind('mouseup', cancelSelection);
         hide($box.add($outer));
         
