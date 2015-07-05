@@ -176,7 +176,7 @@ Panorama.prototype.snapshot={
     var snapshot=this;
     var obj={};
 
-    $.each(metadata,function(property_name){
+    $.each(snapshot.metadata_properties,function(index,property_name){
       obj[property_name]=metadata[property_name];
     });
 
