@@ -487,7 +487,7 @@ $.extend(true,PointCloud.prototype,{
         // theres two subseqent sets of coordinates in the buffer (WebGL/32bits followed by MN95/64bits), sharing the same index
         var buf_webgl_coordinates_byteCount=buf_coordinates_byteCount/3;
 
-        console.log('points count:',buf_webgl_coordinates_byteCount/12);
+        console.log('points count:',Math.floor(buf_webgl_coordinates_byteCount/12));
 
         pointCloud.sector={
           data: new Float32Array(buffer, buf_data_offset, buf_webgl_coordinates_byteCount/4),
