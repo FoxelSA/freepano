@@ -700,6 +700,8 @@ $.extend(true,Sphere.prototype,{
         // trigger tiles loading
         sphere.updateTilesVisibilityStatus();
 
+        panorama.dispatch('change');
+
     }, // sphere_tileSetChanged
 
     /**
