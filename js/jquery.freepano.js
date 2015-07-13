@@ -1991,6 +1991,16 @@ window.isLeftButtonDown=function isLeftButtonDown(e) {
   return e.buttons == 1;
 }, // isLeftButtonDown
 
+
+// keep track of left button up
+$(window)
+.on('mousedown',function(e){
+    window.leftButtonDown=isLeftButtonDown(e);
+})
+.on('mouseup',function(e){
+    window.leftButtonUp=window.leftButtonDown;
+});
+
 /*
  * Panorama
  * Event Dispatcher
