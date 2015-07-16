@@ -109,7 +109,7 @@ f=$2
     # then just use the new width and height set above
     if [ -z "$LEVEL" -o -n "$LEVEL" -a "$LEVEL" = "$bottom" ] && [ ! -f $base/$tilesize/$bottom/done ]  ; then 
       tempfile=/tmp/tmp.$(basename $f).tiff
-      convert $f -resize ${width}x$height -quality 100 $tempfile
+      convert $f -resize ${width}x$height\! -quality 100 $tempfile
       fref=$f
       f=$tempfile
     fi
@@ -150,7 +150,7 @@ f=$2
       else # lower resolution levels
 
         # resize original image
-        convert $f -resize ${curwidth}x$(expr $curwidth / 2) -quality 100 ${base}_${level}.jpg || exit
+        convert $f -resize ${curwidth}x$(expr $curwidth / 2)\! -quality 100 ${base}_${level}.jpg || exit
 
         # split into tiles
         convert -crop ${tilesize}x${tilesize} +repage +adjoin ${base}_${level}.jpg $QUALITY ${base}_${level}.%05d.jpg || exit
