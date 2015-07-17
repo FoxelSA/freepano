@@ -398,11 +398,11 @@ $.extend(true,Sphere.prototype,{
 
         // no need to check visibility status if the following parameters didnt change
         if (
-            sphere_updateTilesVisibilityStatus.lon==panorama.lon &&
-            sphere_updateTilesVisibilityStatus.lat==panorama.lat &&
-            sphere_updateTilesVisibilityStatus.fov==panorama.camera.instance.fov &&
-            sphere_updateTilesVisibilityStatus.canvas_width==canvas.width &&
-            sphere_updateTilesVisibilityStatus.canvas_height==canvas.height
+            sphere.updateTilesVisibilityStatus.lon==panorama.lon &&
+            sphere.updateTilesVisibilityStatus.lat==panorama.lat &&
+            sphere.updateTilesVisibilityStatus.fov==panorama.camera.instance.fov &&
+            sphere.updateTilesVisibilityStatus.canvas_width==canvas.width &&
+            sphere.updateTilesVisibilityStatus.canvas_height==canvas.height
         ) {
           return;
         }
@@ -438,8 +438,8 @@ $.extend(true,Sphere.prototype,{
         sphere.updateTilesVisibilityStatus.lon=panorama.lon;
         sphere.updateTilesVisibilityStatus.lat=panorama.lat;
         sphere.updateTilesVisibilityStatus.fov=panorama.camera.instance.fov;
-        sphere.updateTilesVisibilityStatus.canvas_widht=panorama.renderer.domElement.width;
-        sphere.updateTilesVisibilityStatus.canvas_widht=panorama.renderer.domElement.height;
+        sphere.updateTilesVisibilityStatus.canvas_width=panorama.renderer.domElement.width;
+        sphere.updateTilesVisibilityStatus.canvas_height=panorama.renderer.domElement.height;
 
         // for every tile
         $.each(sphere.object3D.children, function() {
@@ -575,9 +575,9 @@ $.extend(true,Sphere.prototype,{
     }, // sphere_loadTile
 
     onprogress: function sphere_onprogress(e) {
-     
+
       var sphere=this;
-     
+
       if (!sphere.tilesToLoad) {
          if (!sphere.progressBar) {
            return;
@@ -598,7 +598,7 @@ $.extend(true,Sphere.prototype,{
         });
       }
 
-      // update progress bar     
+      // update progress bar
       var percent=sphere.tilesLoaded/(sphere.tilesLoaded+sphere.tilesToLoad);
       sphere.progressBar.set(percent);
 
@@ -1959,9 +1959,9 @@ $.extend(true,Panorama.prototype,{
       // write bitmap to canvas
       imageData.data.set(bitmap);
       ctx.putImageData(imageData,0,0);
-  
+
       return canvas;
-  
+
     } // panorama_screenCapture
 
 }); // Panorama Prototype
