@@ -696,33 +696,50 @@ $(document).on('filesloaded', function(){
   window.p=window.panorama=$('#pano').data('pano');
 
   panorama.dispatchEventsTo({
-    on_panorama_ready: function(e){
 
+    on_panorama_ready: function(e){
       video_init(this);
+      setInterval(function(){
+          panorama.drawScene();
+      },1000/window.video.fps);
     },
+
     on_panorama_render: function(e) {
       var panorama=this;
-      video_update();
       var video=window.video;
+
+      video_updateGeometry();
+
       if (video && video.readyState === video.HAVE_ENOUGH_DATA) {
-        if (videoImageContext.lastUpdate == undefined || Math.abs(video.currentTime - videoImageContext.lastUpdate) > 1/video.fps) {
+        if (
+            videoImageContext.lastUpdate == undefined ||
+            Math.abs(video.currentTime - videoImageContext.lastUpdate) > 1/video.fps
+        ) {
           if (video.texture) {
             videoImageContext.lastUpdate=video.currentTime;
             videoImageContext.drawImage(video,0,0);
             video.texture.needsUpdate=true;
           }
         }
-        panorama.renderer.render(video.maskScene,panorama.camera.instance,video.mask,true);
+
+        // render video mask
+        panorama.renderer.render(video.mask.scene,panorama.camera.instance,video.mask.renderTarget,true);
+
+        // map video
         panorama.renderer.render(video.scene,video.camera);
+
       }
     } // on_panorama_render
   });
 
 
-  function video_init(panorama,update){
-      
+  /**
+  * video_init
+  */
+  function video_init(panorama){
+
       var video=window.video;
-      
+
       if (!video) {
           video=window.video=document.createElement('video');
           video.width=640;
@@ -730,8 +747,7 @@ $(document).on('filesloaded', function(){
           video.autoplay=true;
           video.loop=true;
           video.src='video.mp4';
-          video.fps=30;
-          video.maskcolor=new THREE.Vector4(1,1,1,1);
+          video.fps=23.98;
       }
 
       var videoImage=video.image;
@@ -744,48 +760,79 @@ $(document).on('filesloaded', function(){
           videoImageContext.fillStyle = '#000000';
           videoImageContext.fillRect( 0, 0, videoImage.width, videoImage.height );
       }
-           
+
       var texture=video.texture;
-      
+
       if (!texture) {
-          texture=video.texture=new THREE.Texture(videoImage);     
+          texture=video.texture=new THREE.Texture(videoImage);
           texture.minFilter = THREE.LinearFilter;
           texture.magFilter = THREE.LinearFilter;
           texture.format = THREE.RGBFormat;
       }
 
-      var maskScene=video.maskScene;
+      var canvas=panorama.renderer.getContext().canvas;
 
-      if (!maskScene) {
-          maskScene=video.maskScene=new THREE.Scene();
-          var canvas=panorama.renderer.getContext().canvas;
-          video.mask=new THREE.WebGLRenderTarget(canvas.width, canvas.height, {
-              minFilter:THREE.LinearFilter,
-              stencilBuffer:false,
-              depthBuffer:false
-          });
+      var mask=video.mask;
+
+      if (!mask) {
+
+         mask=video.mask={
+
+             scene: new THREE.Scene(),
+
+             renderTarget: new THREE.WebGLRenderTarget(canvas.width, canvas.height, {
+                  minFilter:THREE.LinearFilter,
+                  stencilBuffer:false,
+                  depthBuffer:false
+              }),
+
+              geometry: new THREE.PlaneGeometry(video.width,video.height,1,1),
+
+              // mask material
+              material: new THREE.MeshBasicMaterial({
+                color: new THREE.Vector3(1.0,1.0,1.0,1.0),
+                depthWrite: false,
+                depthTest: false
+              }),
+
+              /**
+              * video_mask_init()
+              */
+              init: function video_mask_init() {
+                 var mask=this;
+
+                 mask.geometry.dynamic=true;
+
+
+                 mask.mesh=new THREE.Mesh(mask.geometry, mask.material);
+                 mask.mesh.name="video_mask";
+                 mask.mesh.rotateY(Math.PI/2);
+
+                 mask.scene.add(mask.mesh);
+
+
+              }
+          }
+
+          mask.init();
       }
 
       if (!video.H) {
           video.H=new THREE.Matrix3();
       }
-      
-      var material=video.maskMaterial;
 
-      if (!material) {
-          material=video.maskMaterial=new THREE.MeshBasicMaterial({
-              color: video.maskcolor
-          })
+      var shaderMaterial=video.shaderMaterial;
+
+      if (!shaderMaterial) {
 
           var shaderMaterial=video.shaderMaterial=new THREE.ShaderMaterial({
             transparent: true,
             uniforms: {
                 video1_texture: {type: 't', value: video.texture},
-                mask: {type: 't', value: video.mask},
-                video1_H: {type: 'm3', value: video.H},
-                screenres: {type: 'v2', value: new THREE.Vector2(panorama.renderer.getContext().canvas.width,panorama.renderer.getContext().canvas.height)}
+                mask: {type: 't', value: video.mask.renderTarget},
+                video1_H: {type: 'm3', value: video.H}
             },
-            vertexShader: [ 
+            vertexShader: [
               'varying vec2 vUv;',
               'void main() {',
               '  vUv = uv;',
@@ -796,80 +843,42 @@ $(document).on('filesloaded', function(){
               'varying vec2 vUv;',
               'uniform sampler2D video1_texture;',
               'uniform sampler2D mask;',
-              'uniform vec2 screenres;',
               'uniform mat3 video1_H;',
               'void main() {',
-              '  vec2 tUv=vec2(gl_FragCoord.x/screenres.x, gl_FragCoord.y/screenres.y);',
               '  vec4 maskColor=texture2D(mask,vUv);',
               '  vec3 src=vec3(gl_FragCoord.x,gl_FragCoord.y,1)*video1_H;',
-              '  vec4 vidColor=texture2D(video1_texture,vec2(src.x/src.z,src.y/src.z));',
+              '  vec4 vidColor=texture2D(video1_texture,vec2(src.x/src.z,1.0-src.y/src.z));',
               '  gl_FragColor = vec4(vidColor.x,vidColor.y,vidColor.z,vidColor.w*maskColor.x);',
               '}'
             ].join("\n"),
 
-   
+
         });
       }
-/*
-renderer.render( myScene, myCamera, myTexture, true );
-*/
-      if (!video.maskGeometry) {
-          video.maskGeometry=new THREE.Geometry();
-          video.maskGeometry.dynamic=true;
-          video.maskGeometry.vertices.push(new THREE.Vector3(0,0,0));
-          video.maskGeometry.vertices.push(new THREE.Vector3(0,0,0));
-          video.maskGeometry.vertices.push(new THREE.Vector3(0,0,0));
-          video.maskGeometry.vertices.push(new THREE.Vector3(0,0,0));
-          video.maskGeometry.faces.push(new THREE.Face3(0,2,1));
-          video.maskGeometry.faces.push(new THREE.Face3(2,3,1));
-          video.maskGeometry.faceVertexUvs[0].push([
-            new THREE.Vector2(0,1),
-            new THREE.Vector2(0,0),
-            new THREE.Vector2(1,1)
-          ],
-          [
-            new THREE.Vector2(0,0),
-            new THREE.Vector2(1,0),
-            new THREE.Vector2(1,1)
-          ])
-      }
-      
-      var mesh=video.maskMesh;
-
-      if (!mesh) {
-          mesh=video.maskMesh=new THREE.Mesh( video.maskGeometry, video.maskMaterial );
-          mesh.name="video_mask";
-          mesh.rotateY(Math.PI/2);
-
-        edges = mesh.edges = new THREE.FaceNormalsHelper( mesh, 1, 0xffff00, 1 );
-          video.maskScene.add(mesh);
-          video.maskScene.add(edges);
-          
-      }
-
 
       var mesh=video.mesh;
 
       if (!mesh) {
           mesh=video.mesh=new THREE.Mesh( new THREE.PlaneGeometry(canvas.width,canvas.height,1,1) , video.shaderMaterial );
           mesh.name="video";
-      //    edges = mesh.edges = new THREE.FaceNormalsHelper( mesh, 1, 0xffff00, 1 );
+
           video.scene=new THREE.Scene();
           video.scene.add(mesh);
 
           video.camera=new THREE.OrthographicCamera(canvas.width/-2, canvas.width/2, canvas.height/2, canvas.height/-2, -10000, 10000 );
 
-       //   panorama.scene.add(edges);
-          
       }
 
 
-    
-/////////////////////////// 
-    
+
+///////////////////////////
+
   }
 
-  function video_update() {
+  /**
+  * video_updateGeometry()
+  */
+  function video_updateGeometry() {
       var video=window.video;
       if (!video) return;
 
@@ -879,7 +888,7 @@ renderer.render( myScene, myCamera, myTexture, true );
       var botLeft=2;
       var botRight=3;
 
-      // image corners in radians     
+      // image corners in radians
       var corner=window.corner||[
           /* topLeft */  {x: 3631/8192*Math.PI*2, y: 2325/4096*Math.PI},
           /* topRight */ {x: 4282/8192*Math.PI*2, y: 2353/4096*Math.PI},
@@ -890,33 +899,23 @@ renderer.render( myScene, myCamera, myTexture, true );
 
       window.corner=corner;
 
-      var geometry=video.maskGeometry;
-      geometry.dynamic=true;
-      geometry.elementsNeedUpdate=true;
+      var geometry=video.mask.geometry;
 
 
-      var depth=1; 
-      var yAxis=new THREE.Vector3(0,1,0);
-      var xAxis=new THREE.Vector3(1,0,0);
-      var zAxis=new THREE.Vector3(0,0,1);
+      var depth=1;
 
-       var cameraAxis = new THREE.Vector3(
-             depth*Math.sin(panorama.phi)*Math.cos(panorama.theta),
-             depth*Math.cos(panorama.phi),
-             depth*Math.sin(panorama.phi)*Math.sin(panorama.theta)
-       );
-      // 0,0,-1);
-    //   cameraAxis.applyQuaternion(panorama.sphere.object3D.quaternion);
-   //    cameraAxis.applyQuaternion(panorama.camera.instance.quaternion);
-  //     cameraAxis.setLength(depth)
-  //   */
-      
+      var cameraAxis = new THREE.Vector3(
+        depth*Math.sin(panorama.phi)*Math.cos(panorama.theta),
+        depth*Math.cos(panorama.phi),
+        depth*Math.sin(panorama.phi)*Math.sin(panorama.theta)
+      );
+
       var worldToScreen=new THREE.Matrix4().multiplyMatrices(panorama.camera.instance.projectionMatrix,panorama.camera.instance.matrixWorldInverse);
       var canvas=panorama.renderer.getContext().canvas;
 
       // for each image corner (in spherical coordinates)
       $.each(corner,function(i,corner) {
-     
+
          // convert to cartesian coordinates
          var phi=-corner.y;
          var theta=corner.x;
@@ -935,119 +934,27 @@ renderer.render( myScene, myCamera, myTexture, true );
             // behind ?
           }
          geometry.vertices[i]=v;
-         
+
          // compute screen coordinates
-         var pos=video.maskMesh.localToWorld(v.clone());
+         var pos=video.mask.mesh.localToWorld(v.clone());
          pos.applyMatrix4(worldToScreen);
-         var spos=v.spos={
+         var screenPos=v.screenPos={
               x: (pos.x+1)*canvas.width/2,
               y: (pos.y+1)*canvas.height/2
          }
-         console.log(spos)
+         console.log(screenPos);
       });
-
-      // check for coplanarity
-      var A=new THREE.Vector3();
-      var B=new THREE.Vector3();
-      var C=new THREE.Vector3();
-      var AxB=new THREE.Vector3();
-      A.subVectors(geometry.vertices[1],geometry.vertices[0]);
-      B.subVectors(geometry.vertices[2],geometry.vertices[0]);
-      C.subVectors(geometry.vertices[3],geometry.vertices[0]);
-      AxB.crossVectors(A,B);
-      console.log(C.dot(AxB).toFixed(6)!=0?'not coplanar !':'coplanar')
- 
- /*           
-      // convert plane 3D coordinates to 2D coordinates
-  
-      var x=[];
-      var y=[];
-
-      // vector 0 is origin
-      x.push(0);
-      y.push(0);
-
-      // place vector 1 on the same y coordinate
-      x.push(A.length());
-      y.push(0);
-
-      // compute relative coordinates for vector2
-      var angleCB=C.angleTo(B);
-      var lenB=B.length();
-      x.push(Math.cos(angleCB)*lenB);
-      y.push(Math.sin(angleCB)*lenB);
-
-      // compute relative coordinates for vector3
-      var angleAC=A.angleTo(C);
-      var lenC=C.length();
-      x.push(Math.cos(angleAC)*lenC);
-      y.push(Math.sin(angleAC)*lenC);
-
-      // convert to unit square coordinates
-      minx=Math.min.apply(Math,x);
-      miny=Math.min.apply(Math,y);
-      maxx=Math.max.apply(Math,x);
-      maxy=Math.max.apply(Math,y);
-     
-      var xscale=1/(maxx-minx);
-      var yscale=1/(maxy-miny);
-
-      x[0]=(x[0]-minx)*xscale;
-      x[1]=(x[1]-minx)*xscale;
-      x[2]=(x[2]-minx)*xscale;
-      x[3]=(x[3]-minx)*xscale;
-
-      y[0]=(y[0]-miny)*yscale;
-      y[1]=(y[1]-miny)*yscale;
-      y[2]=(y[2]-miny)*yscale;
-      y[3]=(y[3]-miny)*yscale;
-         
-      // update texture coordinates
-      geometry.faceVertexUvs[0][0]=[
-        new THREE.Vector2(x[2],y[2]),
-        new THREE.Vector2(x[0],y[0]),
-        new THREE.Vector2(x[3],y[3])
-      ];
-
-      geometry.faceVertexUvs[0][1]=[
-        new THREE.Vector2(x[0],y[0]),
-        new THREE.Vector2(x[1],y[1]),
-        new THREE.Vector2(x[3],y[3])
-      ];
-
-      // get homography matrix
-      video.H.set(getPerspectiveTransform([
-        {x:x[0]*video.width,y:y[0]*video.height},
-        {x:x[1]*video.width,y:y[1]*video.height},
-        {x:x[3]*video.width,y:y[3]*video.height},
-        {x:x[2]*video.width,y:y[2]*video.height}
-      ]).HA);
-*/
 
       var v=geometry.vertices;
       video.H.fromArray(getPerspectiveTransform([
-        v[0].spos,
-        v[1].spos,
-        v[3].spos,
-        v[2].spos
+        v[0].screenPos,
+        v[1].screenPos,
+        v[3].screenPos,
+        v[2].screenPos
       ])[1]);
 
         geometry.verticesNeedUpdate=true;
-      
-      geometry.normalsNeedUpdate=true;
-      geometry.uvsNeedUpdate=true;
-      geometry.computeVertexNormals();
-      geometry.computeFaceNormals();
-      geometry.computeBoundingBox();
-      geometry.computeBoundingSphere();
 
-/*
-      var mesh=video.mesh;
-      var edges = mesh.edges;
-      p.scene.remove(mesh.edges);
-      mesh.edges=new THREE.FaceNormalsHelper( mesh, 1, 0xffff00, 2 );
-      p.scene.add(mesh.edges);
-*/
   }
 
   function getPerspectiveTransform(P) {
@@ -1089,7 +996,7 @@ renderer.render( myScene, myCamera, myTexture, true );
         adj[8]=a*e-b*d;
 
         return [H,adj]
- 
+
   }
 
   $(document).on('keydown',function(e){
@@ -1100,11 +1007,10 @@ renderer.render( myScene, myCamera, myTexture, true );
       var pos=panorama.mouseCoords;
       console.log(pos)
       corner[cornerIndex].x=pos.pixel_x/8192*Math.PI*2;
-      corner[cornerIndex].y=pos.pixel_y/4096*Math.PI;    
+      corner[cornerIndex].y=pos.pixel_y/4096*Math.PI;
       ++cornerIndex;
       console.log(cornerIndex)
       if (cornerIndex==4)  {
-        video_init(panorama);
         cornerIndex=0;
       }
       window.cornerIndex=cornerIndex;
@@ -1140,7 +1046,7 @@ renderer.render( myScene, myCamera, myTexture, true );
           keepThumb: true
         });
       }
-      break;    
+      break;
     case 80: // p
       panorama.snapshot.toggleEdit({
         cancel: true,
@@ -1161,7 +1067,7 @@ renderer.render( myScene, myCamera, myTexture, true );
         panorama.snapshot.toggleEdit({
           cancel: true,
           keepThumb: false,
-        });  
+        });
       }
       panorama.gallery.show(e.target);
       return;
